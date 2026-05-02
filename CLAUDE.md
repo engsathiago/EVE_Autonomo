@@ -49,7 +49,7 @@ Construindo um agente autônomo inspirado em **Hermes Agent** (Nous Research) e
 > ATUALIZE ESTA SEÇÃO APÓS CADA FASE
 
 - [x] Fase 0: Fundação
-- [ ] Fase 1: Core mínimo
+- [x] Fase 1: Core mínimo
 - [ ] Fase 2: Memória
 - [ ] Fase 3: Skills
 - [ ] Fase 4: Multi-modelo

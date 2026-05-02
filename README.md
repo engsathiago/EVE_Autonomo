@@ -1,102 +1,77 @@
-# Kit Inicial — Agente Autônomo Híbrido
+# Agente Autônomo Híbrido
 
-Esse é o ponto de partida do seu projeto. Contém:
+> **Status:** Fase 0 completa — fundação estabelecida. Sem lógica de agente ainda.
 
-```
-agent_kit/
-├── CLAUDE.md                       ← cole na raiz do seu projeto
-├── docs/
-│   ├── architecture.md             ← referência arquitetural
-│   ├── claude-code-guide.md        ← manual operacional do Claude Code
-│   └── phases/
-│       └── phase-0-spec.md         ← spec da fase 0 (cole no Claude Code)
-└── README.md                       ← esse arquivo
-```
+Agente autônomo inspirado no Hermes Agent (Nous Research) e OpenClaw (Peter
+Steinberger): loop ReAct + memória curada + skills auto-criadas + multi-canal.
 
-## Como começar (passo a passo)
+## Quickstart
 
-### 1. Crie o repo
 ```bash
-mkdir agent && cd agent
-git init
+# 1. Clone e entre na pasta
+git clone <repo-url> agent && cd agent
+
+# 2. Configure o ambiente
+cp .env.example .env
+# Edite .env com sua ANTHROPIC_API_KEY e credenciais do Postgres
+
+# 3. Suba tudo
+docker compose up --build -d
+
+# 4. Verifique
+curl http://localhost:8000/health   # {"ok": true}
+curl http://localhost:8001/health   # {"ok": true}
 ```
 
-### 2. Cole os arquivos do kit
-Copie tudo que tá nesse zip pra raiz do `agent/`:
+Para incluir o Ollama (modelos locais):
+```bash
+docker compose --profile local-llm up --build -d
+```
+
+## Stack
+
+| Camada     | Tecnologia                              |
+|------------|-----------------------------------------|
+| Core       | Python 3.11 + FastAPI + asyncio         |
+| Gateway    | Node 20 + TypeScript + Fastify          |
+| Banco      | PostgreSQL 16 + pgvector                |
+| Bus        | Redis 7                                 |
+| Web UI     | HTML + vanilla JS (Fase 7)              |
+| Deploy     | Docker Compose → DigitalOcean/Hetzner   |
+
+## Estrutura
+
 ```
 agent/
-├── CLAUDE.md
-└── docs/
-    ├── architecture.md
-    ├── claude-code-guide.md
-    └── phases/
-        └── phase-0-spec.md
+├── core/          # Python: AIAgent, memória, skills, tools
+├── gateway/       # Node: canais de mensagem (Telegram, Discord, etc.)
+├── webui/         # HTML/JS estático (Fase 7)
+├── cli/           # Python CLI (`agent` command)
+├── config/        # SOUL.md, AGENTS.md, TOOLS.md, config.yaml
+├── deploy/        # Scripts de deploy (Fase 11)
+└── docs/          # Arquitetura, guias e specs de fase
 ```
 
-### 3. Primeiro commit
-```bash
-git add .
-git commit -m "chore: kit inicial"
-```
+## Roadmap
 
-### 4. Instale o Claude Code
-```bash
-npm install -g @anthropic-ai/claude-code
-```
+| # | Fase                                 | Status       |
+|---|--------------------------------------|--------------|
+| 0 | Fundação                             | ✅ Completo  |
+| 1 | Core mínimo (AIAgent + 3 tools + CLI)| A fazer      |
+| 2 | Memória (PostgreSQL + pgvector)      | A fazer      |
+| 3 | Skills (manager + criação automática)| A fazer      |
+| 4 | Multi-modelo (OpenAI + Ollama)       | A fazer      |
+| 5 | Gateway Node + Telegram              | A fazer      |
+| 6 | Discord + WhatsApp + Slack           | A fazer      |
+| 7 | Web UI (vanilla JS + SSE)            | A fazer      |
+| 8 | Cron + Subagentes                    | A fazer      |
+| 9 | Sandboxes (Docker + SSH)             | A fazer      |
+|10 | Plugins + MCP                        | A fazer      |
+|11 | Deploy (DigitalOcean/Hetzner)        | A fazer      |
 
-### 5. Abra o Claude Code na pasta
-```bash
-claude
-```
+## Configuração
 
-### 6. Inicie a Fase 0
-Cole exatamente isso na primeira mensagem:
+Toda configuração sensível via `.env` (nunca commitado). Comportamento do
+agente editável em `config/SOUL.md` e `config/AGENTS.md` sem redeployar.
 
-> Leia `CLAUDE.md` e `docs/phases/phase-0-spec.md`. Antes de codar, me dê o plano detalhado pra Fase 0. Não escreva código ainda.
-
-### 7. Aprove o plano e deixe executar
-
-### 8. Valide
-```bash
-docker compose up --build -d
-curl http://localhost:8000/health
-curl http://localhost:8001/health
-```
-
-### 9. Commit
-```bash
-git add .
-git commit -m "feat: fase 0 — fundação"
-```
-
-### 10. Volte aqui pra eu te dar o spec da Fase 1
-
-## Roadmap das fases
-
-| # | Fase | Status |
-|---|---|---|
-| 0 | Fundação | Spec pronto |
-| 1 | Core mínimo (AIAgent + Anthropic + 3 tools + CLI) | A fazer |
-| 2 | Memória (PostgreSQL + pgvector + curator) | A fazer |
-| 3 | Skills (manager + creator automático) | A fazer |
-| 4 | Multi-modelo (OpenAI + OpenRouter + Ollama) | A fazer |
-| 5 | Gateway Node + Telegram | A fazer |
-| 6 | Discord + WhatsApp + Slack | A fazer |
-| 7 | Web UI (vanilla JS + SSE) | A fazer |
-| 8 | Cron + Subagentes | A fazer |
-| 9 | Sandboxes (Docker + SSH) | A fazer |
-| 10 | Plugins + MCP | A fazer |
-| 11 | Deploy (DO/Hetzner) | A fazer |
-
-## Importante
-
-**Leia `docs/claude-code-guide.md` antes de começar.** É o que vai te
-salvar de queimar limite à toa.
-
-## Quando terminar a Fase 0
-
-Volta aqui no chat e me fala:
-> "Fase 0 concluída. Pode me passar o spec da Fase 1?"
-
-Eu te entrego o `phase-1-spec.md` na hora. Mesma coisa pra cada fase
-seguinte.
+Veja `docs/architecture.md` para a arquitetura completa.
