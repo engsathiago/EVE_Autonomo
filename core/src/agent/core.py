@@ -2,7 +2,8 @@ import asyncio
 import json
 import time
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -12,6 +13,11 @@ from agent.observability.logger import get_logger
 from agent.prompts.system import PLANNER_SYSTEM, REFLECTOR_SYSTEM
 from agent.tools.registry import ToolRegistry
 from agent.transports.base import BaseTransport
+
+if TYPE_CHECKING:
+    from agent.memory.compressor import ContextCompressor
+    from agent.memory.curator import Curator
+    from agent.memory.store import MemoryStore
 
 log = get_logger(__name__)
 
@@ -28,6 +34,7 @@ class AgentResult(BaseModel):
     total_output_tokens: int
     estimated_cost_usd: float
     duration_s: float
+    conversation_id: str | None = None
 
 
 class AIAgent:
@@ -37,11 +44,19 @@ class AIAgent:
         tool_registry: ToolRegistry,
         reflector_transport: BaseTransport | None = None,
         settings: AgentSettings | None = None,
+        memory_store: "MemoryStore | None" = None,
+        curator: "Curator | None" = None,
+        compressor: "ContextCompressor | None" = None,
+        conversation_id: UUID | None = None,
     ) -> None:
         self._transport = transport
         self._registry = tool_registry
         self._reflector = reflector_transport
         self._settings = settings or get_settings().agent
+        self._memory_store = memory_store
+        self._curator = curator
+        self._compressor = compressor
+        self._conversation_id = conversation_id
 
     async def run(
         self,
@@ -53,10 +68,16 @@ class AIAgent:
         messages: list[dict[str, Any]] = list(conversation_history or [])
         messages.append({"role": "user", "content": goal})
 
+        # Gravar mensagem do usuário no histórico persistente
+        if self._memory_store and self._conversation_id:
+            await self._memory_store.append_message(
+                self._conversation_id, "user", goal
+            )
+
         tools = self._registry.all_schemas()
         total_in = total_out = 0
         model = self._settings.default_model
-        last_text = ""  # rastreia o último texto do planner
+        last_text = ""
 
         async def emit(event: AgentEvent) -> None:
             if on_event:
@@ -66,9 +87,15 @@ class AIAgent:
             await emit(AgentEvent(type="iteration_start", data={"iteration": iteration}))
             log.info("agent.iteration", iteration=iteration)
 
+            # Compressão antes de chamar o LLM
+            messages = await self._maybe_compress(messages)
+
+            # Injeção de memórias relevantes (no system prompt, não em messages)
+            system_with_mem = await self._build_system_with_memories(goal, PLANNER_SYSTEM)
+
             # ── Plan + Act ──────────────────────────────────────────────────
             response = await self._transport.chat(
-                system=PLANNER_SYSTEM,
+                system=system_with_mem,
                 messages=messages,
                 tools=tools or None,
                 max_tokens=4096,
@@ -89,9 +116,16 @@ class AIAgent:
                         data={"text": response.text, "iteration": iteration},
                     )
                 )
+                # Curadoria do turno final
+                if response.text:
+                    await self._curate_turn(goal, response.text)
+                    if self._memory_store and self._conversation_id:
+                        await self._memory_store.append_message(
+                            self._conversation_id, "assistant", response.text
+                        )
                 break
 
-            # Adiciona resposta do assistente ao histórico
+            # Adiciona resposta do assistente ao histórico em memória
             messages.append(self._build_assistant_message(response.text, response.tool_calls))
 
             # ── Execute tools ───────────────────────────────────────────────
@@ -149,7 +183,76 @@ class AIAgent:
             total_output_tokens=total_out,
             estimated_cost_usd=cost,
             duration_s=round(duration, 2),
+            conversation_id=str(self._conversation_id) if self._conversation_id else None,
         )
+
+    # -------------------------------------------------------------------------
+    # Memory integration points
+    # -------------------------------------------------------------------------
+
+    async def _build_system_with_memories(
+        self, user_msg: str, base_system: str
+    ) -> str:
+        """Concatena memorias relevantes ao system prompt principal.
+
+        A API da Anthropic so aceita 'user' e 'assistant' no array de messages;
+        o system e parametro top-level. Por isso a memoria vai dentro da string
+        do system, nao como mensagem extra.
+        """
+        if not self._memory_store:
+            return base_system
+        try:
+            result = await self._memory_store.search_hybrid(user_msg, k=5)
+            if not result.entries:
+                return base_system
+            block = "\n".join(
+                f"- [{e.kind}, imp={e.importance}] {e.content}"
+                for e in result.entries
+            )
+            return f"{base_system}\n\n<memorias_relevantes>\n{block}\n</memorias_relevantes>"
+        except Exception as exc:
+            log.warning("memory.inject.failed", error=str(exc))
+            return base_system
+
+    async def _maybe_compress(
+        self, messages: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        if not self._compressor:
+            return messages
+        try:
+            compacted, summary = await self._compressor.maybe_compress(messages)
+            if summary and self._memory_store and self._conversation_id:
+                await self._memory_store.save(
+                    content=summary,
+                    kind="summary",
+                    conversation_id=self._conversation_id,
+                    importance=6,
+                )
+            return compacted
+        except Exception as exc:
+            log.warning("memory.compress.failed", error=str(exc))
+            return messages
+
+    async def _curate_turn(self, user_msg: str, assistant_msg: str) -> None:
+        if not (self._curator and self._memory_store):
+            return
+        try:
+            decision = await self._curator.should_persist(user_msg, assistant_msg)
+            if decision.persist:
+                content = decision.extracted_content or f"{user_msg}\n→ {assistant_msg}"
+                await self._memory_store.save(
+                    content=content,
+                    kind=decision.kind,
+                    importance=decision.importance,
+                    conversation_id=self._conversation_id,
+                    metadata={"curator_reason": decision.reason},
+                )
+        except Exception as exc:
+            log.warning("memory.curate.failed", error=str(exc))
+
+    # -------------------------------------------------------------------------
+    # Existing helpers (unchanged)
+    # -------------------------------------------------------------------------
 
     async def _execute_tools(
         self,

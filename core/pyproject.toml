@@ -13,12 +13,17 @@ dependencies = [
   "httpx>=0.28",
   "structlog>=24.4",
   "pyyaml>=6.0",
+  # Phase 2: memory
+  "sentence-transformers>=2.7.0",
+  "torch>=2.2.0",
+  "pgvector>=0.3.0",
 ]
 
 [project.optional-dependencies]
 dev = [
   "pytest>=8.3",
   "pytest-asyncio>=0.24",
+  "pytest-mock>=3.14",
   "ruff>=0.8",
   "mypy>=1.13",
   "respx>=0.21",
@@ -41,6 +46,9 @@ select = ["E", "F", "I", "UP"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+  "integration: testes que requerem Postgres rodando (desabilitar com -m 'not integration')",
+]
 
 [tool.mypy]
 python_version = "3.11"

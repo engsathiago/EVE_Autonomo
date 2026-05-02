@@ -2,12 +2,16 @@ import Fastify from "fastify";
 import { Redis } from "ioredis";
 import { z } from "zod";
 
+import { registerChatRoutes } from "./routes/chat.js";
+
 const EnvSchema = z.object({
   PORT: z.coerce.number().default(8001),
   REDIS_URL: z.string().default("redis://redis:6379/0"),
+  CORE_URL: z.string().default("http://core:8000"),
 });
 
 const env = EnvSchema.parse(process.env);
+process.env.CORE_URL = env.CORE_URL;
 
 const app = Fastify({ logger: true });
 
@@ -24,6 +28,8 @@ app.get("/health", async () => {
   const redisPing = await redis.ping().catch(() => "FAIL");
   return { ok: redisPing === "PONG" };
 });
+
+registerChatRoutes(app);
 
 const start = async (): Promise<void> => {
   try {

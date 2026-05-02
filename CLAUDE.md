@@ -50,7 +50,7 @@ Construindo um agente autônomo inspirado em **Hermes Agent** (Nous Research) e
 
 - [x] Fase 0: Fundação
 - [x] Fase 1: Core mínimo
-- [ ] Fase 2: Memória
+- [x] Fase 2: Memória
 - [ ] Fase 3: Skills
 - [ ] Fase 4: Multi-modelo
 - [ ] Fase 5: Gateway + Telegram
