@@ -50,7 +50,7 @@ Construindo um agente autônomo inspirado em **Hermes Agent** (Nous Research) e
 
 - [x] Fase 0: Fundação
 - [x] Fase 1: Core mínimo
-- [x] Fase 2: Memória
+- [x] Fase 2: Memória — MemoryStore (pgvector + FTS multilingual, busca híbrida via RRF), Curator (Haiku 4.5) decidindo o que persistir, ContextCompressor para histórico longo, tools `salvar_memoria` e `ler_memoria`, persistência cross-sessão validada (E2E OpenClaw passou)
 - [ ] Fase 3: Skills
 - [ ] Fase 4: Multi-modelo
 - [ ] Fase 5: Gateway + Telegram
