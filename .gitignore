@@ -50,3 +50,7 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+core/.ven/
+core/.venv/
+.venv/
+.cache/
