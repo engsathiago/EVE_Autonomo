@@ -1,6 +1,7 @@
 import json
 import os
 from collections.abc import AsyncGenerator
+from pathlib import Path
 from uuid import UUID
 
 from fastapi import FastAPI
@@ -15,6 +16,7 @@ from agent.memory.compressor import ContextCompressor
 from agent.memory.curator import Curator
 from agent.memory.store import MemoryStore
 from agent.observability import configure_logging
+from agent.skills.manager import SkillManager
 from agent.tools.registry import ToolRegistry, register_builtin, register_memory_tools
 from agent.transports import AnthropicTransport
 
@@ -24,13 +26,14 @@ _registry: ToolRegistry | None = None
 _memory_store: MemoryStore | None = None
 _curator: Curator | None = None
 _compressor: ContextCompressor | None = None
+_skill_manager: SkillManager | None = None
 
 _CURATOR_ENABLED = os.getenv("MEMORY_CURATOR_ENABLED", "true").lower() != "false"
 
 
 @app.on_event("startup")
 async def _startup() -> None:
-    global _registry, _memory_store, _curator, _compressor
+    global _registry, _memory_store, _curator, _compressor, _skill_manager
     settings = get_settings()
     configure_logging(settings.log_level, json=settings.log_json)
 
@@ -41,6 +44,14 @@ async def _startup() -> None:
     _registry = ToolRegistry()
     register_builtin(_registry)
     register_memory_tools(_registry, _memory_store)
+
+    _skill_manager = SkillManager(
+        skills_dir=Path(settings.skills.skills_dir),
+        transport=AnthropicTransport(model=settings.anthropic.planner_model),
+        memory_store=_memory_store,
+        cache_dir=Path(settings.skills.skills_embedding_cache_dir),
+    )
+    await _skill_manager.load_all()
 
 
 @app.on_event("shutdown")
@@ -59,6 +70,12 @@ def _get_store() -> MemoryStore:
     if _memory_store is None:
         raise RuntimeError("memory_store não inicializado")
     return _memory_store
+
+
+def _get_skill_manager() -> SkillManager:
+    if _skill_manager is None:
+        raise RuntimeError("skill_manager não inicializado")
+    return _skill_manager
 
 
 # ── Request/Response schemas ────────────────────────────────────────────────
@@ -141,6 +158,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
         curator=_curator,
         compressor=_compressor,
         conversation_id=conversation_id,
+        skill_manager=_get_skill_manager(),
     )
     result = await agent.run(goal=req.message, conversation_history=conversation_history)
 
@@ -183,6 +201,7 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
         curator=_curator,
         compressor=_compressor,
         conversation_id=conversation_id,
+        skill_manager=_get_skill_manager(),
     )
 
     async def _event_stream() -> AsyncGenerator[str, None]:

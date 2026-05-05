@@ -1,0 +1,9 @@
+name: dir_skill
+version: 1
+description: Skill carregada de pasta com manifest.yaml e prompt.md separados.
+arguments:
+  - name: query
+    type: string
+    required: true
+tools: []
+tags: [test, directory]

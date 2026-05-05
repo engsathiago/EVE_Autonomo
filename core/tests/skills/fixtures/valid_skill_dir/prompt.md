@@ -1,0 +1,1 @@
+Processe a query: {{ query }}

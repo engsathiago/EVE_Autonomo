@@ -279,6 +279,36 @@ class MemoryStore:
         )
         return SearchResult(entries=entries, query=query, method="hybrid")
 
+    # -------------------------------------------------------------------------
+    # Skill Invocations
+    # -------------------------------------------------------------------------
+
+    async def save_skill_invocation(self, record: "SkillInvocationRecord") -> int:  # type: ignore[name-defined]  # noqa: F821
+        from datetime import timezone
+        from datetime import datetime as dt
+
+        now = dt.now(tz=timezone.utc)
+        row = await self._pool.fetchrow(
+            """
+            INSERT INTO skill_invocations
+                (session_id, skill_name, skill_version, arguments, result,
+                 success, error, latency_ms, started_at, finished_at)
+            VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, $9, $10)
+            RETURNING id
+            """,
+            record.session_id,
+            record.skill_name,
+            record.skill_version,
+            json.dumps(record.arguments),
+            json.dumps(record.result) if record.result is not None else None,
+            record.success,
+            record.error,
+            record.latency_ms,
+            record.started_at or now,
+            record.finished_at or now,
+        )
+        return row["id"]
+
     async def _touch_access(self, ids: list[UUID]) -> None:
         if not ids:
             return

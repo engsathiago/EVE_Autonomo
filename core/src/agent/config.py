@@ -19,6 +19,15 @@ def _load_yaml(path: Path) -> dict[str, Any]:
     return yaml.safe_load(expanded) or {}
 
 
+class SkillsSettings(BaseSettings):
+    skills_dir: str = "core/src/agent/skills"
+    skills_drafts_dir: str = "core/src/agent/skills/_drafts"
+    skills_auto_create: bool = True
+    skills_auto_create_threshold: int = 3
+    skills_embedding_cache_dir: str = ".cache/skill_embeddings"
+    skills_match_k: int = 3
+
+
 class AgentSettings(BaseSettings):
     name: str = "Eve"
     default_model: str = "claude-haiku-4-5"
@@ -60,6 +69,7 @@ class Settings(BaseSettings):
     agent: AgentSettings = AgentSettings()
     anthropic: AnthropicSettings = AnthropicSettings()
     search: SearchSettings = SearchSettings()
+    skills: SkillsSettings = SkillsSettings()
     log_level: str = "INFO"
     log_json: bool = False
 
@@ -81,6 +91,7 @@ class Settings(BaseSettings):
         anthropic_data = providers.get("anthropic", {})
         anthropic_models = anthropic_data.get("models", {})
         search_data = data.get("search", {})
+        skills_data = data.get("skills", {})
 
         return cls(
             log_level=data.get("log_level", "INFO"),
@@ -106,6 +117,14 @@ class Settings(BaseSettings):
                 provider=search_data.get("provider", "tavily"),
                 tavily_api_key=search_data.get("tavily_api_key") or os.environ.get("TAVILY_API_KEY", ""),
                 brave_api_key=search_data.get("brave_api_key") or os.environ.get("BRAVE_API_KEY", ""),
+            ),
+            skills=SkillsSettings(
+                skills_dir=skills_data.get("skills_dir", "core/src/agent/skills"),
+                skills_drafts_dir=skills_data.get("skills_drafts_dir", "core/src/agent/skills/_drafts"),
+                skills_auto_create=skills_data.get("skills_auto_create", True),
+                skills_auto_create_threshold=skills_data.get("skills_auto_create_threshold", 3),
+                skills_embedding_cache_dir=skills_data.get("skills_embedding_cache_dir", ".cache/skill_embeddings"),
+                skills_match_k=skills_data.get("skills_match_k", 3),
             ),
         )
 

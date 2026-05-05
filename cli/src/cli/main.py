@@ -8,7 +8,10 @@ from rich.console import Console
 
 from cli import __version__
 
+from cli.skills import app as skills_app
+
 app = typer.Typer(name="agent", help="Agente autônomo híbrido — CLI de controle.")
+app.add_typer(skills_app, name="skill")
 console = Console()
 
 

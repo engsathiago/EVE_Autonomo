@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     from agent.memory.compressor import ContextCompressor
     from agent.memory.curator import Curator
     from agent.memory.store import MemoryStore
+    from agent.skills.manager import SkillManager
+    from agent.skills.schema import SkillMatch
 
 log = get_logger(__name__)
 
@@ -48,6 +50,7 @@ class AIAgent:
         curator: "Curator | None" = None,
         compressor: "ContextCompressor | None" = None,
         conversation_id: UUID | None = None,
+        skill_manager: "SkillManager | None" = None,
     ) -> None:
         self._transport = transport
         self._registry = tool_registry
@@ -57,6 +60,7 @@ class AIAgent:
         self._curator = curator
         self._compressor = compressor
         self._conversation_id = conversation_id
+        self._skill_manager = skill_manager
 
     async def run(
         self,
@@ -74,7 +78,7 @@ class AIAgent:
                 self._conversation_id, "user", goal
             )
 
-        tools = self._registry.all_schemas()
+        base_tools = self._registry.all_schemas()
         total_in = total_out = 0
         model = self._settings.default_model
         last_text = ""
@@ -93,11 +97,17 @@ class AIAgent:
             # Injeção de memórias relevantes (no system prompt, não em messages)
             system_with_mem = await self._build_system_with_memories(goal, PLANNER_SYSTEM)
 
+            # Skill matching: top-k candidatas injetadas no prompt + tools
+            skill_matches = await self._match_skills(goal)
+            system_final = self._inject_skill_descriptions(system_with_mem, skill_matches)
+            skill_tool_schemas = self._collect_skill_tools(skill_matches)
+            tools = (base_tools + skill_tool_schemas) or None
+
             # ── Plan + Act ──────────────────────────────────────────────────
             response = await self._transport.chat(
-                system=system_with_mem,
+                system=system_final,
                 messages=messages,
-                tools=tools or None,
+                tools=tools,
                 max_tokens=4096,
             )
             total_in += response.usage["input_tokens"]
@@ -251,6 +261,36 @@ class AIAgent:
             log.warning("memory.curate.failed", error=str(exc))
 
     # -------------------------------------------------------------------------
+    # Skill integration points
+    # -------------------------------------------------------------------------
+
+    async def _match_skills(self, query: str) -> "list[SkillMatch]":
+        if not self._skill_manager:
+            return []
+        try:
+            k = get_settings().skills.skills_match_k
+            return await self._skill_manager.match(query, k=k)
+        except Exception as exc:
+            log.warning("skill.match.failed", error=str(exc))
+            return []
+
+    def _inject_skill_descriptions(
+        self, system: str, matches: "list[SkillMatch]"
+    ) -> str:
+        if not matches:
+            return system
+        block = "\n".join(
+            f"- [{m.manifest.name}] {m.manifest.description}"
+            for m in matches
+        )
+        return f"{system}\n\n<skills_disponíveis>\n{block}\n</skills_disponíveis>"
+
+    def _collect_skill_tools(self, matches: "list[SkillMatch]") -> list[dict[str, Any]]:
+        if not self._skill_manager or not matches:
+            return []
+        return [self._skill_manager.to_tool_schema(m.manifest) for m in matches]
+
+    # -------------------------------------------------------------------------
     # Existing helpers (unchanged)
     # -------------------------------------------------------------------------
 
@@ -262,7 +302,12 @@ class AIAgent:
         async def _run_one(call: dict[str, Any]) -> dict[str, Any]:
             name = call["name"]
             args = call.get("input", {})
-            tool = self._registry.get(name)
+
+            # Skills são prefixadas com "skill__" no schema da API Anthropic
+            is_skill = name.startswith("skill__") and self._skill_manager is not None
+            skill_name = name[len("skill__"):] if is_skill else None
+
+            tool = self._registry.get(name) if not is_skill else None
 
             await emit(
                 AgentEvent(
@@ -278,7 +323,20 @@ class AIAgent:
                 )
             )
 
-            result = await self._registry.execute(name, args)
+            if is_skill and self._skill_manager and skill_name:
+                from agent.skills.schema import SkillError, SkillRequiresApproval
+                from agent.tools.base import ToolResult
+                try:
+                    skill_result = await self._skill_manager.run(
+                        skill_name, args, self._conversation_id
+                    )
+                    result = ToolResult(ok=True, output=skill_result.output)
+                except SkillRequiresApproval as exc:
+                    result = ToolResult(ok=False, error=str(exc))
+                except SkillError as exc:
+                    result = ToolResult(ok=False, error=str(exc))
+            else:
+                result = await self._registry.execute(name, args)
 
             await emit(
                 AgentEvent(

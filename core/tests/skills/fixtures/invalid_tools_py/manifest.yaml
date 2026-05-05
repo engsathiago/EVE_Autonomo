@@ -1,0 +1,5 @@
+name: bad_tools_skill
+version: 1
+description: Skill com tools.py que importa módulo não permitido.
+tools: [BadTool]
+tags: [test]
