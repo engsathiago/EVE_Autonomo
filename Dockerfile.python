@@ -10,6 +10,19 @@ COPY core/src core/src
 
 RUN uv pip install --system --no-cache-dir -e "./core"
 
+# CLI — copiada depois do core já estar instalado
+COPY cli/pyproject.toml cli/
+COPY cli/src cli/src
+
+# Instala dependências da CLI explicitamente (evita reprocessar file:../core)
+RUN uv pip install --system --no-cache-dir "typer>=0.12" "rich>=13.0" "prompt_toolkit>=3.0"
+
+# Remove a referência file:// do pyproject.toml nesta cópia de build — agent-core
+# já está instalado acima e o uv não consegue resolver caminhos relativos durante
+# o parse de metadata. O arquivo fonte não é alterado.
+RUN sed -i '/"agent-core @ file/d' cli/pyproject.toml && \
+    uv pip install --system --no-cache-dir --no-deps "./cli"
+
 # ── runtime ──────────────────────────────────────────────────────────────────
 FROM python:3.11-slim AS runtime
 
@@ -19,9 +32,17 @@ WORKDIR /app
 
 COPY --from=builder /usr/local/lib/python3.11 /usr/local/lib/python3.11
 COPY --from=builder /usr/local/bin/uvicorn    /usr/local/bin/uvicorn
+COPY --from=builder /usr/local/bin/agent      /usr/local/bin/agent
 COPY core/src /app/src
 
+# config.yaml real não é copiado para o container; o from_yaml cai para defaults
+# que usam caminhos relativos (core/src/…) que não existem em /app.
+# Criamos um config mínimo só com a seção de skills e apontamos CONFIG_PATH para ele.
+RUN printf 'skills:\n  skills_dir: /app/src/agent/skills\n  skills_drafts_dir: /app/src/agent/skills/_drafts\n' \
+    > /app/docker-config.yaml
+
 ENV PYTHONPATH=/app/src
+ENV CONFIG_PATH=/app/docker-config.yaml
 
 USER agent
 
