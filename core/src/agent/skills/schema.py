@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+_MODEL_RE = re.compile(
+    r"^(anthropic|openai|openrouter|ollama):[\w./\-]+(:[\w.\-]+)?$"
+)
 
 ArgumentType = Literal["string", "integer", "float", "boolean", "enum", "datetime"]
 
@@ -26,10 +31,21 @@ class SkillManifest(BaseModel):
     tools: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     requires_approval: bool = False
+    model: str | None = None   # ex: 'ollama:qwen2.5:7b' — None herda DEFAULT_MODEL
     # Preenchido pelo loader — não vem do frontmatter
     prompt: str = ""
     source_path: str = ""
     content_hash: str = ""
+
+    @field_validator("model")
+    @classmethod
+    def _validate_model(cls, v: str | None) -> str | None:
+        if v is not None and not _MODEL_RE.match(v):
+            raise ValueError(
+                f"Campo 'model' inválido: {v!r}. "
+                "Formato: 'provider:model_id' — ex: 'ollama:qwen2.5:7b', 'anthropic:claude-haiku-4-5'"
+            )
+        return v
 
 
 class SkillMatch(BaseModel):

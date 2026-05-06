@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from agent.memory.compressor import ContextCompressor
     from agent.memory.curator import Curator
     from agent.memory.store import MemoryStore
+    from agent.models.router import ModelRouter
     from agent.skills.manager import SkillManager
     from agent.skills.schema import SkillMatch
 
@@ -51,6 +52,7 @@ class AIAgent:
         compressor: "ContextCompressor | None" = None,
         conversation_id: UUID | None = None,
         skill_manager: "SkillManager | None" = None,
+        model_router: "ModelRouter | None" = None,
     ) -> None:
         self._transport = transport
         self._registry = tool_registry
@@ -61,12 +63,14 @@ class AIAgent:
         self._compressor = compressor
         self._conversation_id = conversation_id
         self._skill_manager = skill_manager
+        self._model_router = model_router
 
     async def run(
         self,
         goal: str,
         on_event: OnEvent | None = None,
         conversation_history: list[dict[str, Any]] | None = None,
+        model_override: str | None = None,
     ) -> AgentResult:
         start = time.monotonic()
         messages: list[dict[str, Any]] = list(conversation_history or [])
@@ -104,11 +108,12 @@ class AIAgent:
             tools = (base_tools + skill_tool_schemas) or None
 
             # ── Plan + Act ──────────────────────────────────────────────────
-            response = await self._transport.chat(
+            response = await self._chat(
                 system=system_final,
                 messages=messages,
                 tools=tools,
                 max_tokens=4096,
+                model=model_override,
             )
             total_in += response.usage["input_tokens"]
             total_out += response.usage["output_tokens"]
@@ -358,10 +363,36 @@ class AIAgent:
         results = await asyncio.gather(*[_run_one(c) for c in tool_calls])
         return list(results)
 
+    async def _chat(
+        self,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None,
+        max_tokens: int,
+        model: str | None = None,
+    ) -> Any:
+        """Encaminha para ModelRouter (com seleção de modelo) ou BaseTransport legado."""
+        if self._model_router is not None:
+            return await self._model_router.chat(
+                system=system,
+                messages=messages,
+                tools=tools,
+                max_tokens=max_tokens,
+                model=model,
+                session_id=str(self._conversation_id) if self._conversation_id else None,
+            )
+        return await self._transport.chat(
+            system=system,
+            messages=messages,
+            tools=tools,
+            max_tokens=max_tokens,
+        )
+
     async def _reflect(self, messages: list[dict[str, Any]]) -> dict[str, Any] | None:
         if self._reflector is None:
             return None
         try:
+            # Reflector sempre usa o transport legado (modelo fixo configurado)
             resp = await self._reflector.chat(
                 system=REFLECTOR_SYSTEM,
                 messages=messages,

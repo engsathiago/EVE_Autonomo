@@ -13,6 +13,7 @@ from agent.observability.logger import get_logger
 from agent.skills.schema import SkillError, SkillManifest, SkillResult
 
 if TYPE_CHECKING:
+    from agent.models.router import ModelRouter
     from agent.tools.registry import ToolRegistry
     from agent.transports.base import BaseTransport
 
@@ -48,9 +49,11 @@ class SkillRunner:
         self,
         transport: "BaseTransport",
         tool_registry: "ToolRegistry | None" = None,
+        model_router: "ModelRouter | None" = None,
     ) -> None:
         self._transport = transport
         self._tool_registry = tool_registry
+        self._model_router = model_router
 
     async def execute(self, manifest: SkillManifest, raw_arguments: dict[str, Any]) -> SkillResult:
         arguments = _fill_defaults(manifest, raw_arguments)
@@ -71,11 +74,12 @@ class SkillRunner:
         ]
 
         try:
-            response = await self._transport.chat(
+            response = await self._chat(
                 system=system_prompt,
                 messages=messages,
                 tools=tool_schemas or None,
                 max_tokens=2048,
+                model=manifest.model,
             )
         except Exception as exc:
             raise SkillError(f"LLM falhou ao executar skill '{manifest.name}': {exc}") from exc
@@ -88,11 +92,12 @@ class SkillRunner:
 
             # Segunda chamada ao LLM com os resultados das tools
             try:
-                response = await self._transport.chat(
+                response = await self._chat(
                     system=system_prompt,
                     messages=messages,
                     tools=None,
                     max_tokens=2048,
+                    model=manifest.model,
                 )
             except Exception as exc:
                 raise SkillError(f"LLM falhou na segunda chamada da skill '{manifest.name}': {exc}") from exc
@@ -102,6 +107,29 @@ class SkillRunner:
             skill_version=manifest.version,
             output=response.text,
             success=True,
+        )
+
+    async def _chat(
+        self,
+        system: str,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None,
+        max_tokens: int,
+        model: str | None,
+    ) -> Any:
+        if self._model_router is not None:
+            return await self._model_router.chat(
+                system=system,
+                messages=messages,
+                tools=tools,
+                max_tokens=max_tokens,
+                model=model,
+            )
+        return await self._transport.chat(
+            system=system,
+            messages=messages,
+            tools=tools,
+            max_tokens=max_tokens,
         )
 
     async def _execute_tool_calls(

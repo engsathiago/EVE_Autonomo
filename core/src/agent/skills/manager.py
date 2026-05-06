@@ -26,6 +26,7 @@ from agent.skills.schema import (
 
 if TYPE_CHECKING:
     from agent.memory.store import MemoryStore
+    from agent.models.router import ModelRouter
     from agent.transports.base import BaseTransport
 
 log = get_logger(__name__)
@@ -47,11 +48,13 @@ class SkillManager:
         transport: "BaseTransport",
         memory_store: "MemoryStore | None" = None,
         cache_dir: Path | None = None,
+        model_router: "ModelRouter | None" = None,
     ) -> None:
         self._skills_dir = skills_dir
         self._transport = transport
         self._memory_store = memory_store
         self._registry = SkillRegistry(cache_dir=cache_dir)
+        self._model_router = model_router
 
     # ------------------------------------------------------------------
     # Loading
@@ -148,7 +151,10 @@ class SkillManager:
             raise SkillRequiresApproval(name)
 
         from agent.skills.runner import SkillRunner
-        runner = SkillRunner(transport=self._transport)
+        runner = SkillRunner(
+            transport=self._transport,
+            model_router=self._model_router,
+        )
 
         started = time.monotonic()
         record = SkillInvocationRecord(

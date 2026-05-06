@@ -52,7 +52,7 @@ Construindo um agente autônomo inspirado em **Hermes Agent** (Nous Research) e
 - [x] Fase 1: Core mínimo
 - [x] Fase 2: Memória — MemoryStore (pgvector + FTS multilingual, busca híbrida via RRF), Curator (Haiku 4.5) decidindo o que persistir, ContextCompressor para histórico longo, tools `salvar_memoria` e `ler_memoria`, persistência cross-sessão validada (E2E OpenClaw passou)
 - [x] Fase 3: Skills — SkillManager (loader + registry + match semântico via embedder da F2), SkillRunner (Jinja2 + tool calls), SkillCreator (extração de sessão → draft), 4 skills builtin, tabela `skill_invocations`, integração no AIAgent (skill__ tools + inject no system prompt), CLI `agent skill list/show/run/validate/review/create-from-session`
-- [ ] Fase 4: Multi-modelo
+- [x] Fase 4: Multi-modelo — Transport Protocol unificado, AnthropicTransport/OpenAITransport/OpenRouterTransport/OllamaTransport, ModelRouter (resolução `provider:model`, fallback chain, capability check), tabela `model_invocations` (custo/latência/tokens por chamada), descoberta de capabilities via `/api/show` + tabela por família, CLI `agent model list/health/show/test/costs`, `agent run --model`, `summarize_text` skill aponta para Ollama
 - [ ] Fase 5: Gateway + Telegram
 - [ ] Fase 6: Discord + WhatsApp + Slack
 - [ ] Fase 7: Web UI
@@ -123,6 +123,22 @@ Veja `.env.example`. Nunca commite `.env` real.
 - **Reflector/Critic:** `claude-sonnet-4-6` (raciocínio profundo)
 - **Memória/Sumarização:** `qwen2.5:7b-instruct` via Ollama (local, grátis)
 - **Embeddings:** `paraphrase-multilingual-MiniLM-L12-v2` (PT+EN)
+
+## Multi-modelo (Fase 4)
+
+Formato de string: `provider:model_id` — ex: `anthropic:claude-haiku-4-5`, `ollama:qwen2.5:7b`
+
+| Provider | Exemplo | Notas |
+|---|---|---|
+| `anthropic` | `anthropic:claude-sonnet-4-7` | Default. Requer `ANTHROPIC_API_KEY` |
+| `openai` | `openai:gpt-4o-mini` | Requer `OPENAI_API_KEY` |
+| `openrouter` | `openrouter:deepseek/deepseek-chat` | Requer `OPENROUTER_API_KEY` |
+| `ollama` | `ollama:qwen2.5:7b` | Local. Requer Ollama rodando em `OLLAMA_BASE_URL` |
+
+Fallback chain: `MODEL_FALLBACK_CHAIN=ollama:qwen2.5:7b,anthropic:claude-haiku-4-5` (vazio = sem fallback).
+Só dispara em erros de infra (timeout, 5xx). Rate limit (429) e auth errors não disparam fallback.
+
+Custo: cada invocação LLM grava em `model_invocations`. Ver gastos: `agent model costs --since today`.
 
 ## O que NÃO fazer
 

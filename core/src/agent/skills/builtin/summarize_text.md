@@ -17,6 +17,7 @@ arguments:
     default: 5
     description: Número de bullets ou parágrafos.
 tools: []
+model: ollama:qwen2.5:7b
 tags: [text, summary, productivity]
 ---
 

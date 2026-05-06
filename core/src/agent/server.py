@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agent import __version__
-from agent.config import get_settings
+from agent.config import build_model_router, get_settings
 from agent.core import AIAgent
 from agent.events import AgentEvent
 from agent.memory.compressor import ContextCompressor
@@ -27,13 +27,14 @@ _memory_store: MemoryStore | None = None
 _curator: Curator | None = None
 _compressor: ContextCompressor | None = None
 _skill_manager: SkillManager | None = None
+_model_router = None
 
 _CURATOR_ENABLED = os.getenv("MEMORY_CURATOR_ENABLED", "true").lower() != "false"
 
 
 @app.on_event("startup")
 async def _startup() -> None:
-    global _registry, _memory_store, _curator, _compressor, _skill_manager
+    global _registry, _memory_store, _curator, _compressor, _skill_manager, _model_router
     settings = get_settings()
     configure_logging(settings.log_level, json=settings.log_json)
 
@@ -45,11 +46,14 @@ async def _startup() -> None:
     register_builtin(_registry)
     register_memory_tools(_registry, _memory_store)
 
+    _model_router = build_model_router(settings, db_pool=_memory_store._pool)
+
     _skill_manager = SkillManager(
         skills_dir=Path(settings.skills.skills_dir),
         transport=AnthropicTransport(model=settings.anthropic.planner_model),
         memory_store=_memory_store,
         cache_dir=Path(settings.skills.skills_embedding_cache_dir),
+        model_router=_model_router,
     )
     await _skill_manager.load_all()
 
@@ -159,6 +163,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
         compressor=_compressor,
         conversation_id=conversation_id,
         skill_manager=_get_skill_manager(),
+        model_router=_model_router,
     )
     result = await agent.run(goal=req.message, conversation_history=conversation_history)
 
@@ -202,6 +207,7 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
         compressor=_compressor,
         conversation_id=conversation_id,
         skill_manager=_get_skill_manager(),
+        model_router=_model_router,
     )
 
     async def _event_stream() -> AsyncGenerator[str, None]:

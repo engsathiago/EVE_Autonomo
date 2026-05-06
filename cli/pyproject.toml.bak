@@ -6,6 +6,7 @@ dependencies = [
   "typer>=0.12",
   "rich>=13.0",
   "prompt_toolkit>=3.0",
+  "agent-core @ file:../core",
 ]
 
 [project.scripts]

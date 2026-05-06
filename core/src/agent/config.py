@@ -52,6 +52,32 @@ class AnthropicSettings(BaseSettings):
     reflector_model: str = "claude-sonnet-4-6"
 
 
+class OpenAISettings(BaseSettings):
+    api_key: str = ""
+    timeout: int = 120
+
+
+class OpenRouterSettings(BaseSettings):
+    api_key: str = ""
+    http_referer: str = "https://github.com/agent"
+    x_title: str = "agent"
+    timeout: int = 120
+
+
+class OllamaSettings(BaseSettings):
+    base_url: str = "http://localhost:11434"
+    timeout: int = 120
+
+
+class ModelSettings(BaseSettings):
+    default_model: str = "anthropic:claude-sonnet-4-7"
+    fallback_chain: str = ""        # CSV: "ollama:qwen2.5:7b,anthropic:claude-haiku-4-5"
+    timeout_s: int = 60
+
+    def fallback_list(self) -> list[str]:
+        return [m.strip() for m in self.fallback_chain.split(",") if m.strip()]
+
+
 class SearchSettings(BaseSettings):
     provider: str = "tavily"
     tavily_api_key: str = ""
@@ -68,6 +94,10 @@ class Settings(BaseSettings):
 
     agent: AgentSettings = AgentSettings()
     anthropic: AnthropicSettings = AnthropicSettings()
+    openai: OpenAISettings = OpenAISettings()
+    openrouter: OpenRouterSettings = OpenRouterSettings()
+    ollama: OllamaSettings = OllamaSettings()
+    models: ModelSettings = ModelSettings()
     search: SearchSettings = SearchSettings()
     skills: SkillsSettings = SkillsSettings()
     log_level: str = "INFO"
@@ -90,6 +120,10 @@ class Settings(BaseSettings):
         providers = data.get("providers", {})
         anthropic_data = providers.get("anthropic", {})
         anthropic_models = anthropic_data.get("models", {})
+        openai_data = providers.get("openai", {})
+        openrouter_data = providers.get("openrouter", {})
+        ollama_data = providers.get("ollama", {})
+        models_data = data.get("models", {})
         search_data = data.get("search", {})
         skills_data = data.get("skills", {})
 
@@ -113,6 +147,25 @@ class Settings(BaseSettings):
                 planner_model=anthropic_models.get("planner", "claude-haiku-4-5"),
                 reflector_model=anthropic_models.get("reflector", "claude-sonnet-4-6"),
             ),
+            openai=OpenAISettings(
+                api_key=openai_data.get("api_key") or os.environ.get("OPENAI_API_KEY", ""),
+                timeout=openai_data.get("timeout", 120),
+            ),
+            openrouter=OpenRouterSettings(
+                api_key=openrouter_data.get("api_key") or os.environ.get("OPENROUTER_API_KEY", ""),
+                http_referer=openrouter_data.get("http_referer") or os.environ.get("OPENROUTER_HTTP_REFERER", "https://github.com/agent"),
+                x_title=openrouter_data.get("x_title") or os.environ.get("OPENROUTER_X_TITLE", "agent"),
+                timeout=openrouter_data.get("timeout", 120),
+            ),
+            ollama=OllamaSettings(
+                base_url=ollama_data.get("base_url") or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
+                timeout=ollama_data.get("timeout", 120),
+            ),
+            models=ModelSettings(
+                default_model=models_data.get("default_model") or os.environ.get("DEFAULT_MODEL", "anthropic:claude-sonnet-4-7"),
+                fallback_chain=models_data.get("fallback_chain") or os.environ.get("MODEL_FALLBACK_CHAIN", ""),
+                timeout_s=int(models_data.get("timeout_s") or os.environ.get("MODEL_TIMEOUT_S", 60)),
+            ),
             search=SearchSettings(
                 provider=search_data.get("provider", "tavily"),
                 tavily_api_key=search_data.get("tavily_api_key") or os.environ.get("TAVILY_API_KEY", ""),
@@ -132,3 +185,69 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings.from_yaml()
+
+
+def build_model_router(
+    settings: "Settings | None" = None,
+    db_pool: Any | None = None,
+) -> "Any":
+    """Constrói e retorna um ModelRouter configurado com os providers disponíveis."""
+    from agent.models.registry import TransportRegistry
+    from agent.models.router import ModelRouter
+
+    cfg = settings or get_settings()
+    registry = TransportRegistry()
+
+    # Anthropic — sempre registrado se tiver API key
+    if cfg.anthropic.api_key:
+        from agent.models.transports.anthropic import AnthropicTransport
+        registry.register(
+            "anthropic",
+            lambda: AnthropicTransport(
+                api_key=cfg.anthropic.api_key,
+                base_url=cfg.anthropic.base_url,
+                timeout=cfg.anthropic.timeout,
+            ),
+        )
+
+    # OpenAI — registrado se tiver API key
+    if cfg.openai.api_key:
+        from agent.models.transports.openai import OpenAITransport
+        registry.register(
+            "openai",
+            lambda: OpenAITransport(
+                api_key=cfg.openai.api_key,
+                timeout=cfg.openai.timeout,
+            ),
+        )
+
+    # OpenRouter — registrado se tiver API key
+    if cfg.openrouter.api_key:
+        from agent.models.transports.openrouter import OpenRouterTransport
+        registry.register(
+            "openrouter",
+            lambda: OpenRouterTransport(
+                api_key=cfg.openrouter.api_key,
+                http_referer=cfg.openrouter.http_referer,
+                x_title=cfg.openrouter.x_title,
+                timeout=cfg.openrouter.timeout,
+            ),
+        )
+
+    # Ollama — sempre registrado (health check detecta se está rodando)
+    from agent.models.transports.ollama import OllamaTransport
+    registry.register(
+        "ollama",
+        lambda: OllamaTransport(
+            base_url=cfg.ollama.base_url,
+            timeout=cfg.ollama.timeout,
+        ),
+    )
+
+    return ModelRouter(
+        registry=registry,
+        default_model=cfg.models.default_model,
+        fallback_chain=cfg.models.fallback_list(),
+        timeout_s=cfg.models.timeout_s,
+        db_pool=db_pool,
+    )
