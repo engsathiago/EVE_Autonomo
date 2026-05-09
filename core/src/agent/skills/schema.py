@@ -85,6 +85,14 @@ class SkillRequiresApproval(Exception):
         self.skill_name = skill_name
 
 
+class ApprovalCreated(Exception):
+    """Raised when a skill approval was created and execution is deferred."""
+
+    def __init__(self, request: "Any") -> None:
+        self.request = request
+        super().__init__(f"Approval criado: {getattr(request, 'approval_id', '?')}")
+
+
 class SkillNotFound(Exception):
     def __init__(self, name: str) -> None:
         super().__init__(f"Skill not found: '{name}'")

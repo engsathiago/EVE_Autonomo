@@ -52,3 +52,13 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
 CMD ["uvicorn", "agent.server:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# ── dev (runtime + test deps) ─────────────────────────────────────────────────
+FROM runtime AS dev
+
+USER root
+RUN pip install --no-cache-dir "pytest>=8.3,<9" "pytest-asyncio>=0.24,<0.26" "pytest-mock>=3.14" "respx>=0.21"
+COPY core/tests /app/tests
+USER agent
+
+CMD ["uvicorn", "agent.server:app", "--host", "0.0.0.0", "--port", "8000"]
