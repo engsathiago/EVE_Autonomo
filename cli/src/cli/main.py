@@ -10,10 +10,26 @@ from cli import __version__
 
 from cli.models import app as models_app
 from cli.skills import app as skills_app
+from cli.cron import app as cron_app
+from cli.tasks import app as tasks_app
+from cli.missions import app as missions_app
+from cli.critic_cli import app as critic_app
+from cli.reflexive_memory_cli import app as reflexive_app
+from cli.loop_cli import app as loop_app
+
+# Subcomando `agent memory` agrupa memória semântica e reflexiva
+_memory_app = typer.Typer(help="Gerencia memória do agente (semântica + reflexiva).")
+_memory_app.add_typer(reflexive_app, name="reflexive")
 
 app = typer.Typer(name="agent", help="Agente autônomo híbrido — CLI de controle.")
 app.add_typer(skills_app, name="skill")
 app.add_typer(models_app, name="model")
+app.add_typer(cron_app, name="cron")
+app.add_typer(tasks_app, name="task")
+app.add_typer(missions_app, name="mission")
+app.add_typer(critic_app, name="critic")
+app.add_typer(_memory_app, name="memory")
+app.add_typer(loop_app, name="loop")
 console = Console()
 
 

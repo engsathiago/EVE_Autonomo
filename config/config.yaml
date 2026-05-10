@@ -52,6 +52,18 @@ channels:
     bot_token: ${SLACK_BOT_TOKEN}
     signing_secret: ${SLACK_SIGNING_SECRET}
 
+critic:
+  medium_model: "anthropic:claude-haiku-4-5"   # Técnico + Advogado do Diabo
+  primary_model: "anthropic:claude-sonnet-4-6"  # Sintetizador (decisão final)
+  cost_threshold_usd: 0.50
+  enabled: true
+
+missions:
+  planner_model: "anthropic:claude-haiku-4-5"
+  reflector_model: "anthropic:claude-sonnet-4-6"
+  loop_interval_minutes: 5
+  loop_enabled: true
+
 sandbox:
   default: "docker"
   docker:

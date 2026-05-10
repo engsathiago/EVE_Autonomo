@@ -49,18 +49,37 @@ class MemoryStore:
         title: str | None = None,
         user_id: str | None = None,
         metadata: dict | None = None,
+        session_id: str | None = None,
     ) -> UUID:
         row = await self._pool.fetchrow(
             """
-            INSERT INTO conversations (title, user_id, metadata)
-            VALUES ($1, $2, $3::jsonb)
+            INSERT INTO conversations (title, user_id, metadata, session_id)
+            VALUES ($1, $2, $3::jsonb, $4)
             RETURNING id
             """,
             title,
             user_id,
             json.dumps(metadata or {}),
+            session_id,
         )
         return row["id"]
+
+    async def ensure_conversation(self, conversation_id: UUID) -> None:
+        """Garante que a conversa exista; idempotente via ON CONFLICT DO NOTHING."""
+        await self._pool.execute(
+            """
+            INSERT INTO conversations (id, metadata) VALUES ($1, '{}'::jsonb)
+            ON CONFLICT (id) DO NOTHING
+            """,
+            conversation_id,
+        )
+
+    async def get_conversation_by_session_id(self, session_id: str) -> UUID | None:
+        row = await self._pool.fetchrow(
+            "SELECT id FROM conversations WHERE session_id = $1 LIMIT 1",
+            session_id,
+        )
+        return row["id"] if row else None
 
     async def append_message(
         self,

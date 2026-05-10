@@ -78,6 +78,54 @@ class ModelSettings(BaseSettings):
         return [m.strip() for m in self.fallback_chain.split(",") if m.strip()]
 
 
+class RedisSettings(BaseSettings):
+    url: str = "redis://redis:6379/0"
+
+
+class ApprovalsSettings(BaseSettings):
+    default_timeout_s: int = 1800  # 30 min
+    scheduler_interval_s: int = 60
+
+
+class OrchestratorSettings(BaseSettings):
+    classifier_model: str = "anthropic:claude-haiku-4-5"
+    classifier_max_tokens: int = 200
+    fast_max_iterations: int = 3
+    strategic_max_iterations: int = 8
+    epic_max_parallel: int = 4
+    epic_max_iterations_per_child: int = 6
+    tier_cache_ttl_s: int = 300
+
+
+class SchedulerSettings(BaseSettings):
+    enabled: bool = True
+    timezone: str = "America/Sao_Paulo"
+    misfire_grace_seconds: int = 60
+    max_instances: int = 3
+
+
+class SubagentsSettings(BaseSettings):
+    default_timeout_seconds: int = 120
+    hard_timeout_seconds: int = 300
+    max_concurrent_global: int = 8
+
+
+class CriticSettings(BaseSettings):
+    # Técnico e Advogado do Diabo usam modelo médio (3 chamadas LLM por avaliação)
+    medium_model: str = "anthropic:claude-haiku-4-5"
+    # Sintetizador usa modelo principal (decisão final)
+    primary_model: str = "anthropic:claude-sonnet-4-6"
+    cost_threshold_usd: float = 0.50
+    enabled: bool = True
+
+
+class MissionsSettings(BaseSettings):
+    planner_model: str = "anthropic:claude-haiku-4-5"
+    reflector_model: str = "anthropic:claude-sonnet-4-6"
+    loop_interval_minutes: int = 5
+    loop_enabled: bool = True
+
+
 class SearchSettings(BaseSettings):
     provider: str = "tavily"
     tavily_api_key: str = ""
@@ -100,6 +148,13 @@ class Settings(BaseSettings):
     models: ModelSettings = ModelSettings()
     search: SearchSettings = SearchSettings()
     skills: SkillsSettings = SkillsSettings()
+    redis: RedisSettings = RedisSettings()
+    approvals: ApprovalsSettings = ApprovalsSettings()
+    orchestrator: OrchestratorSettings = OrchestratorSettings()
+    scheduler: SchedulerSettings = SchedulerSettings()
+    subagents: SubagentsSettings = SubagentsSettings()
+    critic: CriticSettings = CriticSettings()
+    missions: MissionsSettings = MissionsSettings()
     log_level: str = "INFO"
     log_json: bool = False
 
@@ -126,6 +181,10 @@ class Settings(BaseSettings):
         models_data = data.get("models", {})
         search_data = data.get("search", {})
         skills_data = data.get("skills", {})
+
+        orchestrator_data = data.get("orchestrator", {})
+        scheduler_data = data.get("scheduler", {})
+        subagents_data = data.get("subagents", {})
 
         return cls(
             log_level=data.get("log_level", "INFO"),
@@ -178,6 +237,35 @@ class Settings(BaseSettings):
                 skills_auto_create_threshold=skills_data.get("skills_auto_create_threshold", 3),
                 skills_embedding_cache_dir=skills_data.get("skills_embedding_cache_dir", ".cache/skill_embeddings"),
                 skills_match_k=skills_data.get("skills_match_k", 3),
+            ),
+            redis=RedisSettings(
+                url=data.get("redis", {}).get("url") or os.environ.get("REDIS_URL", "redis://redis:6379/0"),
+            ),
+            approvals=ApprovalsSettings(
+                default_timeout_s=int(
+                    data.get("approvals", {}).get("default_timeout_s")
+                    or os.environ.get("APPROVAL_DEFAULT_TIMEOUT_SECONDS", 1800)
+                ),
+            ),
+            orchestrator=OrchestratorSettings(
+                classifier_model=orchestrator_data.get("classifier_model") or os.environ.get("ORCHESTRATOR_CLASSIFIER_MODEL", "anthropic:claude-haiku-4-5"),
+                classifier_max_tokens=int(orchestrator_data.get("classifier_max_tokens", 200)),
+                fast_max_iterations=int(orchestrator_data.get("fast_max_iterations", 3)),
+                strategic_max_iterations=int(orchestrator_data.get("strategic_max_iterations", 8)),
+                epic_max_parallel=int(orchestrator_data.get("epic_max_parallel", 4)),
+                epic_max_iterations_per_child=int(orchestrator_data.get("epic_max_iterations_per_child", 6)),
+                tier_cache_ttl_s=int(orchestrator_data.get("tier_cache_ttl_s", 300)),
+            ),
+            scheduler=SchedulerSettings(
+                enabled=bool(scheduler_data.get("enabled", True)),
+                timezone=scheduler_data.get("timezone") or os.environ.get("SCHEDULER_TZ", "America/Sao_Paulo"),
+                misfire_grace_seconds=int(scheduler_data.get("misfire_grace_seconds", 60)),
+                max_instances=int(scheduler_data.get("max_instances", 3)),
+            ),
+            subagents=SubagentsSettings(
+                default_timeout_seconds=int(subagents_data.get("default_timeout_seconds", 120)),
+                hard_timeout_seconds=int(subagents_data.get("hard_timeout_seconds", 300)),
+                max_concurrent_global=int(subagents_data.get("max_concurrent_global", 8)),
             ),
         )
 

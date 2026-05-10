@@ -31,6 +31,7 @@ class SkillManifest(BaseModel):
     tools: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     requires_approval: bool = False
+    irreversible: bool = False  # True → Critic intercepta antes de executar
     model: str | None = None   # ex: 'ollama:qwen2.5:7b' — None herda DEFAULT_MODEL
     # Preenchido pelo loader — não vem do frontmatter
     prompt: str = ""
@@ -83,6 +84,14 @@ class SkillRequiresApproval(Exception):
             "Approve via CLI: agent skill approve <name>"
         )
         self.skill_name = skill_name
+
+
+class ApprovalCreated(Exception):
+    """Raised when a skill approval was created and execution is deferred."""
+
+    def __init__(self, request: "Any") -> None:
+        self.request = request
+        super().__init__(f"Approval criado: {getattr(request, 'approval_id', '?')}")
 
 
 class SkillNotFound(Exception):

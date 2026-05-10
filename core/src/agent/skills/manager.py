@@ -15,6 +15,7 @@ from agent.observability.logger import get_logger
 from agent.skills.loader import load_all_from_dir
 from agent.skills.registry import SkillRegistry
 from agent.skills.schema import (
+    ApprovalCreated,
     SkillError,
     SkillInvocationRecord,
     SkillManifest,
@@ -25,6 +26,7 @@ from agent.skills.schema import (
 )
 
 if TYPE_CHECKING:
+    from agent.approvals.manager import ApprovalManager
     from agent.memory.store import MemoryStore
     from agent.models.router import ModelRouter
     from agent.transports.base import BaseTransport
@@ -49,12 +51,14 @@ class SkillManager:
         memory_store: "MemoryStore | None" = None,
         cache_dir: Path | None = None,
         model_router: "ModelRouter | None" = None,
+        approval_manager: "ApprovalManager | None" = None,
     ) -> None:
         self._skills_dir = skills_dir
         self._transport = transport
         self._memory_store = memory_store
         self._registry = SkillRegistry(cache_dir=cache_dir)
         self._model_router = model_router
+        self._approval_manager = approval_manager
 
     # ------------------------------------------------------------------
     # Loading
@@ -144,16 +148,20 @@ class SkillManager:
         name: str,
         arguments: dict,
         session_id: UUID | None = None,
+        channel: str = "cli",
+        channel_ref: dict | None = None,
     ) -> SkillResult:
         manifest = self.get(name)
 
-        if manifest.requires_approval:
+        # Without approval_manager, fall back to legacy behaviour (raises SkillRequiresApproval)
+        if manifest.requires_approval and self._approval_manager is None:
             raise SkillRequiresApproval(name)
 
         from agent.skills.runner import SkillRunner
         runner = SkillRunner(
             transport=self._transport,
             model_router=self._model_router,
+            approval_manager=self._approval_manager,
         )
 
         started = time.monotonic()
@@ -165,9 +173,13 @@ class SkillManager:
         )
 
         try:
-            result = await runner.execute(manifest, arguments)
-            record.success = True
-            record.result = result.output
+            result = await runner.execute(
+                manifest,
+                arguments,
+                session_id=str(session_id) if session_id else channel,
+                channel=channel,
+                channel_ref=channel_ref,
+            )
         except Exception as exc:
             record.success = False
             record.error = str(exc)
@@ -178,6 +190,13 @@ class SkillManager:
             if self._memory_store and session_id:
                 await self._persist_invocation(record)
 
+        # runner.execute() returns ApprovalRequest when requires_approval=True
+        from agent.approvals.manager import ApprovalRequest
+        if isinstance(result, ApprovalRequest):
+            raise ApprovalCreated(result)
+
+        record.success = True
+        record.result = result.output
         return result
 
     async def _persist_invocation(self, record: SkillInvocationRecord) -> None:

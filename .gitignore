@@ -54,3 +54,8 @@ core/.ven/
 core/.venv/
 .venv/
 .cache/
+.env
+
+# Backups pré-fase (gerados por scripts de deploy)
+backup_pre_fase*.sql
+backup_*.sql

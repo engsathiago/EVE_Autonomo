@@ -38,6 +38,7 @@ class AgentResult(BaseModel):
     estimated_cost_usd: float
     duration_s: float
     conversation_id: str | None = None
+    approval_request: dict | None = None  # populated when a skill requires approval
 
 
 class AIAgent:
@@ -144,7 +145,21 @@ class AIAgent:
             messages.append(self._build_assistant_message(response.text, response.tool_calls))
 
             # ── Execute tools ───────────────────────────────────────────────
-            tool_results = await self._execute_tools(response.tool_calls, emit)
+            from agent.skills.schema import ApprovalCreated
+            try:
+                tool_results = await self._execute_tools(response.tool_calls, emit)
+            except ApprovalCreated as exc:
+                duration = time.monotonic() - start
+                return AgentResult(
+                    final_text="",
+                    iterations=iteration,
+                    total_input_tokens=total_in,
+                    total_output_tokens=total_out,
+                    estimated_cost_usd=self._estimate_cost(model, total_in, total_out),
+                    duration_s=round(duration, 2),
+                    conversation_id=str(self._conversation_id) if self._conversation_id else None,
+                    approval_request=exc.request.model_dump() if hasattr(exc.request, "model_dump") else {},
+                )
             messages.append({"role": "user", "content": tool_results})
 
             # ── Reflection ──────────────────────────────────────────────────
@@ -329,13 +344,15 @@ class AIAgent:
             )
 
             if is_skill and self._skill_manager and skill_name:
-                from agent.skills.schema import SkillError, SkillRequiresApproval
+                from agent.skills.schema import ApprovalCreated, SkillError, SkillRequiresApproval
                 from agent.tools.base import ToolResult
                 try:
                     skill_result = await self._skill_manager.run(
                         skill_name, args, self._conversation_id
                     )
                     result = ToolResult(ok=True, output=skill_result.output)
+                except ApprovalCreated:
+                    raise  # propagate — caught by agent.run()
                 except SkillRequiresApproval as exc:
                     result = ToolResult(ok=False, error=str(exc))
                 except SkillError as exc:
