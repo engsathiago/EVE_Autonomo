@@ -66,6 +66,14 @@ async def exec_tool(
     """
     policy = get_policy(policy_name)
 
+    # Gate explícito: NetworkPolicy.OPEN requer allow_open_network=True na política
+    from agent.sandbox.base import NetworkPolicy
+    if policy.config.network == NetworkPolicy.OPEN and not policy.allow_open_network:
+        raise ValueError(
+            f"Política '{policy.name}' usa NetworkPolicy.OPEN mas allow_open_network=False. "
+            "Defina allow_open_network=True na SandboxPolicy para permitir rede aberta."
+        )
+
     # Aprovação pelo Crítico se política exige
     if policy.require_critic_approval and critic is not None:
         result = await _request_critic_approval(command, policy, critic)

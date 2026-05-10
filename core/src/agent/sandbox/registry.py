@@ -119,7 +119,7 @@ class SandboxRegistry:
         try:
             today = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
             day_dir = self._log_dir / today
-            await asyncio.get_event_loop().run_in_executor(
+            await asyncio.get_running_loop().run_in_executor(
                 None, lambda: _write_log_files(day_dir, sandbox_id, stdout, stderr)
             )
         except Exception as exc:
