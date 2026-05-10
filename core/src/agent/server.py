@@ -231,6 +231,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         ):
             await _autonomous_loop.start(_cron_worker._scheduler)
 
+        # Registra rotas REST da F7 — globals já inicializados acima
+        if _mission_store and _planner and _reflector:
+            app.include_router(make_missions_router(_mission_store, _planner, _reflector))
+        if _critic and _memory_store:
+            app.include_router(make_critic_router(_critic, _memory_store._pool))
+        if _reflexive_memory:
+            app.include_router(make_reflexive_memory_router(_reflexive_memory))
+        if _autonomous_loop and _mission_store:
+            app.include_router(make_loop_router(_autonomous_loop, _mission_store))
+
     yield
 
     # ── Shutdown (ordem inversa) ──────────────────────────────────────────────
@@ -278,44 +288,6 @@ app.include_router(
         get_orchestrator=lambda: _orchestrator,
     )
 )
-
-
-def _missions_router():
-    from agent.api.missions import make_missions_router
-    if _mission_store and _planner and _reflector:
-        return make_missions_router(_mission_store, _planner, _reflector)
-    return None
-
-
-def _critic_router():
-    from agent.api.critic import make_critic_router
-    if _critic and _memory_store:
-        return make_critic_router(_critic, _memory_store._pool)
-    return None
-
-
-def _reflexive_router():
-    from agent.api.reflexive_memory import make_reflexive_memory_router
-    if _reflexive_memory:
-        return make_reflexive_memory_router(_reflexive_memory)
-    return None
-
-
-def _loop_router():
-    from agent.api.loop import make_loop_router
-    if _autonomous_loop and _mission_store:
-        return make_loop_router(_autonomous_loop, _mission_store)
-    return None
-
-
-# Rotas F7: registradas diretamente com instâncias prontas pós-lifespan
-# Usamos inclusion tardia via startup event para garantir que globals estão inicializados
-@app.on_event("startup")
-async def _register_phase7_routes() -> None:
-    for factory in [_missions_router, _critic_router, _reflexive_router, _loop_router]:
-        router = factory()
-        if router:
-            app.include_router(router)
 
 
 def _get_registry() -> ToolRegistry:

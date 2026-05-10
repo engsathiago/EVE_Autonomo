@@ -163,6 +163,7 @@ Estado da suite ao fechar Fase 5:
 Arquivos com testes quebrados:
 - tests/skills/test_runner.py (TestManagerRun, TestSkillRunnerExecute)
 - tests/skills/test_manager.py (TestManagerMatch)
+- tests/skills/test_creator.py — 7 testes async sem plugin asyncio, pré-F4 (commit 9dbc33a52)
 - tests/agent/memory/test_compressor.py
 - tests/agent/memory/test_curator.py
 - tests/agent/memory/test_memory_tools.py

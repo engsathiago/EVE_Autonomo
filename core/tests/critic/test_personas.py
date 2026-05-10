@@ -55,16 +55,6 @@ async def test_technical_reviewer_flags_invalid_args(decision: Decision) -> None
 
     router = _make_router(low_confidence)
 
-    async def chat_side_effect(**kwargs):
-        resp = MagicMock()
-        if "sintetizador" in str(kwargs.get("system", "")).lower() or "DECIDIR" in kwargs.get("messages", [{}])[-1].get("content", ""):
-            resp.text = synth_json
-        else:
-            resp.text = low_confidence
-        return resp
-
-    router.chat = AsyncMock(side_effect=lambda **kw: _sync_resp(low_confidence if "DECIDIR" not in str(kw) else synth_json))
-
     critic = Critic(router)
     technical = await critic._run_technical(decision)
 
@@ -131,11 +121,3 @@ async def test_synthesizer_never_invents_middle_ground(decision: Decision) -> No
     assert call_count["n"] == 3
 
 
-def _sync_resp(text: str):
-    import asyncio
-    r = MagicMock()
-    r.text = text
-
-    async def _ret():
-        return r
-    return _ret()

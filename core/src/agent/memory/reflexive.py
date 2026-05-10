@@ -53,12 +53,12 @@ class ReflexiveMemory:
             """
             INSERT INTO reflexive_memory
                 (id, insight, source_mission_id, embedding, relevance_score)
-            VALUES ($1, $2, $3, $4::vector, $5)
+            VALUES ($1, $2, $3, $4, $5)
             """,
             insight_id,
             insight,
             source_mission,
-            str(embedding),
+            embedding,
             0.5,
         )
         log.info("reflexive_memory.added", insight_id=str(insight_id))
@@ -73,13 +73,13 @@ class ReflexiveMemory:
 
         rows = await self._pool.fetch(
             """
-            SELECT *, (embedding <=> $1::vector) AS distance
+            SELECT *, (embedding <=> $1) AS distance
             FROM reflexive_memory
             WHERE forgotten = FALSE
             ORDER BY distance
             LIMIT $2
             """,
-            str(query_vec),
+            query_vec,
             top_k,
         )
 
