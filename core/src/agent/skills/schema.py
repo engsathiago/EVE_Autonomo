@@ -31,6 +31,7 @@ class SkillManifest(BaseModel):
     tools: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     requires_approval: bool = False
+    irreversible: bool = False  # True → Critic intercepta antes de executar
     model: str | None = None   # ex: 'ollama:qwen2.5:7b' — None herda DEFAULT_MODEL
     # Preenchido pelo loader — não vem do frontmatter
     prompt: str = ""

@@ -110,6 +110,22 @@ class SubagentsSettings(BaseSettings):
     max_concurrent_global: int = 8
 
 
+class CriticSettings(BaseSettings):
+    # Técnico e Advogado do Diabo usam modelo médio (3 chamadas LLM por avaliação)
+    medium_model: str = "anthropic:claude-haiku-4-5"
+    # Sintetizador usa modelo principal (decisão final)
+    primary_model: str = "anthropic:claude-sonnet-4-6"
+    cost_threshold_usd: float = 0.50
+    enabled: bool = True
+
+
+class MissionsSettings(BaseSettings):
+    planner_model: str = "anthropic:claude-haiku-4-5"
+    reflector_model: str = "anthropic:claude-sonnet-4-6"
+    loop_interval_minutes: int = 5
+    loop_enabled: bool = True
+
+
 class SearchSettings(BaseSettings):
     provider: str = "tavily"
     tavily_api_key: str = ""
@@ -137,6 +153,8 @@ class Settings(BaseSettings):
     orchestrator: OrchestratorSettings = OrchestratorSettings()
     scheduler: SchedulerSettings = SchedulerSettings()
     subagents: SubagentsSettings = SubagentsSettings()
+    critic: CriticSettings = CriticSettings()
+    missions: MissionsSettings = MissionsSettings()
     log_level: str = "INFO"
     log_json: bool = False
 

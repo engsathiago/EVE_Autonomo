@@ -13,7 +13,11 @@ from pydantic import BaseModel
 from agent import __version__
 from agent.api.approvals import make_approvals_router_full
 from agent.api.cron import make_cron_router
+from agent.api.critic import make_critic_router
+from agent.api.loop import make_loop_router
 from agent.api.messages import make_messages_router
+from agent.api.missions import make_missions_router
+from agent.api.reflexive_memory import make_reflexive_memory_router
 from agent.api.tasks import make_tasks_router
 from agent.approvals.manager import ApprovalManager
 from agent.approvals.scheduler import ApprovalScheduler
@@ -47,6 +51,14 @@ _cron_worker = None
 _orchestrator = None
 _subagent_pool = None
 
+# Phase 7 globals
+_mission_store = None
+_reflexive_memory = None
+_critic = None
+_planner = None
+_reflector = None
+_autonomous_loop = None
+
 _CURATOR_ENABLED = os.getenv("MEMORY_CURATOR_ENABLED", "true").lower() != "false"
 _ORCHESTRATOR_ENABLED = os.getenv("ORCHESTRATOR_ENABLED", "true").lower() != "false"
 _SCHEDULER_ENABLED = os.getenv("SCHEDULER_ENABLED", "true").lower() != "false"
@@ -58,6 +70,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     global _skill_manager, _model_router, _approval_manager
     global _approval_scheduler, _dispatcher, _redis_client
     global _task_store, _cron_store, _cron_worker, _orchestrator, _subagent_pool
+    global _mission_store, _reflexive_memory, _critic, _planner, _reflector, _autonomous_loop
 
     settings = get_settings()
     configure_logging(settings.log_level, json=settings.log_json)
@@ -168,6 +181,56 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             )
             await _cron_worker.start()
 
+    # ── Fase 7: missões + critic + loop autônomo ──────────────────────────────
+    if _ORCHESTRATOR_ENABLED:
+        from agent.missions.store import MissionStore
+        from agent.memory.reflexive import ReflexiveMemory
+        from agent.critic.critic import Critic
+        from agent.missions.planner import MissionPlanner
+        from agent.missions.reflector import MissionReflector
+        from agent.autonomous.loop import AutonomousLoop
+
+        _mission_store = MissionStore(_memory_store._pool)
+        _reflexive_memory = ReflexiveMemory(_memory_store._pool)
+
+        _critic = Critic(
+            model_router=_model_router,
+            medium_model=settings.critic.medium_model,
+            primary_model=settings.critic.primary_model,
+            cost_threshold_usd=settings.critic.cost_threshold_usd,
+        ) if settings.critic.enabled else None
+
+        _planner = MissionPlanner(
+            model_router=_model_router,
+            reflexive_memory=_reflexive_memory,
+            model=settings.missions.planner_model,
+        )
+
+        _reflector = MissionReflector(
+            model_router=_model_router,
+            mission_store=_mission_store,
+            reflexive_memory=_reflexive_memory,
+            model=settings.missions.reflector_model,
+        )
+
+        _autonomous_loop = AutonomousLoop(
+            mission_store=_mission_store,
+            orchestrator=_orchestrator,
+            task_store=_task_store,
+            critic=_critic,
+            reflector=_reflector,
+            planner=_planner,
+            db_pool=_memory_store._pool,
+        )
+
+        if (
+            _SCHEDULER_ENABLED
+            and settings.scheduler.enabled
+            and settings.missions.loop_enabled
+            and _cron_worker is not None
+        ):
+            await _autonomous_loop.start(_cron_worker._scheduler)
+
     yield
 
     # ── Shutdown (ordem inversa) ──────────────────────────────────────────────
@@ -215,6 +278,44 @@ app.include_router(
         get_orchestrator=lambda: _orchestrator,
     )
 )
+
+
+def _missions_router():
+    from agent.api.missions import make_missions_router
+    if _mission_store and _planner and _reflector:
+        return make_missions_router(_mission_store, _planner, _reflector)
+    return None
+
+
+def _critic_router():
+    from agent.api.critic import make_critic_router
+    if _critic and _memory_store:
+        return make_critic_router(_critic, _memory_store._pool)
+    return None
+
+
+def _reflexive_router():
+    from agent.api.reflexive_memory import make_reflexive_memory_router
+    if _reflexive_memory:
+        return make_reflexive_memory_router(_reflexive_memory)
+    return None
+
+
+def _loop_router():
+    from agent.api.loop import make_loop_router
+    if _autonomous_loop and _mission_store:
+        return make_loop_router(_autonomous_loop, _mission_store)
+    return None
+
+
+# Rotas F7: registradas diretamente com instâncias prontas pós-lifespan
+# Usamos inclusion tardia via startup event para garantir que globals estão inicializados
+@app.on_event("startup")
+async def _register_phase7_routes() -> None:
+    for factory in [_missions_router, _critic_router, _reflexive_router, _loop_router]:
+        router = factory()
+        if router:
+            app.include_router(router)
 
 
 def _get_registry() -> ToolRegistry:
@@ -270,7 +371,18 @@ async def health() -> dict[str, object]:
         "model": settings.agent.default_model,
         "orchestrator": _orchestrator is not None,
         "scheduler": _cron_worker is not None,
+        "missions": _mission_store is not None,
+        "autonomous_loop": _autonomous_loop is not None,
     }
+
+
+@app.get("/metrics", response_class=__import__("fastapi").responses.PlainTextResponse)
+async def prometheus_metrics() -> str:
+    from agent.metrics.phase_7 import metrics
+    if _mission_store:
+        active = await _mission_store.list_active()
+        metrics.missions_active = len(active)
+    return metrics.prometheus_text()
 
 
 @app.get("/api/tools")
