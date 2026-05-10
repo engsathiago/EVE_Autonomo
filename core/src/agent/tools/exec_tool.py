@@ -88,6 +88,11 @@ async def exec_tool(
         registry.mark_started(sandbox_id, policy_name, backend_name, command)
         await _emit_started(sandbox_id, policy_name, backend_name, command)
 
+    # Inicializado antes do try para que o finally nunca acesse uma variável indefinida.
+    # Se sandbox.run() levantar (ex: CancelledError), result permanece None e o finally
+    # persiste um registro de cancelamento com exit_code=-2.
+    # -1 = rejeição do Crítico  |  -2 = cancelamento/exceção na execução
+    result: SandboxResult | None = None
     sandbox = make_sandbox(policy.config)
     try:
         result = await sandbox.run(command, files=files, stdin=stdin, env=env)
@@ -96,21 +101,35 @@ async def exec_tool(
         if registry is not None and sandbox_id is not None:
             registry.mark_done(sandbox_id)
             backend_name = make_sandbox.__module__.split(".")[-1].replace("_backend", "")
+            # Usa result real ou cria registro de cancelamento se run() não completou
+            _record = result if result is not None else SandboxResult(
+                exit_code=-2,
+                stdout="",
+                stderr="cancelled",
+                duration_ms=0,
+                cpu_seconds=0.0,
+                memory_peak_mb=0.0,
+                timed_out=False,
+                oom_killed=False,
+                network_denied_attempts=[],
+            )
             await registry.record(
                 sandbox_id=sandbox_id,
                 policy_name=policy_name,
                 backend=backend_name,
                 command=command,
-                result=result,
+                result=_record,
                 mission_id=mission_id,
                 subagent_id=subagent_id,
             )
-            await _emit_finished(sandbox_id, result)
-            if result.network_denied_attempts:
-                await _emit_network_denied(sandbox_id, result.network_denied_attempts)
-            if result.timed_out or result.oom_killed:
-                await _emit_limit_exceeded(sandbox_id, result)
+            await _emit_finished(sandbox_id, _record)
+            if _record.network_denied_attempts:
+                await _emit_network_denied(sandbox_id, _record.network_denied_attempts)
+            if _record.timed_out or _record.oom_killed:
+                await _emit_limit_exceeded(sandbox_id, _record)
 
+    # Só chegamos aqui se sandbox.run() completou sem exceção: result != None
+    assert result is not None
     log.info(
         "exec_tool.done",
         policy=policy_name,

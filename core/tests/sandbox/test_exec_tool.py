@@ -289,3 +289,53 @@ async def test_exec_tool_timeout_propagates():
         make_sandbox=_fast_sandbox,
     )
     assert result.timed_out is True
+
+
+# ---------------------------------------------------------------------------
+# Bug fix: CancelledError não vira NameError no finally
+# ---------------------------------------------------------------------------
+
+async def test_exec_tool_handles_cancelled_error_in_finally(tmp_log_dir):
+    """
+    Regressão: se sandbox.run() levantar CancelledError, o finally acessava
+    `result.network_denied_attempts` com `result` indefinida → NameError.
+
+    Garante que:
+    - CancelledError é propagada (não engolida).
+    - Nenhum NameError/UnboundLocalError é levantado.
+    - registry.mark_done() foi chamado (active_count=0 — sem leak de estado).
+    - Log file escrito com stderr="cancelled" (registro de cancelamento).
+    """
+    import asyncio
+    from agent.sandbox.base import Sandbox, SandboxConfig
+    from agent.sandbox.registry import SandboxRegistry
+    from agent.tools.exec_tool import exec_tool
+
+    class CancelledSandbox(Sandbox):
+        """Sandbox que sempre levanta CancelledError ao rodar."""
+        def __init__(self, config: SandboxConfig) -> None:
+            pass
+
+        async def run(self, command, *, stdin=None, files=None, env=None):
+            raise asyncio.CancelledError("simulando cancelamento pelo orchestrator")
+
+        async def cleanup(self) -> None:
+            pass
+
+    reg = SandboxRegistry(db_pool=None, log_dir=tmp_log_dir)
+
+    with pytest.raises(asyncio.CancelledError):
+        await exec_tool(
+            "echo should_not_run",
+            policy_name="default",
+            make_sandbox=lambda cfg: CancelledSandbox(cfg),
+            registry=reg,
+        )
+
+    # mark_done foi chamado no finally: nenhuma sandbox ativa com estado pendente
+    assert reg.active_count() == 0
+
+    # Log file escrito: finally completou sem explodir
+    err_files = list(tmp_log_dir.rglob("*.err"))
+    assert len(err_files) == 1
+    assert err_files[0].read_text() == "cancelled"
