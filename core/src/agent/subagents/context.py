@@ -17,6 +17,9 @@ class SubAgentContext:
     # Referência do canal pai (para propagar approvals)
     channel_ref: dict = field(default_factory=dict)
     parent_task_id: str | None = None
+    # Política de sandbox para execuções deste subagente (Fase 8)
+    # "untrusted" → require_critic_approval=True (skills auto-geradas na F9)
+    sandbox_policy: str = "default"
 
     def build_system_prompt(self) -> str:
         parts = [

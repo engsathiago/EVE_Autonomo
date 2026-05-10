@@ -59,6 +59,7 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 markers = [
   "integration: testes que requerem Postgres rodando (desabilitar com -m 'not integration')",
+  "docker: testes que requerem Docker daemon disponível (desabilitar com -m 'not docker')",
 ]
 
 [tool.mypy]
