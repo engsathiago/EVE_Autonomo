@@ -5,14 +5,26 @@ Integração sem quebrar Fase 5:
 - Se orchestrator não estiver inicializado, server.py continua usando AIAgent diretamente.
 - Os endpoints existentes (/api/chat, /v1/messages) chamam orchestrator.route(task) em vez
   de AIAgent.run() — o orchestrator chama o AIAgent internamente para INSTANT/FAST.
+
+Fase 8: lint de steps rejeita padrões proibidos (subprocess/os.system/eval/exec builtin).
+Use exec_tool (agent.tools.exec_tool) para toda execução de comandos arbitrários.
 """
 from __future__ import annotations
 
+import re
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
+
+# Padrões proibidos em código de steps — devem usar exec_tool em vez disso.
+_FORBIDDEN_PATTERNS = re.compile(
+    r"\bsubprocess\s*\.\s*(run|Popen|call|check_output|check_call)\b"
+    r"|\bos\s*\.\s*system\s*\("
+    r"|\beval\s*\("
+    r"|\bexec\s*\("
+)
 
 from agent.core import AgentResult, AIAgent
 from agent.observability.logger import get_logger
@@ -227,6 +239,22 @@ class Orchestrator:
         key = tier.value
         self._stats[key] = [t for t in self._stats[key] if t > cutoff]
         self._stats[key].append(duration_s)
+
+    def check_step_safety(self, step_code: str) -> list[str]:
+        """
+        Verifica se o código de um step usa padrões proibidos de execução direta.
+        Retorna lista de violações (vazia = step seguro).
+
+        Padrões bloqueados: subprocess.run/Popen/call/check_output, os.system, eval(), exec().
+        Use exec_tool (agent.tools.exec_tool) em vez de qualquer um desses.
+        """
+        violations = []
+        for match in _FORBIDDEN_PATTERNS.finditer(step_code):
+            violations.append(
+                f"Padrão proibido '{match.group()}' na posição {match.start()} — "
+                "use exec_tool (agent.tools.exec_tool) para execução de comandos"
+            )
+        return violations
 
     def stats(self) -> dict[str, Any]:
         result: dict[str, Any] = {}

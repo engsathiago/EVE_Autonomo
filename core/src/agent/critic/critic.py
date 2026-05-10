@@ -295,6 +295,39 @@ class Critic:
                 concerns=["Falha ao avaliar — rejeição defensiva"],
             )
 
+    async def request_approval(
+        self,
+        command: list[str] | str,
+        policy_name: str,
+    ) -> bool:
+        """
+        Avalia se um comando pode ser executado sob a política dada.
+
+        Cria uma Decision sintética e passa pelo Conclave. Retorna True se
+        aprovado (approve ou approve_with_mitigation), False caso contrário.
+        Chamado por exec_tool quando SandboxPolicy.require_critic_approval=True.
+        """
+        cmd_str = command if isinstance(command, str) else " ".join(command)
+        decision = Decision(
+            tool_name="exec_sandbox",
+            tool_args={"command": cmd_str[:200], "policy": policy_name},
+            context_summary=(
+                f"Execução de comando em sandbox com política '{policy_name}'. "
+                f"Comando: {cmd_str[:300]}"
+            ),
+            affects_external_world=True,
+            is_first_of_its_kind=True,
+        )
+        verdict = await self.evaluate(decision)
+        approved = verdict.verdict in ("approve", "approve_with_mitigation")
+        log.info(
+            "critic.sandbox_approval",
+            policy=policy_name,
+            verdict=verdict.verdict,
+            approved=approved,
+        )
+        return approved
+
     async def _persist(
         self,
         decision: Decision,

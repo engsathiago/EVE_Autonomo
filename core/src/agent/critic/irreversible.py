@@ -18,6 +18,7 @@ IRREVERSIBLE_TOOLS: frozenset[str] = frozenset({
     "transfer_money",
     "delete_record",
     "execute_sql_write",
+    "exec_sandbox",    # Fase 8: execução de código arbitrário em sandbox
 })
 
 
