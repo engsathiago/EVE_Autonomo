@@ -59,7 +59,7 @@ class SkillCreator:
         description = task_description or f"sessão {session_id}"
 
         extract_skill = self._manager.get("extract_skill")
-        from agent.skills.runner import SkillRunner
+        from agent.skills.template_runner import TemplateSkillRunner as SkillRunner
         runner = SkillRunner(transport=self._transport)
 
         try:
