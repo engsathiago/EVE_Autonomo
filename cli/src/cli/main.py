@@ -10,6 +10,7 @@ from cli import __version__
 
 from cli.models import app as models_app
 from cli.skills import app as skills_app
+from cli.skills_cmd import app as skills_f9_app
 from cli.cron import app as cron_app
 from cli.tasks import app as tasks_app
 from cli.missions import app as missions_app
@@ -23,6 +24,7 @@ _memory_app.add_typer(reflexive_app, name="reflexive")
 
 app = typer.Typer(name="agent", help="Agente autônomo híbrido — CLI de controle.")
 app.add_typer(skills_app, name="skill")
+app.add_typer(skills_f9_app, name="skills")
 app.add_typer(models_app, name="model")
 app.add_typer(cron_app, name="cron")
 app.add_typer(tasks_app, name="task")
