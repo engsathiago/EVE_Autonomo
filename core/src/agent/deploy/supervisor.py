@@ -128,9 +128,6 @@ def _db_record_event(
     try:
         conn = sqlite3.connect(_get_db_path())
         conn.execute(
-            "INSERT OR IGNORE INTO sqlite_master SELECT * FROM sqlite_master WHERE 0"
-        )  # verifica conexão
-        conn.execute(
             "INSERT INTO deploy_events (kind, worker, detail, success) VALUES (?,?,?,?)",
             (kind, worker, json.dumps(detail), int(success)),
         )

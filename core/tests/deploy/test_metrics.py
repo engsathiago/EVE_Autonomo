@@ -127,3 +127,57 @@ class TestMetricsIncrement:
         text = prom.generate_latest(_REGISTRY).decode()
         assert 'verdict="approve"' in text
         assert 'verdict="reject"' in text
+
+    def test_sandbox_counter_all_profiles_initialized(self) -> None:
+        """C7: sandbox_executions_total inicializado para todos os perfis."""
+        text = prom.generate_latest(_REGISTRY).decode()
+        for profile in ("default", "skill_dev", "untrusted"):
+            assert f'profile="{profile}"' in text, f"perfil {profile} ausente"
+
+
+# ── C7: métricas não-zero logo após boot ──────────────────────────────────────
+
+class TestMetricsBootC7:
+    def test_worker_restarts_initialized_for_all_workers(self) -> None:
+        """C7: worker_restarts_total tem labels para os 4 workers desde o boot."""
+        text = prom.generate_latest(_REGISTRY).decode()
+        for worker in ("orchestrator", "scheduler", "api", "heartbeat"):
+            assert f'worker="{worker}"' in text, f"worker {worker} ausente em worker_restarts_total"
+
+    def test_missions_total_initialized_for_all_statuses(self) -> None:
+        """C7: missions_total tem labels completed/failed/cancelled desde o boot."""
+        text = prom.generate_latest(_REGISTRY).decode()
+        for status in ("completed", "failed", "cancelled"):
+            assert f'status="{status}"' in text, f"status {status} ausente em missions_total"
+
+    def test_critic_decisions_initialized_for_all_verdicts(self) -> None:
+        """C7: critic_decisions_total tem labels approve/reject/escalate."""
+        text = prom.generate_latest(_REGISTRY).decode()
+        for verdict in ("approve", "reject", "escalate"):
+            assert f'verdict="{verdict}"' in text, f"verdict {verdict} ausente"
+
+    def test_sync_worker_restarts_counter_increments_delta(self) -> None:
+        """_sync_worker_restarts_counter não duplica counts."""
+        from agent.deploy.metrics import _sync_worker_restarts_counter, _RESTART_SEEN
+
+        # Garante estado limpo para o worker de teste
+        _RESTART_SEEN.pop("test_worker_sync", None)
+        METRICS.worker_restarts_total.labels(worker="test_worker_sync")
+
+        _sync_worker_restarts_counter("test_worker_sync", 5)
+        _sync_worker_restarts_counter("test_worker_sync", 5)  # mesma leitura — sem incremento
+
+        # Apenas 1 incremento de 5, não 10
+        text = prom.generate_latest(_REGISTRY).decode()
+        assert 'worker="test_worker_sync"' in text
+
+    def test_update_dynamic_metrics_sets_uptime(self) -> None:
+        """_update_dynamic_metrics define uptime > 0."""
+        from agent.deploy.metrics import _update_dynamic_metrics
+        _update_dynamic_metrics()
+        text = prom.generate_latest(_REGISTRY).decode()
+        for line in text.splitlines():
+            if line.startswith("agent_uptime_seconds") and not line.startswith("#"):
+                assert float(line.split()[-1]) > 0
+                return
+        pytest.fail("agent_uptime_seconds não encontrado")

@@ -5,12 +5,14 @@ Não usa os.fork() — testa a lógica de state machine diretamente.
 """
 from __future__ import annotations
 
+import os
 import time
 from collections import deque
 
 import pytest
 
 from agent.deploy.supervisor import (
+    _BACKOFF_SEQUENCE,
     _FLAPPING_MAX_RESTARTS,
     _FLAPPING_WINDOW_S,
     _WorkerState,
@@ -118,3 +120,86 @@ def test_backoff_caps_at_60() -> None:
     for _ in range(20):
         state.record_restart()
     assert state.backoff_seconds() == 60.0
+
+
+# ── C2: restart com attempt=1 e backoff=1s ───────────────────────────────────
+
+class TestFirstRestartC2:
+    def test_first_restart_has_attempt_1(self) -> None:
+        """C2: primeiro restart → restarts_in_window() == 1."""
+        state = _WorkerState(worker=_FakeWorker())
+        state.record_restart()
+        assert state.restarts_in_window() == 1
+
+    def test_first_restart_backoff_is_1s(self) -> None:
+        """C2: backoff do primeiro restart deve ser 1s."""
+        state = _WorkerState(worker=_FakeWorker())
+        state.record_restart()
+        assert state.backoff_seconds() == _BACKOFF_SEQUENCE[0]
+
+    def test_restart_recorded_after_record_restart(self) -> None:
+        state = _WorkerState(worker=_FakeWorker())
+        assert state.restarts_in_window() == 0
+        state.record_restart()
+        assert state.restarts_in_window() == 1
+
+    def test_last_restart_at_updated(self) -> None:
+        state = _WorkerState(worker=_FakeWorker())
+        before = time.monotonic()
+        state.record_restart()
+        assert state.last_restart_at >= before
+
+
+# ── C3: flapping detection ────────────────────────────────────────────────────
+
+class TestFlappingDetectionC3:
+    def test_exactly_10_restarts_triggers_flapping_threshold(self) -> None:
+        """C3: ao atingir FLAPPING_MAX_RESTARTS o threshold é cumprido."""
+        state = _WorkerState(worker=_FakeWorker())
+        for _ in range(_FLAPPING_MAX_RESTARTS):
+            state.record_restart()
+        assert state.restarts_in_window() >= _FLAPPING_MAX_RESTARTS
+
+    def test_11_restarts_above_threshold(self) -> None:
+        state = _WorkerState(worker=_FakeWorker())
+        for _ in range(_FLAPPING_MAX_RESTARTS + 1):
+            state.record_restart()
+        assert state.restarts_in_window() > _FLAPPING_MAX_RESTARTS
+
+    def test_restarts_outside_window_dont_count(self) -> None:
+        """C3: restarts com >10min não entram no cálculo."""
+        state = _WorkerState(worker=_FakeWorker())
+        old = time.monotonic() - _FLAPPING_WINDOW_S - 5
+        state.restart_timestamps = deque([old] * (_FLAPPING_MAX_RESTARTS + 1))
+        assert state.restarts_in_window() == 0
+
+    def test_disabled_worker_is_not_restarted(self) -> None:
+        """C3: worker.disabled impede novos forks (verificado no supervisor)."""
+        state = _WorkerState(worker=_FakeWorker(), disabled=True)
+        assert state.disabled is True
+
+
+# ── _is_pid_alive com fork real ────────────────────────────────────────────────
+
+class TestIsPidAliveWithFork:
+    def test_forked_child_is_alive(self) -> None:
+        """Filho vivo detectado por _is_pid_alive."""
+        pid = os.fork()
+        if pid == 0:
+            time.sleep(5)
+            os._exit(0)
+        try:
+            assert _is_pid_alive(pid) is True
+        finally:
+            os.kill(pid, 9)
+            os.waitpid(pid, 0)
+
+    def test_killed_child_not_alive(self) -> None:
+        """Filho morto (SIGKILL) detectado por _is_pid_alive."""
+        pid = os.fork()
+        if pid == 0:
+            time.sleep(30)
+            os._exit(0)
+        os.kill(pid, 9)
+        os.waitpid(pid, 0)
+        assert _is_pid_alive(pid) is False

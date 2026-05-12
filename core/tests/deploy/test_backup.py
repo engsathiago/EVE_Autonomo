@@ -176,3 +176,70 @@ class TestRunBackup:
         assert "results" in result
         assert "sqlite" in result["results"]
         assert result["results"]["sqlite"]["ok"] is True
+
+    @pytest.mark.asyncio
+    async def test_c8_creates_two_files_min(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tmp_skills_dir: Path
+    ) -> None:
+        """C8: run_backup cria pelo menos sqlite + skills (sem Postgres mock)."""
+        db = tmp_path / "agent.db"
+        sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
+        _set_backup_env(monkeypatch, tmp_path, db_path=db, skills_dir=tmp_skills_dir)
+
+        result = await run_backup()
+        tag = result["tag"]
+        backup_dir = tmp_path / "backups"
+        assert (backup_dir / f"sqlite-{tag}.db.gz").exists()
+        assert (backup_dir / f"skills-{tag}.tar.gz").exists()
+
+    @pytest.mark.asyncio
+    async def test_c8_sha256_present_in_results(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tmp_skills_dir: Path
+    ) -> None:
+        """C8: resultados incluem sha256 de cada arquivo."""
+        db = tmp_path / "agent.db"
+        sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
+        _set_backup_env(monkeypatch, tmp_path, db_path=db, skills_dir=tmp_skills_dir)
+
+        result = await run_backup()
+        sqlite_result = result["results"]["sqlite"]
+        assert sqlite_result.get("ok") is True
+        assert "sha256" in sqlite_result
+        assert len(sqlite_result["sha256"]) == 64
+
+    @pytest.mark.asyncio
+    async def test_c8_retention_purges_old_files(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tmp_skills_dir: Path
+    ) -> None:
+        """C8: run_backup chama _purge_old_backups — arquivo de 15 dias é apagado."""
+        import os
+        db = tmp_path / "agent.db"
+        sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
+        _set_backup_env(monkeypatch, tmp_path, db_path=db, skills_dir=tmp_skills_dir)
+        monkeypatch.setenv("AGENT_BACKUP_RETAIN_DAYS", "14")
+
+        old = tmp_path / "backups" / "postgres-20200101.sql.gz"
+        old.write_bytes(b"old")
+        os.utime(str(old), (time.time() - 15 * 86400, time.time() - 15 * 86400))
+
+        await run_backup()
+        assert not old.exists(), "Arquivo de 15 dias deveria ter sido apagado"
+
+    @pytest.mark.asyncio
+    async def test_c8_backup_emits_event_via_bus(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tmp_skills_dir: Path
+    ) -> None:
+        """C8: backup emite backup.completed no event bus."""
+        db = tmp_path / "agent.db"
+        sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
+        _set_backup_env(monkeypatch, tmp_path, db_path=db, skills_dir=tmp_skills_dir)
+
+        events: list[tuple] = []
+
+        class _Bus:
+            async def publish(self, kind: str, payload: dict) -> None:
+                events.append((kind, payload))
+
+        await run_backup(event_bus=_Bus())
+        kinds = [e[0] for e in events]
+        assert "backup.completed" in kinds or "backup.failed" in kinds
