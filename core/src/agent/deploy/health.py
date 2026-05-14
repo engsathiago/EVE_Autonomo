@@ -44,19 +44,24 @@ async def _run_noop_skill() -> dict[str, Any]:
     Usa a mesma infra do SkillRunner (F9/F8) para validar que o caminho
     completo de execução está funcional.
     """
+    import sys
     from agent.tools.exec_tool import exec_tool
-    from agent.sandbox.subprocess_backend import make_sandbox
+    from agent.sandbox.subprocess_backend import SubprocessSandbox
+    from agent.sandbox.base import SandboxConfig
+
+    def _make_subprocess_sandbox(config: SandboxConfig) -> SubprocessSandbox:
+        return SubprocessSandbox(config)
 
     t0 = time.monotonic()
     result = await asyncio.wait_for(
         exec_tool(
-            ["python", "-c", _RUNTIME_SCRIPT],
+            [sys.executable, "-c", _RUNTIME_SCRIPT],
             policy_name="default",
             files={
                 "skill.py": _NOOP_SKILL_PY,
                 "input.json": b"{}",
             },
-            make_sandbox=make_sandbox,
+            make_sandbox=_make_subprocess_sandbox,
         ),
         timeout=2.0,
     )

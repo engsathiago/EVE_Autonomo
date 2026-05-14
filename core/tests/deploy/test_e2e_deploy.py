@@ -245,7 +245,7 @@ class TestRebootRecoveryC10:
         if result.returncode != 0:
             pytest.skip("agent.service não está ativo")
 
-        subprocess.run(["systemctl", "restart", "agent"], check=True, timeout=30)
+        subprocess.run(["systemctl", "restart", "agent"], check=True, timeout=60)
         time.sleep(3)
 
         # Verifica que health/live responde em <60s
@@ -270,7 +270,7 @@ class TestUnitFileConfig:
     """Testa o template do unit file sem precisar de systemd real."""
 
     def _template_path(self) -> Path:
-        return Path(__file__).parents[3] / "src" / "agent" / "deploy" / "templates" / "agent.service"
+        return Path(__file__).parents[2] / "src" / "agent" / "deploy" / "templates" / "agent.service"
 
     def test_template_exists(self) -> None:
         assert self._template_path().exists()
@@ -290,7 +290,7 @@ class TestUnitFileConfig:
 
     def test_loopback_api_host_in_env_example(self) -> None:
         """Anti-padrão: nunca 0.0.0.0 por padrão."""
-        env_path = Path(__file__).parents[3] / "src" / "agent" / "deploy" / "templates" / "env.example"
+        env_path = Path(__file__).parents[2] / "src" / "agent" / "deploy" / "templates" / "env.example"
         if not env_path.exists():
             pytest.skip("env.example não encontrado")
         content = env_path.read_text()

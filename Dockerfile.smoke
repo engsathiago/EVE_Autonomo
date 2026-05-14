@@ -1,0 +1,104 @@
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV container=docker
+
+# Instala systemd e deps do Python
+RUN apt-get update -q && \
+    apt-get install -y --no-install-recommends \
+        systemd systemd-sysv dbus \
+        python3.12 python3.12-venv python3.12-dev python3-pip \
+        git curl ca-certificates \
+        sqlite3 \
+        postgresql-client \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Remove serviços desnecessários que bloqueiam o init
+RUN (cd /lib/systemd/system/sysinit.target.wants/ && for i in *; do [ "$i" = "systemd-tmpfiles-setup.service" ] && continue; rm -f "$i"; done) && \
+    rm -f /lib/systemd/system/multi-user.target.wants/* && \
+    rm -f /etc/systemd/system/*.wants/* && \
+    rm -f /lib/systemd/system/local-fs.target.wants/* && \
+    rm -f /lib/systemd/system/sockets.target.wants/*udev* && \
+    rm -f /lib/systemd/system/sockets.target.wants/*initctl* && \
+    rm -f /lib/systemd/system/basic.target.wants/* && \
+    rm -f /lib/systemd/system/anaconda.target.wants/*
+
+# Cria venv e instala o agente
+COPY core/ /opt/agent/core/
+COPY cli/ /opt/agent/cli/
+COPY config/ /opt/agent/config/
+
+RUN python3.12 -m venv /opt/agent/.venv && \
+    /opt/agent/.venv/bin/pip install --quiet --upgrade pip && \
+    /opt/agent/.venv/bin/pip install --quiet -e /opt/agent/core/ && \
+    /opt/agent/.venv/bin/pip install --quiet -e /opt/agent/cli/
+
+# Remove skills builtin do diretório copiado — o smoke test não as usa
+# e evitamos precisar baixar o modelo de embeddings (~120MB) durante a startup.
+RUN find /opt/agent/core/src/agent/skills/builtin -name "*.md" -delete 2>/dev/null || true
+
+# Inicializa o banco SQLite com todas as migrations
+RUN mkdir -p /var/lib/agent/data && \
+    for f in /opt/agent/core/migrations/*.sql; do \
+        echo "Applying: $f" && \
+        sqlite3 /var/lib/agent/data/agent.db < "$f" || true; \
+    done
+
+# Cria usuário e dirs
+RUN useradd --system --no-create-home --shell /usr/sbin/nologin agent && \
+    mkdir -p /var/lib/agent/data /var/lib/agent/state /var/lib/agent/logs \
+             /var/lib/agent/backups /etc/agent /var/lib/agent/data/skills && \
+    chown -R agent:agent /var/lib/agent /etc/agent
+
+# Instala env de configuração
+# POSTGRES_DSN é injetado via -e no docker run (usa o postgres do compose)
+# ORCHESTRATOR_ENABLED=false: pula orchestrator/scheduler/missions (evita APScheduler+PG extra)
+# SCHEDULER_ENABLED=false: garante que CronWorker não tente se conectar ao APScheduler jobstore
+RUN cat > /etc/agent/.env <<'EOF'
+AGENT_DB_SQLITE=/var/lib/agent/data/agent.db
+AGENT_DATA_DIR=/var/lib/agent/data
+AGENT_STATE_DIR=/var/lib/agent/state
+AGENT_LOG_DIR=/var/lib/agent/logs
+AGENT_BACKUP_DIR=/var/lib/agent/backups
+AGENT_API_HOST=127.0.0.1
+AGENT_API_PORT=8000
+AGENT_WORKERS=api
+AGENT_RESTART_MAX_PER_10MIN=10
+AGENT_WATCHDOG_INTERVAL_SECONDS=10
+AGENT_PID_FILE=/var/run/agent.pid
+AGENT_LOG_LEVEL=INFO
+REDIS_URL=redis://redis:6379/0
+ANTHROPIC_API_KEY=sk-ant-SMOKE_TEST_KEY
+ORCHESTRATOR_ENABLED=false
+SCHEDULER_ENABLED=false
+EOF
+RUN chmod 600 /etc/agent/.env
+
+# Instala unit file provisório com Type=simple (será sobrescrito por `agent deploy install`)
+# Isso permite que `systemctl enable agent` funcione na build sem depender de systemd real.
+RUN cat > /etc/systemd/system/agent.service <<'EOF'
+[Unit]
+Description=Autonomous Agent Smoke Test
+After=network.target
+
+[Service]
+Type=simple
+User=agent
+Group=agent
+WorkingDirectory=/opt/agent
+EnvironmentFile=/etc/agent/.env
+ExecStart=/opt/agent/.venv/bin/python -m agent.deploy.supervisor
+Restart=on-failure
+RestartSec=2s
+StartLimitInterval=120
+StartLimitBurst=5
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+RUN systemctl enable agent 2>/dev/null || true
+
+CMD ["/lib/systemd/systemd"]
