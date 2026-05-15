@@ -59,7 +59,7 @@ Construindo um agente autônomo inspirado em **Hermes Agent** (Nous Research) e
 - [ ] Fase 8: Sandboxes
 - [ ] Fase 9: Skills auto-geradas estilo Voyager
 - [ ] Fase 10: Deploy VPS
-- [ ] Fase 11: Web UI
+- [x] Fase 11: Web UI — FastAPI web module (server/auth/metrics/routes/adapters), WS multiplexado /api/v1/stream (heartbeat 20s, backpressure 100, close 4001), auth HMAC 5s cache, rate limit 60 req/s, CSP estrita, 8 painéis terminal (HTML/CSS/JS vanila), CLI agent web, migration 012_web.sql, 113 testes passando, cobertura 87%
 - [ ] Fase 12+: Canais extras + plugins
 - [ ] Fase 13: Fine-tuning local periódico (LoRA)
 - [ ] Fase 14+: RLAIF
