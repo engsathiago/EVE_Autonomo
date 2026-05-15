@@ -1,0 +1,6 @@
+[run]
+concurrency = thread
+source = src/agent/web
+
+[report]
+show_missing = true

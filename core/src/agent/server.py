@@ -241,6 +241,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         if _autonomous_loop and _mission_store:
             app.include_router(make_loop_router(_autonomous_loop, _mission_store))
 
+    # ── Fase 11: Web UI ───────────────────────────────────────────────────────
+    from agent.web.server import attach_web_routes
+    attach_web_routes(
+        app,
+        missions_store=_mission_store,
+        missions_planner=_planner,
+        missions_reflector=_reflector,
+        skill_manager=_skill_manager,
+        memory_store=_memory_store,
+        task_store=_task_store,
+        db_pool=_memory_store._pool if _memory_store else None,
+        subagent_pool=_subagent_pool,
+        approval_manager=_approval_manager,
+        orchestrator=_orchestrator,
+    )
+
     yield
 
     # ── Shutdown (ordem inversa) ──────────────────────────────────────────────

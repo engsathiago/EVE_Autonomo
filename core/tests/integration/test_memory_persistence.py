@@ -8,6 +8,7 @@ import os
 import uuid
 
 import pytest
+import pytest_asyncio
 
 from agent.memory.store import MemoryStore
 
@@ -16,13 +17,14 @@ pytestmark = pytest.mark.integration
 DSN = os.getenv("POSTGRES_DSN", "postgresql://agent:changeme@localhost:5432/agent")
 
 
-@pytest.fixture(scope="module")
+@pytest_asyncio.fixture
 async def store():
     s = await MemoryStore.create(dsn=DSN)
     yield s
     await s.close()
 
 
+@pytest.mark.asyncio
 async def test_memory_persists_across_sessions(store: MemoryStore):
     """
     Simula duas sessões independentes.
@@ -51,6 +53,7 @@ async def test_memory_persists_across_sessions(store: MemoryStore):
     assert top.importance == 9
 
 
+@pytest.mark.asyncio
 async def test_conversation_history_survives_restart(store: MemoryStore):
     """
     Mensagens gravadas em uma conversa podem ser recuperadas posteriormente.
@@ -72,6 +75,7 @@ async def test_conversation_history_survives_restart(store: MemoryStore):
     assert "Tóquio" in msgs[3]["content"]
 
 
+@pytest.mark.asyncio
 async def test_curator_decision_metadata_preserved(store: MemoryStore):
     """Metadados do Curator são preservados após save."""
     mem_id = await store.save(
@@ -82,9 +86,9 @@ async def test_curator_decision_metadata_preserved(store: MemoryStore):
     )
 
     # Busca de volta pelo conteúdo
-    result = await store.search_fts("respostas concisas", k=3)
+    entries = await store.search_fts("respostas concisas", k=3)
 
-    assert any(str(mem_id) == str(e.id) for e in result.entries)
-    match = next(e for e in result.entries if str(e.id) == str(mem_id))
+    assert any(str(mem_id) == str(e.id) for e in entries)
+    match = next(e for e in entries if str(e.id) == str(mem_id))
     assert match.metadata.get("curator_reason") is not None
     assert match.importance == 8
