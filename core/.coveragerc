@@ -1,6 +1,8 @@
 [run]
 concurrency = thread
 source = src/agent/web
+omit =
+    src/agent/channels/dispatcher.py
 
 [report]
 show_missing = true
