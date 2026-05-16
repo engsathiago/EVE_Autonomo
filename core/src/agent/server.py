@@ -384,10 +384,12 @@ async def health() -> dict[str, object]:
 @app.get("/metrics", response_class=__import__("fastapi").responses.PlainTextResponse)
 async def prometheus_metrics() -> str:
     from agent.metrics.phase_7 import metrics
+    from agent.channels.metrics import prometheus_text as channel_metrics_text
+    from agent.web.metrics import prometheus_text as web_metrics_text
     if _mission_store:
         active = await _mission_store.list_active()
         metrics.missions_active = len(active)
-    return metrics.prometheus_text()
+    return metrics.prometheus_text() + channel_metrics_text() + web_metrics_text()
 
 
 @app.get("/api/tools")
