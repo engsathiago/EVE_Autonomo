@@ -15,6 +15,14 @@ _PUBLIC_DIR = Path(__file__).parent.parent.parent.parent.parent.parent / "webui"
 _CACHE_IMMUTABLE_EXTS = {".js", ".css", ".woff2", ".woff", ".ttf", ".svg", ".ico", ".png"}
 _NO_CACHE = "no-cache, no-store, must-revalidate"
 _LONG_CACHE = "public, max-age=86400, immutable"
+_CSP = (
+    "default-src 'self'; "
+    "script-src 'self'; "
+    "style-src 'self'; "
+    "connect-src 'self' ws://127.0.0.1:8080 wss://127.0.0.1:8080; "
+    "img-src 'self' data:; "
+    "font-src 'self';"
+)
 
 
 def make_static_router() -> APIRouter:
@@ -47,4 +55,10 @@ def _serve_file(rel_path: Path) -> Response:
     content = full.read_bytes()
     mime = mimetypes.guess_type(str(full))[0] or "application/octet-stream"
     cache = _LONG_CACHE if full.suffix in _CACHE_IMMUTABLE_EXTS else _NO_CACHE
-    return Response(content=content, media_type=mime, headers={"Cache-Control": cache})
+    headers: dict[str, str] = {"Cache-Control": cache}
+    if mime == "text/html":
+        headers["Content-Security-Policy"] = _CSP
+        headers["X-Content-Type-Options"] = "nosniff"
+        headers["X-Frame-Options"] = "DENY"
+        headers["Referrer-Policy"] = "no-referrer"
+    return Response(content=content, media_type=mime, headers=headers)
