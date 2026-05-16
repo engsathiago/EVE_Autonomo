@@ -55,6 +55,24 @@ POLICY_UNTRUSTED = _register(SandboxPolicy(
 ))
 
 
+POLICY_FINETUNE = _register(SandboxPolicy(
+    name="finetune",
+    config=SandboxConfig(
+        cpu_limit=8.0,
+        memory_limit_mb=32768,     # 32 GiB — merge+quantize pode precisar de RAM
+        wall_time_seconds=7200,    # 2h — treino LoRA + merge em GPU
+        network=NetworkPolicy.ALLOWLIST,
+        allowed_domains=[
+            "localhost",
+            "127.0.0.1",
+            "huggingface.co",      # download de tokenizers/configs de base models
+        ],
+    ),
+    allow_open_network=False,      # somente domínios na allowlist
+    require_critic_approval=False, # treino não passa pelo Crítico
+))
+
+
 def get_policy(name: str) -> SandboxPolicy:
     policy = _POLICY_REGISTRY.get(name)
     if policy is None:
