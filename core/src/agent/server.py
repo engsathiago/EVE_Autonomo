@@ -63,6 +63,9 @@ _CURATOR_ENABLED = os.getenv("MEMORY_CURATOR_ENABLED", "true").lower() != "false
 _ORCHESTRATOR_ENABLED = os.getenv("ORCHESTRATOR_ENABLED", "true").lower() != "false"
 _SCHEDULER_ENABLED = os.getenv("SCHEDULER_ENABLED", "true").lower() != "false"
 
+# Phase 12 globals
+_channel_adapters: list = []
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -71,6 +74,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     global _approval_scheduler, _dispatcher, _redis_client
     global _task_store, _cron_store, _cron_worker, _orchestrator, _subagent_pool
     global _mission_store, _reflexive_memory, _critic, _planner, _reflector, _autonomous_loop
+    global _channel_adapters
 
     settings = get_settings()
     configure_logging(settings.log_level, json=settings.log_json)
@@ -257,9 +261,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         orchestrator=_orchestrator,
     )
 
+    # ── Fase 12: canais extras ────────────────────────────────────────────────
+    from agent.channels import bootstrap_channels
+    _channel_adapters = await bootstrap_channels(
+        orchestrator=_orchestrator,
+        approval_manager=_approval_manager,
+        db_pool=_memory_store._pool if _memory_store else None,
+    )
+
     yield
 
     # ── Shutdown (ordem inversa) ──────────────────────────────────────────────
+    from agent.channels import stop_channels
+    await stop_channels()
+
     if _cron_worker:
         _cron_worker.shutdown(wait=False)
     if _approval_scheduler:
@@ -353,6 +368,7 @@ class ToolInfo(BaseModel):
 @app.get("/health")
 async def health() -> dict[str, object]:
     settings = get_settings()
+    from agent.channels import get_channel_statuses
     return {
         "ok": True,
         "version": __version__,
@@ -361,6 +377,7 @@ async def health() -> dict[str, object]:
         "scheduler": _cron_worker is not None,
         "missions": _mission_store is not None,
         "autonomous_loop": _autonomous_loop is not None,
+        "channels": get_channel_statuses(),
     }
 
 
