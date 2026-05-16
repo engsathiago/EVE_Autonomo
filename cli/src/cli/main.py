@@ -17,6 +17,7 @@ from cli.critic_cli import app as critic_app
 from cli.reflexive_memory_cli import app as reflexive_app
 from cli.loop_cli import app as loop_app
 from cli.web_cmd import app as web_app
+from cli.finetune_cli import app as finetune_app
 
 # Subcomando `agent memory` agrupa memória semântica e reflexiva
 _memory_app = typer.Typer(help="Gerencia memória do agente (semântica + reflexiva).")
@@ -32,6 +33,7 @@ app.add_typer(critic_app, name="critic")
 app.add_typer(_memory_app, name="memory")
 app.add_typer(loop_app, name="loop")
 app.add_typer(web_app, name="web")
+app.add_typer(finetune_app, name="finetune")
 console = Console()
 
 
