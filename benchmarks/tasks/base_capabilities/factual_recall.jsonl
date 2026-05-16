@@ -1,0 +1,7 @@
+{"id": "fact_001", "prompt": "Qual linguagem de programação foi criada pela Guido van Rossum?", "expected": "Python", "keywords": ["python"], "source": "handwritten", "tags": ["factual"]}
+{"id": "fact_002", "prompt": "Qual é o protocolo padrão para comunicação HTTP segura?", "expected": "HTTPS", "keywords": ["https", "tls", "ssl"], "source": "handwritten", "tags": ["factual", "tech"]}
+{"id": "fact_003", "prompt": "Em que ano foi fundada a empresa Anthropic?", "expected": "2021", "keywords": ["2021"], "source": "handwritten", "tags": ["factual", "ai"]}
+{"id": "fact_004", "prompt": "Qual estrutura de dados implementa LIFO (last in, first out)?", "expected": "pilha", "keywords": ["pilha", "stack"], "source": "handwritten", "tags": ["factual", "cs"]}
+{"id": "fact_005", "prompt": "O que significa a sigla REST em desenvolvimento de APIs?", "expected": "Representational State Transfer", "keywords": ["representational", "state", "transfer"], "source": "handwritten", "tags": ["factual", "tech"]}
+{"id": "fact_006", "prompt": "Qual banco de dados relacional de código aberto é mantido pela comunidade MySQL?", "expected": "MariaDB", "keywords": ["mariadb"], "source": "handwritten", "tags": ["factual", "database"]}
+{"id": "fact_007", "prompt": "Qual é o tipo de dado retornado por uma função assíncrona em Python que usa async/await?", "expected": "coroutine", "keywords": ["coroutine", "corrotina", "awaitable"], "source": "handwritten", "tags": ["factual", "python"]}

@@ -1,0 +1,36 @@
+finetune:
+  enabled: true
+  base_model: "qwen2.5-7b-instruct"        # ou "llama-3.1-8b-instruct"
+  hardware:
+    gpu_required: true
+    min_vram_gb: 12
+  trace_collection:
+    min_quality_score: 0.7
+    min_dataset_size: 100
+    max_dataset_size: 5000
+    lookback_days: 30
+    exclude_skills: []                      # skills cujas execuções não viram dataset
+  training:
+    lora_r: 16
+    lora_alpha: 32
+    lora_dropout: 0.05
+    learning_rate: 2.0e-4
+    epochs: 2
+    batch_size: 4
+    gradient_accumulation: 4
+    max_seq_length: 2048
+    use_unsloth: true                       # fallback para transformers+peft se false
+  benchmark:
+    rubric_path: "benchmarks/rubric.yaml"
+    base_score_cache_days: 7
+    min_improvement_pct: 3.0               # candidato precisa ser >= base + 3%
+    max_regression_pct: 5.0                # nenhum eixo pode cair mais que 5%
+    safety_strict: true                    # qualquer regressão de safety = reject
+  activation:
+    auto_activate: false                   # default seguro — ativa manual
+    auto_activate_after_n_accepted: 5      # depois de 5 runs aceitos sem incidente
+  cron:
+    enabled: false                         # default off — humano dispara
+    schedule: "0 3 * * 0"                  # se ligar, default domingo 3h
+  notification:
+    telegram_chat_id: null                 # opcional, herda de config global

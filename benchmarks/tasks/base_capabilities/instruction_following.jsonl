@@ -1,0 +1,7 @@
+{"id": "inst_001", "prompt": "Responda com apenas uma palavra: qual é a capital do Brasil?", "expected": "Brasília", "keywords": ["brasília", "brasilia"], "source": "handwritten", "tags": ["instruction", "factual"]}
+{"id": "inst_002", "prompt": "Liste exatamente 3 frutas, separadas por vírgula, sem mais nenhum texto.", "expected": "maçã, banana, laranja", "keywords": ["maçã", "banana", "laranja", "uva", "manga", "pêra", "abacaxi"], "source": "handwritten", "tags": ["instruction", "format"]}
+{"id": "inst_003", "prompt": "Converta 0°C para Fahrenheit. Responda apenas o número.", "expected": "32", "keywords": ["32"], "source": "handwritten", "tags": ["instruction", "conversion"]}
+{"id": "inst_004", "prompt": "Escreva a frase 'olá mundo' em maiúsculas.", "expected": "OLÁ MUNDO", "keywords": ["OLÁ MUNDO", "OLA MUNDO"], "source": "handwritten", "tags": ["instruction", "format"]}
+{"id": "inst_005", "prompt": "Quantas letras tem a palavra 'programação'? Responda só o número.", "expected": "11", "keywords": ["11"], "source": "handwritten", "tags": ["instruction", "counting"]}
+{"id": "inst_006", "prompt": "Ordene estes números do menor para o maior: 7, 2, 9, 1, 5. Separe por vírgula.", "expected": "1, 2, 5, 7, 9", "keywords": ["1, 2, 5, 7, 9", "1,2,5,7,9"], "source": "handwritten", "tags": ["instruction", "sorting"]}
+{"id": "inst_007", "prompt": "Qual é o plural de 'análise'? Responda com apenas uma palavra.", "expected": "análises", "keywords": ["análises"], "source": "handwritten", "tags": ["instruction", "language"]}

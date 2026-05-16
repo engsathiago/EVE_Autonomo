@@ -1,0 +1,8 @@
+# Modelos são grandes demais para git — gerenciar manualmente
+base/
+checkpoints/
+_archive/
+!base/.gitkeep
+!checkpoints/.gitkeep
+!_archive/.gitkeep
+active_checkpoint.txt
