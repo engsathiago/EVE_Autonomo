@@ -98,9 +98,11 @@ agent doctor
 # 5. Dashboard de status
 agent status
 
-# 6. Converse com a EVE
-agent run "Quem é você?"
+# 6. Converse com a EVE (TUI estilo OpenClaw)
+eve                          # ou: agent chat
 ```
+
+> 💬 **`eve` abre o TUI interativo** com auto-complete, slash commands (`/model`, `/cost`, `/skills`, `/missions`...), troca de modelo ao vivo e renderização Markdown — exatamente como o OpenClaw faz.
 
 ### Subindo manualmente (forma tradicional)
 

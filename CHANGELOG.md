@@ -10,6 +10,13 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## [Unreleased]
 
 ### Adicionado
+- **`agent chat` (alias: `eve`) — TUI interativo estilo OpenClaw:** Chat dedicado com banner permanente (modelo, tokens, custo, tempo), auto-complete de comandos via prompt_toolkit, histórico persistente, renderização Markdown nas respostas, e 12 slash commands:
+  - `/model [novo]` — troca modelo **ao vivo** sem sair
+  - `/clear`, `/cost`, `/reset`
+  - `/tools`, `/skills`, `/missions`, `/approvals` — inspeção rápida
+  - `/save [arquivo.md]` — exporta conversa
+  - `/help`, `/exit`
+- **Entry-point `eve`** instalável via `pip install -e cli` para invocar diretamente sem `agent chat`.
 - **CLI estilo OpenClaw/Hermes:** 4 novos comandos para setup e operação fluida:
   - `agent init` — wizard interativo (escolhe provider, modelo, testa conexão, grava .env)
   - `agent config show/use/set/get/models/providers` — gerenciamento estilo `gcloud config`

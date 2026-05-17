@@ -81,6 +81,67 @@ agent status --detailed     # Inclui últimas 5 chamadas LLM
 
 ---
 
+## 🆕 agent chat (ou `eve`) — TUI interativo estilo OpenClaw
+
+Abre uma interface de chat rica no terminal, com:
+- Banner permanente mostrando modelo, mensagens, tokens, custo, tempo
+- Auto-complete de comandos
+- Histórico persistente entre sessões
+- Renderização Markdown nas respostas
+- 12 slash commands
+
+```bash
+agent chat                            # Abre com modelo padrão
+agent chat --model ollama:gpt-oss:120b   # Override de modelo
+eve                                   # Atalho dedicado (após pip install)
+```
+
+**Slash commands disponíveis dentro do chat:**
+
+| Comando | Descrição |
+|---------|-----------|
+| `/help` | Lista todos os comandos |
+| `/model` | Mostra o modelo atual |
+| `/model <novo>` | Troca o modelo **ao vivo** (sem sair) |
+| `/clear` | Limpa a tela |
+| `/cost` | Mostra total de tokens/custo da sessão |
+| `/tools` | Lista tools disponíveis |
+| `/skills` | Lista skills carregadas |
+| `/missions` | Lista missões ativas |
+| `/approvals` | Lista aprovações pendentes |
+| `/save [arquivo.md]` | Salva a conversa em Markdown |
+| `/reset` | Zera contadores de tokens/custo |
+| `/exit` (ou Ctrl+D) | Sai do chat |
+
+**Exemplo de sessão:**
+
+```
+╭──────────────────────────────────────────╮
+│ EVE — Agente Autônomo  | modelo: ollama:gpt-oss:120b
+│ Digite /help para comandos · /exit para sair
+╰──────────────────────────────────────────╯
+
+› Liste os arquivos do projeto
+
+  🔧 list_dir(path=.)
+     ↳ 12 itens
+
+  EVE  No diretório raiz tem: core/, gateway/, cli/, webui/, docs/...
+
+  ─ 2 iter · 1,250 tokens · $0.0012 · 1.8s ─
+
+› /model ollama:deepseek-v3.1:671b-cloud
+  ✓ Modelo trocado: ollama:gpt-oss:120b → ollama:deepseek-v3.1:671b-cloud
+
+› /cost
+  Mensagens: 1 · Tokens: 1,250 · $0.0012
+
+› /exit
+  Até logo! 👋
+```
+
+---
+
 ## 🆕 agent doctor — Diagnóstico
 
 ```bash

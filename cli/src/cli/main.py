@@ -22,6 +22,7 @@ from cli.init_cmd import app as init_app
 from cli.config_cmd import app as config_app
 from cli.status_cmd import app as status_app
 from cli.doctor_cmd import app as doctor_app
+from cli.chat_cmd import app as chat_app
 
 # Subcomando `agent memory` agrupa memória semântica e reflexiva
 _memory_app = typer.Typer(help="Gerencia memória do agente (semântica + reflexiva).")
@@ -34,6 +35,7 @@ app.add_typer(init_app, name="init", help="Wizard interativo de configuração i
 app.add_typer(config_app, name="config", help="Gerencia configuração (show, use, set, get, models, providers)")
 app.add_typer(status_app, name="status", help="Dashboard de status (provider, infra, métricas)")
 app.add_typer(doctor_app, name="doctor", help="Valida a instalação e reporta problemas")
+app.add_typer(chat_app, name="chat", help="Abre o chat TUI interativo (estilo OpenClaw)")
 
 # Subsistemas
 app.add_typer(skills_app, name="skill")
