@@ -19,8 +19,88 @@ pip install -e "./core" -e "./cli"
 ```bash
 agent --help          # Ver todos os comandos
 agent --version       # Versão
-agent setup           # Validar configuração
 ```
+
+---
+
+## 🆕 agent init — Wizard de configuração (estilo OpenClaw/Hermes)
+
+Setup interativo completo em ~2 minutos. Pergunta provider, modelo, chave de API, testa conexão, grava `.env`.
+
+```bash
+agent init                   # Wizard interativo
+agent init --force           # Sobrescreve .env existente
+agent init --env-path ./.env.prod   # Aponta para outro arquivo
+```
+
+**O que ele faz:**
+1. Mostra os 5 providers disponíveis (Ollama Cloud, Ollama Local, Anthropic, OpenAI, OpenRouter)
+2. Você escolhe um e o modelo padrão dele
+3. Pede a API key (se aplicável)
+4. **Testa a conexão antes de salvar**
+5. Pergunta config do Postgres (Docker ou bare-metal)
+6. Mostra resumo e pede confirmação
+7. Grava o `.env` completo
+
+---
+
+## 🆕 agent config — Gerenciar configuração (estilo OpenClaw)
+
+```bash
+agent config show                       # Estado atual completo (com keys mascaradas)
+agent config use ollama:gpt-oss:120b   # Trocar modelo padrão
+agent config set MODEL_TIMEOUT_S 180    # Mudar qualquer variável
+agent config get DEFAULT_MODEL          # Ler valor de uma variável
+agent config models                     # Listar modelos de todos os providers ativos
+agent config providers                  # Status de cada provider
+```
+
+**Exemplo prático — trocar de Claude para Ollama Cloud:**
+
+```bash
+agent config set OLLAMA_API_KEY ollama_xxx
+agent config set OLLAMA_BASE_URL https://ollama.com
+agent config use ollama:gpt-oss:120b
+docker compose restart core
+```
+
+---
+
+## 🆕 agent status — Dashboard (estilo Hermes)
+
+```bash
+agent status                # Visão geral (provider, infra, métricas 24h)
+agent status --detailed     # Inclui últimas 5 chamadas LLM
+```
+
+**Mostra de uma só vez:**
+- Configuração ativa (modelo, fallback, timeouts)
+- Health: Postgres, Redis, Core HTTP, Gateway HTTP
+- Health de cada provider de LLM configurado
+- Estatísticas das últimas 24h (mensagens, tokens, custo, missões, aprovações)
+
+---
+
+## 🆕 agent doctor — Diagnóstico
+
+```bash
+agent doctor                # Roda 11 checks e reporta o que está OK/quebrado
+```
+
+**Checks executados:**
+1. Versão do Python (3.11+)
+2. `.env` existe
+3. Config carrega sem erro
+4. Pelo menos 1 provider LLM configurado
+5. `DEFAULT_MODEL` é válido e tem key correspondente
+6. Postgres conecta
+7. Redis conecta
+8. Provider ativo responde
+9. Migrações aplicadas (tabelas críticas presentes)
+10. Docker instalado (opcional)
+11. Workspace paths acessíveis
+
+Exit code 0 = tudo OK. Exit code 1 = problemas.
 
 ---
 

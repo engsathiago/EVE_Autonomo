@@ -10,6 +10,11 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## [Unreleased]
 
 ### Adicionado
+- **CLI estilo OpenClaw/Hermes:** 4 novos comandos para setup e operação fluida:
+  - `agent init` — wizard interativo (escolhe provider, modelo, testa conexão, grava .env)
+  - `agent config show/use/set/get/models/providers` — gerenciamento estilo `gcloud config`
+  - `agent status [--detailed]` — dashboard com provider, infra, métricas 24h
+  - `agent doctor` — 11 checks de validação (Python, .env, config, providers, DB, Redis, migrações)
 - **Ollama Cloud:** suporte a `OLLAMA_API_KEY` no `OllamaTransport`. Mesmo transport funciona local (`http://localhost:11434`) ou cloud (`https://ollama.com`). Inclui detecção de erros 401/403 com mensagem clara, propriedade `is_cloud`, documentação em `docs/OLLAMA_CLOUD.md`.
 - **Infraestrutura open-source:** CI GitHub Actions (pytest + ruff + npm test + gitleaks), pre-commit hooks, `SECURITY.md` com threat model, `CHANGELOG.md`, issue/PR templates, `CODEOWNERS`, badges no README.
 - **Exemplos práticos:** 6 tutoriais do iniciante ao avançado em `examples/`.

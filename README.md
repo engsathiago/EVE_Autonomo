@@ -79,23 +79,35 @@ O resultado é uma agente que **pensa, age, aprende e se adapta** — com contro
 - [Docker](https://docs.docker.com/get-docker/) e [Docker Compose](https://docs.docker.com/compose/install/)
 - Uma chave de API da [Anthropic](https://console.anthropic.com/) (ou outro provider LLM)
 
-### Subindo o projeto
+### Subindo o projeto (forma rápida — estilo OpenClaw)
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/seu-usuario/EVE_Autonomo.git
+git clone https://github.com/engsathiago/EVE_Autonomo.git
 cd EVE_Autonomo
 
-# 2. Configure as variáveis de ambiente
-cp .env.example .env
-# Edite .env com sua ANTHROPIC_API_KEY e demais credenciais
+# 2. Wizard interativo (escolhe provider, modelo, gera .env)
+agent init
 
 # 3. Suba todos os serviços
 docker compose up --build -d
 
-# 4. Verifique se está rodando
-curl http://localhost:8000/health   # Core Python → {"ok": true}
-curl http://localhost:3000/health   # Gateway Node → {"ok": true}
+# 4. Valide a instalação
+agent doctor
+
+# 5. Dashboard de status
+agent status
+
+# 6. Converse com a EVE
+agent run "Quem é você?"
+```
+
+### Subindo manualmente (forma tradicional)
+
+```bash
+cp .env.example .env       # Edite .env manualmente
+docker compose up --build -d
+curl http://localhost:8000/health
 ```
 
 ### Com Ollama (modelos locais)
