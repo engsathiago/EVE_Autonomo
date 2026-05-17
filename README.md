@@ -369,7 +369,10 @@ anthropic:claude-sonnet-4-6        # Claude (padrão)
 openai:gpt-4o-mini                  # OpenAI
 openrouter:deepseek/deepseek-chat   # OpenRouter
 ollama:qwen2.5:7b                   # Ollama (local, gratuito)
+ollama:gpt-oss:120b                 # Ollama Cloud (com OLLAMA_API_KEY)
 ```
+
+O mesmo `OllamaTransport` suporta **local** (`OLLAMA_BASE_URL=http://localhost:11434`) ou **cloud** (`OLLAMA_BASE_URL=https://ollama.com` + `OLLAMA_API_KEY=...`). Veja [docs/OLLAMA_CLOUD.md](docs/OLLAMA_CLOUD.md).
 
 Fallback chain: se o provider principal falhar (timeout, 5xx), a EVE tenta automaticamente o próximo da chain.
 

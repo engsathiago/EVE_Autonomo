@@ -9,6 +9,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Adicionado
+- **Ollama Cloud:** suporte a `OLLAMA_API_KEY` no `OllamaTransport`. Mesmo transport funciona local (`http://localhost:11434`) ou cloud (`https://ollama.com`). Inclui detecção de erros 401/403 com mensagem clara, propriedade `is_cloud`, documentação em `docs/OLLAMA_CLOUD.md`.
+- **Infraestrutura open-source:** CI GitHub Actions (pytest + ruff + npm test + gitleaks), pre-commit hooks, `SECURITY.md` com threat model, `CHANGELOG.md`, issue/PR templates, `CODEOWNERS`, badges no README.
+- **Exemplos práticos:** 6 tutoriais do iniciante ao avançado em `examples/`.
+- **Plugin development guide:** `docs/PLUGINS.md` documentando Tools, Skills, Transports, Channels, Sandboxes.
+
 ### Planejado
 - Fase 14: RLAIF (Reinforcement Learning from AI Feedback)
 - Plugin marketplace

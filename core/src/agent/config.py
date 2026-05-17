@@ -66,6 +66,7 @@ class OpenRouterSettings(BaseSettings):
 
 class OllamaSettings(BaseSettings):
     base_url: str = "http://localhost:11434"
+    api_key: str = ""  # opcional — necessário apenas para Ollama Cloud (ollama.com)
     timeout: int = 120
 
 
@@ -218,6 +219,7 @@ class Settings(BaseSettings):
             ),
             ollama=OllamaSettings(
                 base_url=ollama_data.get("base_url") or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
+                api_key=ollama_data.get("api_key") or os.environ.get("OLLAMA_API_KEY", ""),
                 timeout=ollama_data.get("timeout", 120),
             ),
             models=ModelSettings(
@@ -328,6 +330,7 @@ def build_model_router(
         "ollama",
         lambda: OllamaTransport(
             base_url=cfg.ollama.base_url,
+            api_key=cfg.ollama.api_key,
             timeout=cfg.ollama.timeout,
         ),
     )
