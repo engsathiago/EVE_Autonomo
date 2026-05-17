@@ -1,0 +1,28 @@
+# Configuração do Gitleaks para a EVE
+# https://github.com/gitleaks/gitleaks
+
+title = "EVE Gitleaks Config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist global"
+paths = [
+    '''\.env\.example$''',
+    '''docs/.*\.md$''',
+    '''CHANGELOG\.md$''',
+    '''.*test.*\.py$''',
+]
+
+# Padrões de placeholder em .env.example e docs
+regexes = [
+    '''sk-ant-xxxx''',
+    '''sk-ant-sua-chave-aqui''',
+    '''sk-ant-\.\.\.''',
+    '''changeme''',
+    '''dummy-for-tests''',
+    '''seu-token-aqui''',
+    '''xapp-\.\.\.''',
+    '''xoxb-\.\.\.''',
+]

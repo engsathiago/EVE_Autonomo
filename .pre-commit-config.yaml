@@ -1,0 +1,40 @@
+# Pre-commit hooks para EVE
+# Instalar: pip install pre-commit && pre-commit install
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        exclude: ^docker-compose\.yml$  # multi-doc YAML
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-case-conflict
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        name: gitleaks (secret scanning)
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^(core|cli)/.*\.py$
+      - id: ruff-format
+        files: ^(core|cli)/.*\.py$
+
+  - repo: local
+    hooks:
+      - id: no-env-bak
+        name: Bloquear .env.bak* (segurança)
+        entry: bash -c 'if git diff --cached --name-only | grep -qE "\.env\.bak"; then echo "ERRO: arquivos .env.bak* não podem ser commitados"; exit 1; fi'
+        language: system
+        pass_filenames: false
+        always_run: true

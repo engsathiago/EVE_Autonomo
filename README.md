@@ -9,6 +9,17 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/engsathiago/EVE_Autonomo/actions/workflows/ci.yml"><img src="https://github.com/engsathiago/EVE_Autonomo/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+" />
+  <img src="https://img.shields.io/badge/node-20%2B-green.svg" alt="Node 20+" />
+  <img src="https://img.shields.io/badge/postgres-16-blue.svg" alt="PostgreSQL 16" />
+  <img src="https://img.shields.io/badge/status-active-success.svg" alt="Status: Active" />
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" /></a>
+  <a href="https://github.com/engsathiago/EVE_Autonomo/issues"><img src="https://img.shields.io/github/issues/engsathiago/EVE_Autonomo.svg" alt="Issues" /></a>
+</p>
+
+<p align="center">
   <a href="#quickstart">Quickstart</a> •
   <a href="#arquitetura">Arquitetura</a> •
   <a href="#funcionalidades">Funcionalidades</a> •
@@ -109,6 +120,19 @@ npm run dev
 ```
 
 Veja [docs/INSTALACAO.md](docs/INSTALACAO.md) para o guia completo de instalação.
+
+### Primeiros Passos
+
+Após subir o projeto, explore os exemplos práticos:
+
+- 🟢 [Primeira conversa](examples/01_primeira_conversa/) — Hello world via CLI/API/Web
+- 🟢 [Criando uma skill custom](examples/02_criando_skill_custom/) — Skills personalizadas em Markdown
+- 🟡 [Configurando Telegram](examples/03_configurando_telegram/) — Bot em 5 minutos
+- 🟡 [Missão multi-step](examples/04_missao_complexa/) — Tarefas autônomas longas
+- 🔴 [Plugin custom tool](examples/05_plugin_custom_tool/) — Estendendo a EVE
+- 🔴 [Fine-tuning workflow](examples/06_finetuning_workflow/) — LoRA local
+
+Veja também [docs/PLUGINS.md](docs/PLUGINS.md) para desenvolver extensões.
 
 ## Arquitetura
 

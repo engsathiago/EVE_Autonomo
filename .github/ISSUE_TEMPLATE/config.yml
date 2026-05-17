@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/engsathiago/EVE_Autonomo/discussions
+    about: Para conversas abertas, ideias e ajuda da comunidade
+  - name: 🔒 Reportar Vulnerabilidade
+    url: https://github.com/engsathiago/EVE_Autonomo/blob/main/SECURITY.md
+    about: NÃO abra uma issue pública para vulnerabilidades de segurança
