@@ -17,7 +17,6 @@ build/
 .pytest_cache/
 .coverage
 htmlcov/
-*.log
 
 # Node
 node_modules/
@@ -25,13 +24,15 @@ dist/
 *.tsbuildinfo
 .npm
 
-# Environment
+# Environment (NUNCA commitar credenciais)
 .env
 .env.local
 .env.*.local
+.env.bak*
 
 # Agent runtime
 .agent/
+.aios/
 
 # IDEs
 .vscode/
@@ -50,12 +51,22 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Cache
+.cache/
 core/.ven/
 core/.venv/
-.venv/
-.cache/
-.env
 
-# Backups pré-fase (gerados por scripts de deploy)
+# Backups SQL (gerados por scripts de deploy)
 backup_pre_fase*.sql
 backup_*.sql
+*.sql.bak
+
+# Fine-tuning outputs (modelos treinados são grandes)
+models/checkpoints/*/model/
+models/checkpoints/*/gguf/
+datasets/*.jsonl
+
+# Claude Code (config local do desenvolvedor)
+.claude/worktrees/
+.claude/settings.local.json

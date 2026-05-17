@@ -1,77 +1,435 @@
-# Agente Autônomo Híbrido
+<p align="center">
+  <strong>🤖 EVE — Agente Autônomo</strong>
+</p>
 
-> **Status:** Fase 0 completa — fundação estabelecida. Sem lógica de agente ainda.
+<h1 align="center">EVE_Autonomo</h1>
 
-Agente autônomo inspirado no Hermes Agent (Nous Research) e OpenClaw (Peter
-Steinberger): loop ReAct + memória curada + skills auto-criadas + multi-canal.
+<p align="center">
+  Agente de IA autônomo, multi-modelo e multi-canal com memória persistente, skills auto-geradas, missões de longo prazo e fine-tuning local.
+</p>
+
+<p align="center">
+  <a href="#quickstart">Quickstart</a> •
+  <a href="#arquitetura">Arquitetura</a> •
+  <a href="#funcionalidades">Funcionalidades</a> •
+  <a href="#cli">CLI</a> •
+  <a href="#api">API</a> •
+  <a href="#configuração">Configuração</a> •
+  <a href="#contribuindo">Contribuindo</a>
+</p>
+
+---
+
+## O que é a EVE?
+
+EVE é um agente de IA autônomo construído em Python e TypeScript, inspirado no
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research) e no
+[OpenClaw](https://github.com/steipete/agent) (Peter Steinberger). Ela combina:
+
+- **Do Hermes:** loop autônomo ReAct, memória curada, skills auto-criadas, cron, subagentes, multi-provider, compressão de contexto.
+- **Do OpenClaw:** gateway central, configuração via `SOUL.md`, multi-canal, plugins drop-in, sistema de aprovações.
+
+O resultado é uma agente que **pensa, age, aprende e se adapta** — com controle total do operador em cada etapa.
+
+## Funcionalidades
+
+| Módulo | Descrição |
+|--------|-----------|
+| **Loop ReAct** | Planejamento + execução + reflexão em até 15 iterações por goal |
+| **Memória Persistente** | PostgreSQL + pgvector para busca semântica, FTS multilingual, curadoria automática via Haiku |
+| **Skills** | Carregamento dinâmico, match semântico, criação automática a partir de sessões, promoção estilo Voyager |
+| **Multi-Modelo** | Anthropic, OpenAI, OpenRouter e Ollama com fallback chain configurável |
+| **Multi-Canal** | Telegram (Gateway Node), Discord, Slack, E-mail (Core Python) |
+| **Aprovações** | Operações sensíveis requerem confirmação humana com timeout configurável |
+| **Cron** | Agendamento com linguagem natural → cron expression, persistido em Postgres |
+| **Subagentes** | Pool com isolamento, timeout hard, semáforo global e orquestrador com tiers |
+| **Missões** | Planejamento multi-step com replanejamento automático e reflexão |
+| **Crítico Autônomo** | 3 personas (técnico, advogado do diabo, sintetizador) avaliando ações em paralelo |
+| **Sandboxes** | Execução de código em subprocess ou Docker com políticas de segurança |
+| **Fine-tuning Local** | LoRA periódico sobre Qwen 2.5 / Llama com benchmark gates automáticos |
+| **Web Dashboard** | 8 painéis (chat, missões, skills, memória, traces, crítico, subagentes, aprovações) via WebSocket |
+| **CLI Completa** | 11 subcomandos para operar o agente sem abrir um browser |
+
+## Stack Tecnológica
+
+| Camada | Tecnologia |
+|--------|------------|
+| **Core (cérebro)** | Python 3.11+, FastAPI, asyncio, asyncpg |
+| **Gateway (canais)** | Node 20+, TypeScript, Fastify, Telegraf |
+| **Banco de Dados** | PostgreSQL 16 + pgvector |
+| **Fila/Pubsub** | Redis 7 |
+| **Web UI** | HTML + vanilla JS (sem build, sem framework) |
+| **Deploy** | Docker Compose → VPS (DigitalOcean / Hetzner) |
 
 ## Quickstart
 
+### Pré-requisitos
+
+- [Docker](https://docs.docker.com/get-docker/) e [Docker Compose](https://docs.docker.com/compose/install/)
+- Uma chave de API da [Anthropic](https://console.anthropic.com/) (ou outro provider LLM)
+
+### Subindo o projeto
+
 ```bash
-# 1. Clone e entre na pasta
-git clone <repo-url> agent && cd agent
+# 1. Clone o repositório
+git clone https://github.com/seu-usuario/EVE_Autonomo.git
+cd EVE_Autonomo
 
-# 2. Configure o ambiente
+# 2. Configure as variáveis de ambiente
 cp .env.example .env
-# Edite .env com sua ANTHROPIC_API_KEY e credenciais do Postgres
+# Edite .env com sua ANTHROPIC_API_KEY e demais credenciais
 
-# 3. Suba tudo
+# 3. Suba todos os serviços
 docker compose up --build -d
 
-# 4. Verifique
-curl http://localhost:8000/health   # {"ok": true}
-curl http://localhost:8001/health   # {"ok": true}
+# 4. Verifique se está rodando
+curl http://localhost:8000/health   # Core Python → {"ok": true}
+curl http://localhost:3000/health   # Gateway Node → {"ok": true}
 ```
 
-Para incluir o Ollama (modelos locais):
+### Com Ollama (modelos locais)
+
 ```bash
 docker compose --profile local-llm up --build -d
 ```
 
-## Stack
+### Sem Docker (desenvolvimento local)
 
-| Camada     | Tecnologia                              |
-|------------|-----------------------------------------|
-| Core       | Python 3.11 + FastAPI + asyncio         |
-| Gateway    | Node 20 + TypeScript + Fastify          |
-| Banco      | PostgreSQL 16 + pgvector                |
-| Bus        | Redis 7                                 |
-| Web UI     | HTML + vanilla JS (Fase 7)              |
-| Deploy     | Docker Compose → DigitalOcean/Hetzner   |
+```bash
+# Core Python
+cd core
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+uvicorn agent.server:app --reload --port 8000
 
-## Estrutura
+# Gateway Node (outro terminal)
+cd gateway
+npm install
+npm run dev
+```
+
+Veja [docs/INSTALACAO.md](docs/INSTALACAO.md) para o guia completo de instalação.
+
+## Arquitetura
 
 ```
-agent/
-├── core/          # Python: AIAgent, memória, skills, tools
-├── gateway/       # Node: canais de mensagem (Telegram, Discord, etc.)
-├── webui/         # HTML/JS estático (Fase 7)
-├── cli/           # Python CLI (`agent` command)
-├── config/        # SOUL.md, AGENTS.md, TOOLS.md, config.yaml
-├── deploy/        # Scripts de deploy (Fase 11)
-└── docs/          # Arquitetura, guias e specs de fase
+                    ┌─────────────────────────────────┐
+                    │          Web Dashboard           │
+                    │    (HTML + JS + WebSocket)       │
+                    └──────────┬──────────────────────┘
+                               │
+                    ┌──────────▼──────────────────────┐
+                    │        Core Python (FastAPI)      │
+                    │                                   │
+                    │  ┌─────────┐  ┌──────────────┐   │
+                    │  │ AIAgent │  │   Memória     │   │
+                    │  │  ReAct  │  │  (pgvector)   │   │
+                    │  └────┬────┘  └──────────────┘   │
+                    │       │                           │
+                    │  ┌────▼────┐  ┌──────────────┐   │
+                    │  │  Tools  │  │   Skills      │   │
+                    │  │Registry │  │  (auto-gen)   │   │
+                    │  └─────────┘  └──────────────┘   │
+                    │                                   │
+                    │  ┌─────────┐  ┌──────────────┐   │
+                    │  │  Cron   │  │  Subagentes   │   │
+                    │  │Scheduler│  │    + Pool     │   │
+                    │  └─────────┘  └──────────────┘   │
+                    │                                   │
+                    │  ┌─────────┐  ┌──────────────┐   │
+                    │  │Missões  │  │   Crítico     │   │
+                    │  │+Planner │  │  (3 personas) │   │
+                    │  └─────────┘  └──────────────┘   │
+                    │                                   │
+                    │  ┌─────────┐  ┌──────────────┐   │
+                    │  │Sandbox  │  │  Fine-tune    │   │
+                    │  │(Docker) │  │  (LoRA)       │   │
+                    │  └─────────┘  └──────────────┘   │
+                    └──────────┬──────────────────────┘
+                               │ Redis pub/sub
+                    ┌──────────▼──────────────────────┐
+                    │      Gateway Node (Fastify)      │
+                    │                                   │
+                    │  ┌─────────┐  ┌──────────────┐   │
+                    │  │Telegram │  │  Outbound     │   │
+                    │  │  Bot    │  │  Dispatcher   │   │
+                    │  └─────────┘  └──────────────┘   │
+                    └──────────────────────────────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              ▼                ▼                ▼
+         Telegram          Discord           Slack
+```
+
+Veja [docs/ARQUITETURA.md](docs/ARQUITETURA.md) para detalhes completos.
+
+## Estrutura do Projeto
+
+```
+EVE_Autonomo/
+├── core/                    # Cérebro do agente (Python)
+│   ├── src/agent/
+│   │   ├── core.py          # Loop ReAct principal
+│   │   ├── server.py        # Servidor FastAPI
+│   │   ├── config.py        # Configuração centralizada
+│   │   ├── api/             # Rotas REST (mensagens, cron, missões, etc.)
+│   │   ├── approvals/       # Sistema de aprovações humanas
+│   │   ├── autonomous/      # Loop autônomo (tick periódico)
+│   │   ├── channels/        # Adaptadores multi-canal (Discord, Slack, Email)
+│   │   ├── critic/          # Crítico autônomo (3 personas)
+│   │   ├── finetune/        # Fine-tuning LoRA local
+│   │   ├── memory/          # Memória persistente (pgvector + FTS)
+│   │   ├── metrics/         # Métricas Prometheus
+│   │   ├── missions/        # Missões de longo prazo
+│   │   ├── models/          # Multi-modelo (Anthropic, OpenAI, Ollama, etc.)
+│   │   ├── observability/   # Logging estruturado
+│   │   ├── orchestrator/    # Orquestrador de tiers
+│   │   ├── prompts/         # System prompts
+│   │   ├── sandbox/         # Sandboxes de execução
+│   │   ├── scheduler/       # APScheduler + parser de linguagem natural
+│   │   ├── skills/          # Skills dinâmicas
+│   │   ├── subagents/       # Pool de subagentes
+│   │   ├── tasks/           # Store de tasks
+│   │   ├── tools/           # Tools builtin
+│   │   ├── transports/      # Abstração de transporte LLM
+│   │   └── web/             # Servidor web UI
+│   ├── migrations/          # Migrações SQL (002 a 014)
+│   └── tests/               # ~130 arquivos de teste
+├── gateway/                 # Gateway de canais (TypeScript)
+│   ├── src/
+│   │   ├── index.ts         # Servidor Fastify
+│   │   ├── channels/        # Telegram bot (Telegraf)
+│   │   ├── outbound/        # Dispatcher + Worker com rate limiting
+│   │   └── auth/            # Allowlist de chat_ids
+│   └── tests/
+├── cli/                     # CLI do agente (Typer + Rich)
+│   └── src/cli/             # 11 subcomandos
+├── webui/                   # Dashboard web (HTML + vanilla JS)
+│   └── public/              # 8 painéis interativos
+├── config/                  # Configuração editável sem redeployar
+│   ├── SOUL.md              # Personalidade e limites éticos
+│   ├── AGENTS.md            # Regras operacionais
+│   ├── TOOLS.md             # Documentação das tools
+│   └── config.yaml          # Modelos, providers, limites
+├── skills/                  # Skills ativas e drafts
+├── benchmarks/              # Tasks de benchmark para fine-tuning
+├── deploy/                  # Scripts de deploy
+├── docs/                    # Documentação completa
+├── docker-compose.yml       # Orquestração dos serviços
+├── Dockerfile.python        # Multi-stage build do core
+├── Dockerfile.node          # Multi-stage build do gateway
+└── .env.example             # Template de variáveis de ambiente
+```
+
+## CLI
+
+A EVE inclui uma CLI completa construída com [Typer](https://typer.tiangolo.com/) e [Rich](https://rich.readthedocs.io/):
+
+```bash
+# Conversar com o agente
+agent run "Resuma os logs de hoje"
+agent run --model ollama:qwen2.5:7b "O que é Docker?"
+
+# Gerenciar skills
+agent skill list
+agent skill show backup-postgres
+agent skill run backup-postgres
+agent skill create-from-session <session_id>
+
+# Agendar tarefas
+agent cron add "toda terça às 9h" "Checar se há PRs abertos"
+agent cron list
+agent cron run-now <job_id>
+
+# Gerenciar missões
+agent mission create "Migrar banco para schema v2"
+agent mission list
+agent mission show <mission_id>
+
+# Modelos
+agent model list
+agent model health
+agent model test anthropic:claude-haiku-4-5 "Oi, tudo bem?"
+agent model costs --since today
+
+# Crítico autônomo
+agent critic history
+agent critic stats
+
+# Fine-tuning local
+agent finetune run
+agent finetune list
+agent finetune activate <checkpoint_id>
+agent finetune rollback
+
+# Loop autônomo
+agent loop status
+agent loop pause / agent loop resume
+
+# Web dashboard
+agent web start
+```
+
+Veja [docs/CLI.md](docs/CLI.md) para a referência completa.
+
+## API
+
+O Core expõe uma API REST via FastAPI (porta 8000 por padrão).
+
+### Endpoints principais
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/v1/messages` | Enviar mensagem para o agente |
+| `GET` | `/v1/approvals` | Listar aprovações pendentes |
+| `POST` | `/v1/approvals/{id}` | Aprovar/negar operação |
+| `POST` | `/v1/cron/jobs` | Criar job agendado |
+| `GET` | `/v1/cron/jobs` | Listar jobs |
+| `POST` | `/v1/missions` | Criar missão |
+| `GET` | `/v1/missions` | Listar missões |
+| `POST` | `/v1/missions/{id}/replan` | Replanejar missão |
+| `GET` | `/v1/tasks` | Listar tasks |
+| `GET` | `/v1/loop/status` | Status do loop autônomo |
+| `GET` | `/v1/critic/evaluations` | Avaliações do crítico |
+| `GET` | `/v1/memory/reflexive` | Memória reflexiva |
+| `GET` | `/health` | Health check |
+
+### Web Dashboard API
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `WS` | `/api/v1/stream` | WebSocket multiplexado (tempo real) |
+| `GET` | `/web/api/missions` | Missões |
+| `GET` | `/web/api/skills` | Skills |
+| `POST` | `/web/api/memory/search` | Busca semântica |
+| `GET` | `/web/api/traces` | Traces de execução |
+| `GET` | `/web/api/critic/history` | Histórico do crítico |
+| `GET` | `/web/api/metrics/summary` | Métricas consolidadas |
+| `GET` | `/web/api/system/info` | Informações do sistema |
+
+Veja [docs/API.md](docs/API.md) para a referência completa com exemplos.
+
+## Configuração
+
+### Variáveis de Ambiente
+
+O arquivo `.env.example` documenta todas as variáveis. As mais importantes:
+
+| Variável | Obrigatória | Descrição |
+|----------|-------------|-----------|
+| `ANTHROPIC_API_KEY` | Sim* | Chave da API Anthropic |
+| `POSTGRES_URL` | Sim | URL de conexão do PostgreSQL |
+| `REDIS_URL` | Sim | URL de conexão do Redis |
+| `TELEGRAM_BOT_TOKEN` | Não | Token do bot Telegram |
+| `DEFAULT_MODEL` | Não | Modelo padrão (ex: `anthropic:claude-haiku-4-5`) |
+| `MODEL_FALLBACK_CHAIN` | Não | Chain de fallback (CSV) |
+| `OLLAMA_BASE_URL` | Não | URL do Ollama para modelos locais |
+
+*\* Ao menos um provider LLM é necessário.*
+
+### Arquivos de Configuração
+
+| Arquivo | Propósito |
+|---------|-----------|
+| `config/SOUL.md` | Personalidade, tom de voz e limites éticos |
+| `config/AGENTS.md` | Regras operacionais (confirmações, erros, iterações) |
+| `config/TOOLS.md` | Documentação das tools disponíveis |
+| `config/config.yaml` | Modelos, providers, limites, sandbox, critic |
+
+### Multi-Modelo
+
+A EVE suporta múltiplos providers de LLM com a sintaxe `provider:model_id`:
+
+```
+anthropic:claude-sonnet-4-6        # Claude (padrão)
+openai:gpt-4o-mini                  # OpenAI
+openrouter:deepseek/deepseek-chat   # OpenRouter
+ollama:qwen2.5:7b                   # Ollama (local, gratuito)
+```
+
+Fallback chain: se o provider principal falhar (timeout, 5xx), a EVE tenta automaticamente o próximo da chain.
+
+## Fine-tuning Local
+
+A EVE pode ser periodicamente ajustada (LoRA) sobre modelos locais usando traces reais.
+
+**Regra: sem benchmark aprovado, nenhum checkpoint é ativado.**
+
+```bash
+agent finetune bench --model base    # Estabelecer baseline
+agent finetune run                   # Executar ciclo completo
+agent finetune activate <id>         # Ativar checkpoint aprovado
+agent finetune rollback              # Reverter se necessário
+```
+
+Cada ciclo: coleta traces → filtra PII → treina QLoRA 4-bit → avalia com 62 tasks em 6 eixos → rejeita se inferior ao baseline.
+
+Veja [docs/finetune.md](docs/finetune.md) para o runbook completo.
+
+## Migrações de Banco
+
+As migrações SQL ficam em `core/migrations/` e são aplicadas na inicialização:
+
+| Migração | Conteúdo |
+|----------|----------|
+| `002` | Memória (conversations, messages, memories + pgvector) |
+| `003` | Skills (skill_invocations) |
+| `004` | Multi-modelo (model_invocations) |
+| `005` | Aprovações (pending_approvals) |
+| `006` | Sessões (conversation_session_id) |
+| `007` | Cron + Tasks (cron_jobs, tasks, subagent_runs) |
+| `008` | Missões + Crítico (missions, steps, critic_evaluations, reflexive_memory) |
+| `009` | Sandboxes (sandbox_executions) |
+| `010` | Skills v2 (skill_registry, skill_executions) |
+| `012` | Web UI (web_sessions, traces) |
+| `013` | Canais extras (channel_messages) |
+| `014` | Fine-tuning (finetune_runs, checkpoints, benchmark_results) |
+
+## Testes
+
+```bash
+# Testes Python (core) — ~130 arquivos
+cd core
+pytest                          # Todos os testes
+pytest -m "not integration"     # Sem testes de integração
+pytest -m "not docker"          # Sem testes que requerem Docker
+pytest -m "not slow"            # Sem testes lentos (GPU)
+
+# Testes Node (gateway)
+cd gateway
+npm test
 ```
 
 ## Roadmap
 
-| # | Fase                                 | Status       |
-|---|--------------------------------------|--------------|
-| 0 | Fundação                             | ✅ Completo  |
-| 1 | Core mínimo (AIAgent + 3 tools + CLI)| A fazer      |
-| 2 | Memória (PostgreSQL + pgvector)      | A fazer      |
-| 3 | Skills (manager + criação automática)| A fazer      |
-| 4 | Multi-modelo (OpenAI + Ollama)       | A fazer      |
-| 5 | Gateway Node + Telegram              | A fazer      |
-| 6 | Discord + WhatsApp + Slack           | A fazer      |
-| 7 | Web UI (vanilla JS + SSE)            | A fazer      |
-| 8 | Cron + Subagentes                    | A fazer      |
-| 9 | Sandboxes (Docker + SSH)             | A fazer      |
-|10 | Plugins + MCP                        | A fazer      |
-|11 | Deploy (DigitalOcean/Hetzner)        | A fazer      |
+| # | Fase | Status |
+|---|------|--------|
+| 0 | Fundação (Docker, Postgres, Redis, projeto base) | ✅ |
+| 1 | Core mínimo (AIAgent + 4 tools + CLI) | ✅ |
+| 2 | Memória persistente (pgvector + FTS + Curator + Compressor) | ✅ |
+| 3 | Skills (loader, runner, creator, match semântico) | ✅ |
+| 4 | Multi-modelo (Anthropic, OpenAI, OpenRouter, Ollama) | ✅ |
+| 5 | Gateway Node + Telegram + Aprovações | ✅ |
+| 6 | Cron + Subagentes + Orquestrador com Tiers | ✅ |
+| 7 | Missões persistentes + Crítico autônomo + Loop | ✅ |
+| 8 | Sandboxes de execução (subprocess + Docker) | ✅ |
+| 9 | Skills auto-geradas estilo Voyager | ✅ |
+| 10 | Deploy VPS (supervisor, health, métricas, backup) | ✅ |
+| 11 | Web UI Dashboard (8 painéis, WebSocket, auth) | ✅ |
+| 12 | Canais extras (Discord, Slack, E-mail) | ✅ |
+| 13 | Fine-tuning local periódico (LoRA + benchmark gates) | ✅ |
+| 14 | RLAIF (Reinforcement Learning from AI Feedback) | Em breve |
 
-## Configuração
+## Licença
 
-Toda configuração sensível via `.env` (nunca commitado). Comportamento do
-agente editável em `config/SOUL.md` e `config/AGENTS.md` sem redeployar.
+Este projeto está licenciado sob a [MIT License](LICENSE).
 
-Veja `docs/architecture.md` para a arquitetura completa.
+## Contribuindo
+
+Contribuições são bem-vindas! Veja [CONTRIBUTING.md](CONTRIBUTING.md) para o guia completo.
+
+---
+
+<p align="center">
+  Feito com dedicação por <strong>Thiago</strong>
+</p>
