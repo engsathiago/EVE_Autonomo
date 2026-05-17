@@ -56,6 +56,8 @@ yarn-error.log*
 .cache/
 core/.ven/
 core/.venv/
+core/.venv312/
+.venv312/
 
 # Backups SQL (gerados por scripts de deploy)
 backup_pre_fase*.sql
