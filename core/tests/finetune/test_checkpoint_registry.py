@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 import stat
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -110,3 +110,93 @@ class TestCreateRun:
         call_args = pool.execute.call_args[0]
         assert "UPDATE finetune_runs" in call_args[0]
         assert "accepted" in call_args
+
+
+class TestRollback:
+    @pytest.mark.asyncio
+    async def test_rollback_to_base_when_no_archived(self, tmp_path: Path):
+        """C11: rollback() returns 'base' when no archived checkpoint exists."""
+        pool = AsyncMock()
+        # current active = None, previous archived = None
+        pool.fetchrow.side_effect = [None, None]
+        pool.execute = AsyncMock()
+
+        registry = CheckpointRegistry(pool=pool, models_dir=tmp_path)
+        result = await registry.rollback()
+        assert result == "base"
+        # active_checkpoint.txt should be written with 'base'
+        assert (tmp_path / "active_checkpoint.txt").read_text() == "base"
+
+    @pytest.mark.asyncio
+    async def test_rollback_to_previous_archived(self, tmp_path: Path):
+        """C11: rollback() returns the previous archived checkpoint ID."""
+        pool = AsyncMock()
+        pool.fetchrow.side_effect = [
+            {"id": "ckpt-current"},   # current active checkpoint
+            {"id": "ckpt-previous"},  # last archived
+        ]
+        pool.execute = AsyncMock()
+
+        registry = CheckpointRegistry(pool=pool, models_dir=tmp_path)
+        result = await registry.rollback()
+        assert result == "ckpt-previous"
+        assert (tmp_path / "active_checkpoint.txt").read_text() == "ckpt-previous"
+
+    @pytest.mark.asyncio
+    async def test_rollback_archives_current_and_activates_previous(self, tmp_path: Path):
+        """C11: rollback archives current checkpoint before re-activating previous."""
+        pool = AsyncMock()
+        pool.fetchrow.side_effect = [
+            {"id": "ckpt-v2"},  # current active
+            {"id": "ckpt-v1"},  # previous archived
+        ]
+        pool.execute = AsyncMock()
+
+        registry = CheckpointRegistry(pool=pool, models_dir=tmp_path)
+        await registry.rollback()
+
+        # execute should be called at least twice (archive current + activate previous)
+        assert pool.execute.call_count >= 2
+
+
+class TestActivateNotFound:
+    @pytest.mark.asyncio
+    async def test_activate_raises_when_checkpoint_not_in_db(self, tmp_path: Path):
+        """C10: CheckpointActivationError when checkpoint ID not found."""
+        pool = AsyncMock()
+        pool.fetchrow.return_value = None  # not found
+        pool.execute = AsyncMock()
+
+        registry = CheckpointRegistry(pool=pool, models_dir=tmp_path)
+        with pytest.raises(CheckpointActivationError, match="não encontrado"):
+            await registry.activate("nonexistent-ckpt")
+
+
+class TestCanAutoActivate:
+    @pytest.mark.asyncio
+    async def test_can_auto_activate_true_when_enough_accepted(self, tmp_path: Path):
+        pool = AsyncMock()
+        pool.fetchrow.return_value = {"n": 10}
+
+        registry = CheckpointRegistry(
+            pool=pool,
+            models_dir=tmp_path,
+            auto_activate=True,
+            auto_activate_after_n_accepted=5,
+        )
+        registry._count_human_accepted_runs = AsyncMock(return_value=10)  # type: ignore[method-assign]
+        result = await registry.can_auto_activate()
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_can_auto_activate_false_when_not_enough(self, tmp_path: Path):
+        pool = AsyncMock()
+        registry = CheckpointRegistry(
+            pool=pool,
+            models_dir=tmp_path,
+            auto_activate=True,
+            auto_activate_after_n_accepted=5,
+        )
+        registry._count_human_accepted_runs = AsyncMock(return_value=2)  # type: ignore[method-assign]
+        result = await registry.can_auto_activate()
+        assert result is False
