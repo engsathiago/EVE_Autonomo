@@ -1,116 +1,284 @@
 """
-Cache in-memory de skills carregadas com seus vetores de embedding.
-Hash do manifest detecta mudanças e dispara re-embedding seletivo.
+SkillRegistry (Fase 9): CRUD + busca semântica para skills auto-geradas.
+
+Persistência em PostgreSQL (tabela skills). Embedding como bytea + cosine em Python.
+Sem pgvector direto — skills são poucas dezenas, Python é suficiente.
 """
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from typing import Any
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any
+from uuid import uuid4
 
 from agent.observability.logger import get_logger
-from agent.skills.schema import SkillManifest
+from agent.skills.embeddings import cosine, pack_embedding, unpack_embedding
+from agent.skills.exceptions import SkillAlreadyExists, SkillNotFound
+from agent.skills.manifest import SkillManifestF9, manifest_to_dict
+
+if TYPE_CHECKING:
+    import asyncpg
 
 log = get_logger(__name__)
 
-_CACHE_VERSION = 1
-
 
 class SkillRegistry:
-    def __init__(self, cache_dir: Path | None = None) -> None:
-        self._manifests: dict[str, SkillManifest] = {}
-        self._embeddings: dict[str, list[float]] = {}
-        self._cache_dir = cache_dir
+    def __init__(self, pool: "asyncpg.Pool") -> None:
+        self._pool = pool
 
-    # ------------------------------------------------------------------
-    # Mutations
-    # ------------------------------------------------------------------
+    # ── CRUD ─────────────────────────────────────────────────────────────────
 
-    def add(self, manifest: SkillManifest, embedding: list[float]) -> None:
-        self._manifests[manifest.name] = manifest
-        self._embeddings[manifest.name] = embedding
-
-    def remove(self, name: str) -> None:
-        self._manifests.pop(name, None)
-        self._embeddings.pop(name, None)
-
-    def clear(self) -> None:
-        self._manifests.clear()
-        self._embeddings.clear()
-
-    # ------------------------------------------------------------------
-    # Queries
-    # ------------------------------------------------------------------
-
-    def has(self, name: str) -> bool:
-        return name in self._manifests
-
-    def get(self, name: str) -> SkillManifest | None:
-        return self._manifests.get(name)
-
-    def all(self) -> list[SkillManifest]:
-        return list(self._manifests.values())
-
-    def by_tag(self, tag: str) -> list[SkillManifest]:
-        return [m for m in self._manifests.values() if tag in m.tags]
-
-    def embedding_for(self, name: str) -> list[float] | None:
-        return self._embeddings.get(name)
-
-    def all_embeddings(self) -> dict[str, list[float]]:
-        return dict(self._embeddings)
-
-    def needs_reembed(self, manifest: SkillManifest) -> bool:
-        """True se a skill não está no cache ou o hash mudou."""
-        existing = self._manifests.get(manifest.name)
-        if existing is None:
-            return True
-        return existing.content_hash != manifest.content_hash
-
-    # ------------------------------------------------------------------
-    # Disk cache (opcional) — evita re-embedar ao reiniciar o processo
-    # ------------------------------------------------------------------
-
-    def _cache_path(self) -> Path | None:
-        if not self._cache_dir:
-            return None
-        return self._cache_dir / f"skill_embeddings_v{_CACHE_VERSION}.json"
-
-    def load_disk_cache(self) -> None:
-        path = self._cache_path()
-        if not path or not path.exists():
-            return
+    async def save(
+        self,
+        manifest: SkillManifestF9,
+        embedding: list[float],
+        *,
+        status: str = "pending",
+    ) -> None:
+        embedding_bytes = pack_embedding(embedding)
+        manifest_json = json.dumps(manifest_to_dict(manifest))
         try:
-            data: dict[str, Any] = json.loads(path.read_text())
-            for name, entry in data.items():
-                self._embeddings[name] = entry["vector"]
-                # Registra apenas o hash; manifest completo vem do load_all
-                if name not in self._manifests:
-                    # Placeholder até o manifest ser carregado do disco
-                    self._manifests[name] = SkillManifest(
-                        name=name,
-                        description="",
-                        content_hash=entry["hash"],
-                    )
-            log.debug("skill.cache.loaded", count=len(data))
+            await self._pool.execute(
+                """
+                INSERT INTO skills (
+                    slug, version, status, manifest_json, embedding, created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (slug) DO UPDATE SET
+                    version = EXCLUDED.version,
+                    status = EXCLUDED.status,
+                    manifest_json = EXCLUDED.manifest_json,
+                    embedding = EXCLUDED.embedding
+                """,
+                manifest.slug,
+                manifest.version,
+                status,
+                manifest_json,
+                embedding_bytes,
+                manifest.created_at,
+            )
         except Exception as exc:
-            log.warning("skill.cache.load_failed", error=str(exc))
+            raise RuntimeError(f"Erro ao salvar skill '{manifest.slug}': {exc}") from exc
 
-    def save_disk_cache(self) -> None:
-        path = self._cache_path()
-        if not path:
-            return
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            data = {
-                name: {
-                    "hash": self._manifests[name].content_hash,
-                    "vector": self._embeddings[name],
-                }
-                for name in self._embeddings
-                if name in self._manifests
-            }
-            path.write_text(json.dumps(data))
-            log.debug("skill.cache.saved", count=len(data))
-        except Exception as exc:
-            log.warning("skill.cache.save_failed", error=str(exc))
+    async def get(self, slug: str) -> dict[str, Any]:
+        row = await self._pool.fetchrow("SELECT * FROM skills WHERE slug = $1", slug)
+        if row is None:
+            raise SkillNotFound(slug)
+        return dict(row)
+
+    async def get_manifest(self, slug: str) -> SkillManifestF9:
+        row = await self.get(slug)
+        return SkillManifestF9(**json.loads(row["manifest_json"]))
+
+    async def list(self, status: str | None = None) -> list[dict[str, Any]]:
+        if status:
+            rows = await self._pool.fetch(
+                "SELECT * FROM skills WHERE status = $1 ORDER BY created_at DESC", status
+            )
+        else:
+            rows = await self._pool.fetch("SELECT * FROM skills ORDER BY created_at DESC")
+        return [dict(r) for r in rows]
+
+    async def update_status(
+        self,
+        slug: str,
+        status: str,
+        *,
+        critic_approval_id: str | None = None,
+        rejection_reason: str | None = None,
+    ) -> None:
+        now = datetime.now(tz=timezone.utc)
+        params: list[Any] = [status, slug]
+        extra_set = ""
+        if status == "active":
+            extra_set = ", promoted_at = $3"
+            params = [status, slug, now]
+        if critic_approval_id:
+            params.append(critic_approval_id)
+            extra_set += f", critic_approval_id = ${len(params)}"
+        if rejection_reason:
+            params.append(rejection_reason)
+            extra_set += f", rejection_reason = ${len(params)}"
+
+        await self._pool.execute(
+            f"UPDATE skills SET status = $1{extra_set} WHERE slug = $2",
+            *params,
+        )
+
+    async def record_execution(
+        self,
+        slug: str,
+        *,
+        success: bool,
+        duration_seconds: float,
+        sandbox_execution_id: str | None = None,
+        mission_id: str | None = None,
+        input_data: dict | None = None,
+        output_data: dict | None = None,
+        error_message: str | None = None,
+    ) -> str:
+        exec_id = uuid4().hex
+        now = datetime.now(tz=timezone.utc)
+
+        await self._pool.execute(
+            """
+            INSERT INTO skill_executions (
+                id, skill_slug, sandbox_execution_id, mission_id,
+                input_json, output_json, success, duration_seconds,
+                error_message, created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            """,
+            exec_id,
+            slug,
+            sandbox_execution_id,
+            mission_id,
+            json.dumps(input_data or {}),
+            json.dumps(output_data) if output_data is not None else None,
+            success,
+            duration_seconds,
+            error_message,
+            now,
+        )
+
+        # Atualiza stats da skill
+        if success:
+            await self._pool.execute(
+                """
+                UPDATE skills SET
+                    executions_count = executions_count + 1,
+                    successes_count = successes_count + 1,
+                    last_used_at = $2,
+                    avg_duration_seconds = CASE
+                        WHEN avg_duration_seconds IS NULL THEN $3
+                        ELSE (avg_duration_seconds * executions_count + $3) / (executions_count + 1)
+                    END
+                WHERE slug = $1
+                """,
+                slug, now, duration_seconds,
+            )
+        else:
+            await self._pool.execute(
+                """
+                UPDATE skills SET
+                    executions_count = executions_count + 1,
+                    failures_count = failures_count + 1,
+                    last_used_at = $2
+                WHERE slug = $1
+                """,
+                slug, now,
+            )
+
+        return exec_id
+
+    async def save_candidate(
+        self,
+        proposed_slug: str,
+        source_execution_ids: list[str],
+        pattern_cluster_score: float,
+        status: str = "synthesizing",
+        llm_prompt: str | None = None,
+        llm_response: str | None = None,
+        validation_report: dict | None = None,
+    ) -> str:
+        candidate_id = uuid4().hex
+        await self._pool.execute(
+            """
+            INSERT INTO skill_candidates (
+                id, proposed_slug, source_execution_ids, pattern_cluster_score,
+                llm_synthesis_prompt, llm_synthesis_response,
+                validation_report_json, status, created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            """,
+            candidate_id,
+            proposed_slug,
+            json.dumps(source_execution_ids),
+            pattern_cluster_score,
+            llm_prompt,
+            llm_response,
+            json.dumps(validation_report) if validation_report else None,
+            status,
+            datetime.now(tz=timezone.utc),
+        )
+        return candidate_id
+
+    async def update_candidate(
+        self,
+        candidate_id: str,
+        *,
+        status: str,
+        validation_report: dict | None = None,
+        llm_response: str | None = None,
+    ) -> None:
+        now = datetime.now(tz=timezone.utc)
+        await self._pool.execute(
+            """
+            UPDATE skill_candidates SET
+                status = $2,
+                resolved_at = CASE WHEN $2 IN ('approved','rejected') THEN $3 ELSE resolved_at END,
+                validation_report_json = COALESCE($4, validation_report_json),
+                llm_synthesis_response = COALESCE($5, llm_synthesis_response)
+            WHERE id = $1
+            """,
+            candidate_id,
+            status,
+            now,
+            json.dumps(validation_report) if validation_report else None,
+            llm_response,
+        )
+
+    # ── Busca semântica ───────────────────────────────────────────────────────
+
+    async def search(
+        self,
+        intent_embedding: list[float],
+        top_k: int = 3,
+        min_score: float = 0.78,
+        status_filter: str = "active",
+    ) -> list[tuple[str, float]]:
+        """
+        Retorna lista de (slug, score) ordenada por cosine descendente.
+        Só retorna skills com status=status_filter e score >= min_score.
+        """
+        rows = await self._pool.fetch(
+            "SELECT slug, embedding FROM skills WHERE status = $1 AND embedding IS NOT NULL",
+            status_filter,
+        )
+        results: list[tuple[str, float]] = []
+        for row in rows:
+            if row["embedding"] is None:
+                continue
+            vec = unpack_embedding(bytes(row["embedding"]))
+            score = cosine(intent_embedding, vec)
+            if score >= min_score:
+                results.append((row["slug"], score))
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:top_k]
+
+    # ── Stats ─────────────────────────────────────────────────────────────────
+
+    async def stats(self) -> list[dict[str, Any]]:
+        rows = await self._pool.fetch(
+            """
+            SELECT slug, status, executions_count, successes_count, failures_count,
+                   last_used_at, avg_duration_seconds
+            FROM skills ORDER BY executions_count DESC
+            """
+        )
+        result = []
+        for row in rows:
+            r = dict(row)
+            total = r["executions_count"] or 0
+            succs = r["successes_count"] or 0
+            r["success_rate"] = round(succs / total, 3) if total > 0 else None
+            result.append(r)
+        return result
+
+    async def recent_executions(self, slug: str, limit: int = 10) -> list[dict[str, Any]]:
+        rows = await self._pool.fetch(
+            """
+            SELECT success, duration_seconds, created_at, error_message
+            FROM skill_executions WHERE skill_slug = $1
+            ORDER BY created_at DESC LIMIT $2
+            """,
+            slug, limit,
+        )
+        return [dict(r) for r in rows]

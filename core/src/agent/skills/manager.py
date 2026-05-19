@@ -13,7 +13,7 @@ from uuid import UUID
 from agent.memory.embeddings import embed, embed_batch
 from agent.observability.logger import get_logger
 from agent.skills.loader import load_all_from_dir
-from agent.skills.registry import SkillRegistry
+from agent.skills.cache import SkillEmbeddingCache as SkillRegistry
 from agent.skills.schema import (
     ApprovalCreated,
     SkillError,
@@ -157,7 +157,7 @@ class SkillManager:
         if manifest.requires_approval and self._approval_manager is None:
             raise SkillRequiresApproval(name)
 
-        from agent.skills.runner import SkillRunner
+        from agent.skills.template_runner import TemplateSkillRunner as SkillRunner
         runner = SkillRunner(
             transport=self._transport,
             model_router=self._model_router,

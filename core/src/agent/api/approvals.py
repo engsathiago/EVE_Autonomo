@@ -155,7 +155,7 @@ def make_approvals_router_full(
             return DecisionResponse(status="approved", result={"warning": "skill_manager unavailable"})
 
         try:
-            from agent.skills.runner import SkillRunner
+            from agent.skills.template_runner import TemplateSkillRunner as SkillRunner
             from agent.transports import AnthropicTransport
             from agent.config import get_settings
 

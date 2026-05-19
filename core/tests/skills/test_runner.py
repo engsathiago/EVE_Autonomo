@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from agent.skills.manager import SkillManager
-from agent.skills.runner import SkillRunner, _fill_defaults, _render_prompt
+from agent.skills.template_runner import TemplateSkillRunner as SkillRunner, _fill_defaults, _render_prompt
 from agent.skills.schema import (
     SkillArgument,
     SkillError,

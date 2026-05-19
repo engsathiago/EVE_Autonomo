@@ -18,6 +18,7 @@ from agent.api.loop import make_loop_router
 from agent.api.messages import make_messages_router
 from agent.api.missions import make_missions_router
 from agent.api.reflexive_memory import make_reflexive_memory_router
+from agent.api.skills import make_skills_router
 from agent.api.tasks import make_tasks_router
 from agent.approvals.manager import ApprovalManager
 from agent.approvals.scheduler import ApprovalScheduler
@@ -59,6 +60,13 @@ _planner = None
 _reflector = None
 _autonomous_loop = None
 
+# Phase 9 globals
+_skill_registry = None
+_skill_runner = None
+_skill_promoter = None
+_skill_synthesizer = None
+_skill_decay_manager = None
+
 _CURATOR_ENABLED = os.getenv("MEMORY_CURATOR_ENABLED", "true").lower() != "false"
 _ORCHESTRATOR_ENABLED = os.getenv("ORCHESTRATOR_ENABLED", "true").lower() != "false"
 _SCHEDULER_ENABLED = os.getenv("SCHEDULER_ENABLED", "true").lower() != "false"
@@ -74,6 +82,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     global _approval_scheduler, _dispatcher, _redis_client
     global _task_store, _cron_store, _cron_worker, _orchestrator, _subagent_pool
     global _mission_store, _reflexive_memory, _critic, _planner, _reflector, _autonomous_loop
+    global _skill_registry, _skill_runner, _skill_promoter, _skill_synthesizer, _skill_decay_manager
     global _channel_adapters
 
     settings = get_settings()
@@ -245,6 +254,70 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         if _autonomous_loop and _mission_store:
             app.include_router(make_loop_router(_autonomous_loop, _mission_store))
 
+    # ── Fase 9: skills auto-geradas ───────────────────────────────────────────
+    _project_root = Path(__file__).parents[4]
+    _skills_root = _project_root / "skills"
+    _active_dir = _skills_root / "_active"
+    _pending_dir = _skills_root / "_pending"
+    _rejected_dir = _skills_root / "_rejected"
+    _archive_dir = _skills_root / "_archive"
+    for _d in [_active_dir, _pending_dir, _rejected_dir, _archive_dir]:
+        _d.mkdir(parents=True, exist_ok=True)
+
+    try:
+        from agent.skills.registry import SkillRegistry as SkillRegistryF9
+        from agent.skills.runner import SkillRunner as SkillRunnerF9
+        from agent.skills.promoter import SkillPromoter
+        from agent.skills.synthesizer import SkillSynthesizer
+        from agent.skills.decay import SkillDecayManager
+        from agent.api.skills import make_skills_router
+        from agent.tools.exec_tool import exec_tool
+
+        _skill_registry = SkillRegistryF9(_memory_store._pool)
+        _skill_runner = SkillRunnerF9(
+            registry=_skill_registry,
+            skills_active_dir=_active_dir,
+            exec_tool_fn=exec_tool,
+        )
+        _skill_promoter = SkillPromoter(
+            registry=_skill_registry,
+            pending_dir=_pending_dir,
+            active_dir=_active_dir,
+            rejected_dir=_rejected_dir,
+            critic=_critic,
+        )
+        _skill_synthesizer = SkillSynthesizer(
+            db_pool=_memory_store._pool,
+            output_dir=_pending_dir,
+            model_router=_model_router,
+        )
+        _skill_decay_manager = SkillDecayManager(
+            registry=_skill_registry,
+            active_dir=_active_dir,
+            archive_dir=_archive_dir,
+        )
+
+        # Job de decay diário às 3h
+        if _SCHEDULER_ENABLED and _cron_worker is not None:
+            _cron_worker._scheduler.add_job(
+                _run_skill_decay,
+                "cron",
+                hour=3,
+                minute=0,
+                id="skill_decay_daily",
+                replace_existing=True,
+            )
+
+        app.include_router(make_skills_router(
+            registry=_skill_registry,
+            runner=_skill_runner,
+            promoter=_skill_promoter,
+            synthesizer=_skill_synthesizer,
+        ))
+    except Exception as _exc:
+        import logging
+        logging.getLogger(__name__).warning("skill_registry_init_failed: %s", _exc)
+
     # ── Fase 11: Web UI ───────────────────────────────────────────────────────
     from agent.web.server import attach_web_routes
     attach_web_routes(
@@ -283,6 +356,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await _redis_client.aclose()
     if _memory_store:
         await _memory_store.close()
+
+
+async def _run_skill_decay() -> None:
+    if _skill_decay_manager is not None:
+        await _skill_decay_manager.scan()
 
 
 app = FastAPI(title="agent-core", version=__version__, lifespan=lifespan)

@@ -1,234 +1,185 @@
 """
-Executa uma skill: renderiza o prompt Jinja2, chama o LLM e,
-se a skill declarar tools, executa as tool_calls que o LLM produzir.
+SkillRunner (Fase 9): executa skills auto-geradas via exec_tool (F8).
+
+Single entry point: TODA execução de skill passa por exec_tool.
+Sem bypass do sandbox — toda execução via exec_tool.
+
+Fluxo:
+  1. Carrega manifest do registry
+  2. Valida input contra inputs_schema
+  3. Monta SandboxPolicy do manifesto
+  4. Executa via exec_tool com script skill_runtime
+  5. Valida output contra outputs_schema
+  6. Atualiza stats + emite evento
 """
 from __future__ import annotations
 
 import json
+import time
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from jinja2 import Environment, StrictUndefined, TemplateError, UndefinedError
-
 from agent.observability.logger import get_logger
-from agent.skills.schema import SkillError, SkillManifest, SkillResult
+from agent.skills.exceptions import (
+    SkillInputInvalid,
+    SkillNotActive,
+    SkillNotFound,
+    SkillOutputInvalid,
+)
 
 if TYPE_CHECKING:
-    from agent.approvals.manager import ApprovalManager, ApprovalRequest
-    from agent.models.router import ModelRouter
-    from agent.tools.registry import ToolRegistry
-    from agent.transports.base import BaseTransport
+    from agent.sandbox.base import SandboxResult
+    from agent.skills.manifest import SkillManifestF9
+    from agent.skills.registry import SkillRegistry
 
 log = get_logger(__name__)
 
-_jinja_env = Environment(
-    undefined=StrictUndefined,  # falha alto se argumento ausente
-    autoescape=False,
-)
+# Script que roda dentro do sandbox: carrega skill.py, chama run(input), imprime JSON
+_RUNTIME_SCRIPT = """\
+import asyncio, json, sys, importlib.util
+spec = importlib.util.spec_from_file_location('skill', 'skill.py')
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+raw = open('input.json').read()
+data = json.loads(raw)
+result = asyncio.run(mod.run(data))
+print(json.dumps(result))
+"""
 
 
-def _render_prompt(template_str: str, arguments: dict[str, Any]) -> str:
-    try:
-        template = _jinja_env.from_string(template_str)
-        return template.render(**arguments)
-    except UndefinedError as exc:
-        raise SkillError(f"Argumento ausente no template da skill: {exc}") from exc
-    except TemplateError as exc:
-        raise SkillError(f"Erro no template da skill: {exc}") from exc
-
-
-def _fill_defaults(manifest: SkillManifest, arguments: dict[str, Any]) -> dict[str, Any]:
-    """Injeta defaults para argumentos não fornecidos."""
-    filled = dict(arguments)
-    for arg in manifest.arguments:
-        if arg.name not in filled and arg.default is not None:
-            filled[arg.name] = arg.default
-    return filled
-
-
-def _render_approval_summary(manifest: SkillManifest, arguments: dict[str, Any]) -> str:
-    template = getattr(manifest, "approval_summary_template", None)
-    if template:
-        try:
-            return _jinja_env.from_string(template).render(**arguments)
-        except Exception:
-            pass
-    args_text = ", ".join(f"{k}={v!r}" for k, v in arguments.items())
-    return f"Executar skill '{manifest.name}' com args: {args_text}"
+@dataclass
+class SkillRunResult:
+    slug: str
+    output: dict[str, Any]
+    sandbox_result: "SandboxResult"
+    execution_id: str
+    duration_seconds: float
 
 
 class SkillRunner:
     def __init__(
         self,
-        transport: "BaseTransport",
-        tool_registry: "ToolRegistry | None" = None,
-        model_router: "ModelRouter | None" = None,
-        approval_manager: "ApprovalManager | None" = None,
+        registry: "SkillRegistry",
+        skills_active_dir: Any,  # Path
+        exec_tool_fn: Any = None,
+        sandbox_registry: Any = None,
     ) -> None:
-        self._transport = transport
-        self._tool_registry = tool_registry
-        self._model_router = model_router
-        self._approval_manager = approval_manager
+        self._registry = registry
+        self._active_dir = skills_active_dir
+        self._exec_tool = exec_tool_fn
+        self._sandbox_registry = sandbox_registry
 
-    async def execute(
+    async def run_skill(
         self,
-        manifest: SkillManifest,
-        raw_arguments: dict[str, Any],
-        session_id: str | None = None,
-        channel: str = "cli",
-        channel_ref: dict[str, Any] | None = None,
-    ) -> "SkillResult | ApprovalRequest":
-        if manifest.requires_approval:
-            if self._approval_manager is None:
-                raise SkillError(
-                    f"Skill '{manifest.name}' requires_approval=True mas ApprovalManager não está configurado."
-                )
-            summary = _render_approval_summary(manifest, raw_arguments)
-            return await self._approval_manager.create(
-                session_id=session_id or "cli",
-                skill_name=manifest.name,
-                skill_args=raw_arguments,
-                summary=summary,
-                channel=channel,
-                channel_ref=channel_ref,
-            )
+        slug: str,
+        input_data: dict[str, Any],
+        *,
+        mission_id: str | None = None,
+    ) -> SkillRunResult:
+        """Executa skill ativa. Lança SkillNotFound, SkillNotActive, SkillInputInvalid."""
+        row = await self._registry.get(slug)
+        if row["status"] != "active":
+            raise SkillNotActive(slug, row["status"])
 
-        return await self._run_skill(manifest, raw_arguments)
+        manifest_data = json.loads(row["manifest_json"])
+        from agent.skills.manifest import SkillManifestF9
+        manifest = SkillManifestF9(**manifest_data)
 
-    async def execute_approved(
-        self,
-        approval_id: str,
-        manifest: SkillManifest,
-    ) -> SkillResult:
-        """Executa uma skill após aprovação humana. Busca os args originais do approval."""
-        if self._approval_manager is None:
-            raise SkillError("ApprovalManager não está configurado.")
+        _validate_input(input_data, manifest.inputs_schema, slug)
 
-        from agent.approvals.manager import ApprovalNotFoundError
+        skill_dir = self._active_dir / slug
+        skill_py = skill_dir / "skill.py"
+        if not skill_py.exists():
+            raise SkillNotFound(slug)
 
-        state = await self._approval_manager.get(approval_id)
-        if state.status != "approved":
-            raise SkillError(f"Approval {approval_id!r} não está aprovado (status={state.status!r}).")
+        policy_name = _manifest_profile_to_policy(manifest.sandbox_profile)
+        files: dict[str, bytes] = {
+            "skill.py": skill_py.read_bytes(),
+            "input.json": json.dumps(input_data).encode(),
+            "runtime.py": _RUNTIME_SCRIPT.encode(),
+        }
 
-        return await self._run_skill(manifest, state.skill_args)
+        t0 = time.monotonic()
+        sandbox_result = await self._exec_tool(
+            ["python", "runtime.py"],
+            policy_name=policy_name,
+            files=files,
+            mission_id=mission_id,
+            registry=self._sandbox_registry,
+        )
+        duration = time.monotonic() - t0
 
-    async def _run_skill(self, manifest: SkillManifest, raw_arguments: dict[str, Any]) -> SkillResult:
-        """Núcleo de execução (sem verificação de approval)."""
-        arguments = _fill_defaults(manifest, raw_arguments)
-        system_prompt = _render_prompt(manifest.prompt, arguments)
+        success = sandbox_result.exit_code == 0
+        output: dict[str, Any] = {}
+        error_msg: str | None = None
 
-        tool_schemas: list[dict[str, Any]] = []
-        if manifest.tools and self._tool_registry:
-            for tool_name in manifest.tools:
-                tool = self._tool_registry.get(tool_name)
-                if tool:
-                    tool_schemas.append(tool.to_anthropic_schema())
-                else:
-                    log.warning("skill.tool_not_found", skill=manifest.name, tool=tool_name)
-
-        messages: list[dict[str, Any]] = [
-            {"role": "user", "content": f"Execute a skill '{manifest.name}'."},
-        ]
-
-        try:
-            response = await self._chat(
-                system=system_prompt,
-                messages=messages,
-                tools=tool_schemas or None,
-                max_tokens=2048,
-                model=manifest.model,
-            )
-        except Exception as exc:
-            raise SkillError(f"LLM falhou ao executar skill '{manifest.name}': {exc}") from exc
-
-        if response.tool_calls and self._tool_registry:
-            tool_results = await self._execute_tool_calls(response.tool_calls, manifest.name)
-            messages.append(self._build_assistant_message(response.text, response.tool_calls))
-            messages.append({"role": "user", "content": tool_results})
-
+        if success:
             try:
-                response = await self._chat(
-                    system=system_prompt,
-                    messages=messages,
-                    tools=None,
-                    max_tokens=2048,
-                    model=manifest.model,
-                )
-            except Exception as exc:
-                raise SkillError(
-                    f"LLM falhou na segunda chamada da skill '{manifest.name}': {exc}"
-                ) from exc
+                output = json.loads(sandbox_result.stdout.strip())
+                _validate_output(output, manifest.outputs_schema, slug)
+            except (json.JSONDecodeError, SkillOutputInvalid) as exc:
+                success = False
+                error_msg = str(exc)
+        else:
+            error_msg = sandbox_result.stderr[:500] or f"exit_code={sandbox_result.exit_code}"
 
-        return SkillResult(
-            skill_name=manifest.name,
-            skill_version=manifest.version,
-            output=response.text,
-            success=True,
+        exec_id = await self._registry.record_execution(
+            slug,
+            success=success,
+            duration_seconds=duration,
+            mission_id=mission_id,
+            input_data=input_data,
+            output_data=output if success else None,
+            error_message=error_msg,
         )
 
-    async def _chat(
-        self,
-        system: str,
-        messages: list[dict[str, Any]],
-        tools: list[dict[str, Any]] | None,
-        max_tokens: int,
-        model: str | None,
-    ) -> Any:
-        if self._model_router is not None:
-            return await self._model_router.chat(
-                system=system,
-                messages=messages,
-                tools=tools,
-                max_tokens=max_tokens,
-                model=model,
-            )
-        return await self._transport.chat(
-            system=system,
-            messages=messages,
-            tools=tools,
-            max_tokens=max_tokens,
+        await _emit_skill_event("skill.executed", {
+            "slug": slug,
+            "success": success,
+            "duration": duration,
+            "mission_id": mission_id,
+        })
+
+        if not success:
+            raise RuntimeError(f"Skill '{slug}' falhou: {error_msg}")
+
+        return SkillRunResult(
+            slug=slug,
+            output=output,
+            sandbox_result=sandbox_result,
+            execution_id=exec_id,
+            duration_seconds=duration,
         )
 
-    async def _execute_tool_calls(
-        self, tool_calls: list[dict[str, Any]], skill_name: str
-    ) -> list[dict[str, Any]]:
-        if not self._tool_registry:
-            return []
 
-        results = []
-        for call in tool_calls:
-            name = call["name"]
-            args = call.get("input", {})
-            tool_result = await self._tool_registry.execute(name, args)
-            results.append({
-                "type": "tool_result",
-                "tool_use_id": call["id"],
-                "content": (
-                    json.dumps(tool_result.output, ensure_ascii=False)
-                    if tool_result.ok
-                    else f"ERROR: {tool_result.error}"
-                ),
-            })
-            if not tool_result.ok:
-                log.warning(
-                    "skill.tool_call.failed",
-                    skill=skill_name,
-                    tool=name,
-                    error=tool_result.error,
-                )
-        return results
+def _manifest_profile_to_policy(profile: str) -> str:
+    mapping = {
+        "SKILL_DEV": "skill_dev",
+        "DEFAULT": "default",
+        "UNTRUSTED": "untrusted",
+    }
+    return mapping.get(profile, "default")
 
-    @staticmethod
-    def _build_assistant_message(
-        text: str, tool_calls: list[dict[str, Any]]
-    ) -> dict[str, Any]:
-        content: list[dict[str, Any]] = []
-        if text:
-            content.append({"type": "text", "text": text})
-        for call in tool_calls:
-            content.append({
-                "type": "tool_use",
-                "id": call["id"],
-                "name": call["name"],
-                "input": call.get("input", {}),
-            })
-        return {"role": "assistant", "content": content}
+
+def _validate_input(data: dict[str, Any], schema: dict[str, Any], slug: str) -> None:
+    required = schema.get("required", [])
+    for field_name in required:
+        if field_name not in data:
+            raise SkillInputInvalid(slug, f"campo obrigatório '{field_name}' ausente")
+
+
+def _validate_output(data: Any, schema: dict[str, Any], slug: str) -> None:
+    if not isinstance(data, dict):
+        raise SkillOutputInvalid(slug, f"output deve ser dict, got {type(data).__name__}")
+    required = schema.get("required", [])
+    for field_name in required:
+        if field_name not in data:
+            raise SkillOutputInvalid(slug, f"campo obrigatório '{field_name}' ausente no output")
+
+
+async def _emit_skill_event(event_type: str, data: dict[str, Any]) -> None:
+    try:
+        from agent.events import emit_skill_event
+        await emit_skill_event(event_type, data)
+    except Exception:
+        pass
