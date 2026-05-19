@@ -28,6 +28,9 @@ dependencies = [
   "croniter==2.0.5",
   "sqlalchemy==2.0.36",
   "psycopg2-binary==2.9.9",
+  # Phase 10: deploy
+  "prometheus_client>=0.21",  # métricas Prometheus: 12 séries do §5.3
+  "psutil>=6.1",              # RSS gauge (agent_memory_bytes)
   # Phase 12: canais extras
   "discord.py>=2.3.2",
   "slack-bolt>=1.18.0",

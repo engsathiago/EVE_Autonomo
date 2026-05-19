@@ -318,6 +318,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         import logging
         logging.getLogger(__name__).warning("skill_registry_init_failed: %s", _exc)
 
+    # ── Fase 10: backup job às 4h ─────────────────────────────────────────────
+    if _SCHEDULER_ENABLED and _cron_worker is not None:
+        _backup_hour = int(os.getenv("AGENT_BACKUP_HOUR", "4"))
+        try:
+            _cron_worker._scheduler.add_job(
+                _run_backup_job,
+                "cron",
+                hour=_backup_hour,
+                minute=0,
+                id="deploy_backup_daily",
+                replace_existing=True,
+                misfire_grace_time=3600,
+            )
+        except Exception:
+            pass  # APScheduler pode não estar iniciado em alguns ambientes de teste
+
     # ── Fase 11: Web UI ───────────────────────────────────────────────────────
     from agent.web.server import attach_web_routes
     attach_web_routes(
@@ -365,6 +381,20 @@ async def _run_skill_decay() -> None:
 
 app = FastAPI(title="agent-core", version=__version__, lifespan=lifespan)
 
+# ── F10: health + metrics ─────────────────────────────────────────────────────
+from agent.deploy.health import make_health_router  # noqa: E402
+from agent.deploy.metrics import make_metrics_router  # noqa: E402
+
+app.include_router(make_health_router(
+    get_db_pool=lambda: _memory_store._pool if _memory_store else None,
+    get_cron_worker=lambda: _cron_worker,
+    get_subagent_pool=lambda: _subagent_pool,
+))
+app.include_router(make_metrics_router())
+
+from agent.api.deploy import make_deploy_router  # noqa: E402
+app.include_router(make_deploy_router())
+
 # Rotas registradas em escopo de módulo — lambdas lêem globals no momento da request
 app.include_router(
     make_messages_router(lambda: {
@@ -397,6 +427,17 @@ app.include_router(
         get_orchestrator=lambda: _orchestrator,
     )
 )
+
+
+def _run_backup_job() -> None:
+    """Callable síncrono para o APScheduler disparar o backup diário."""
+    import asyncio as _asyncio
+    from agent.deploy.backup import run_backup as _run_backup
+    try:
+        loop = _asyncio.get_event_loop()
+        loop.create_task(_run_backup())
+    except Exception:
+        pass
 
 
 def _get_registry() -> ToolRegistry:
