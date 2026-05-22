@@ -9,13 +9,14 @@ Garantias de isolamento (por construção, não por convenção):
 - tool_registry com subset restrito
 - skill_manager=None  → sem match semântico automático de skills
 """
+
 from __future__ import annotations
 
-from uuid import uuid4
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
-from agent.core import AIAgent
 from agent.config import get_settings
+from agent.core import AIAgent
 from agent.subagents.context import SubAgentContext
 from agent.tools.registry import ToolRegistry, register_builtin
 from agent.transports.anthropic import AnthropicTransport
@@ -26,15 +27,19 @@ if TYPE_CHECKING:
 
 def build_subagent(
     context: SubAgentContext,
-    model_router: "ModelRouter",
+    model_router: ModelRouter,
 ) -> AIAgent:
     settings = get_settings()
 
     registry = _build_restricted_registry(context.tools_allowed)
 
+    # Fallback inerte: AIAgent prefere model_router quando presente (core.py:_chat).
+    # Este transport só é usado se model_router=None — não é o caminho ativo em produção.
     transport = AnthropicTransport(model=settings.anthropic.planner_model)
 
     from agent.config import AgentSettings
+
+    # default_model armazenado para informação; roteamento real vai por model_router.
     child_settings = AgentSettings(
         name="subagent",
         default_model=settings.anthropic.planner_model,
@@ -47,11 +52,11 @@ def build_subagent(
         tool_registry=registry,
         reflector_transport=None,  # sem reflection
         settings=child_settings,
-        memory_store=None,         # isolamento: filho não vê memória do pai
+        memory_store=None,  # isolamento: filho não vê memória do pai
         curator=None,
         compressor=None,
-        conversation_id=uuid4(),   # namespace separado
-        skill_manager=None,        # sem auto-matching de skills
+        conversation_id=uuid4(),  # namespace separado
+        skill_manager=None,  # sem auto-matching de skills
         model_router=model_router,
     )
 
