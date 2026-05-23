@@ -9,12 +9,13 @@ Anti-padrões proibidos:
 - Network policy OPEN em skill sintetizada
 - Auto-commit de skills geradas
 """
+
 from __future__ import annotations
 
 import json
 import textwrap
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -79,7 +80,7 @@ class SynthesisResult:
 class SkillSynthesizer:
     def __init__(
         self,
-        db_pool: "Pool",
+        db_pool: Pool,
         output_dir: Path,
         model_router: Any = None,
     ) -> None:
@@ -92,7 +93,7 @@ class SkillSynthesizer:
         Varre execution_traces dos últimos 14 dias e retorna clusters com
         ≥5 execuções similares bem-sucedidas (cosine ≥0.85).
         """
-        cutoff = datetime.now(tz=timezone.utc) - timedelta(days=_LOOKBACK_DAYS)
+        cutoff = datetime.now(tz=UTC) - timedelta(days=_LOOKBACK_DAYS)
 
         rows = await self._pool.fetch(
             """
@@ -116,9 +117,7 @@ class SkillSynthesizer:
         log.info("synthesizer.clusters_found", total=len(clusters), valid=len(valid))
         return valid
 
-    async def _cluster_executions(
-        self, executions: list[dict[str, Any]]
-    ) -> list[ExecutionCluster]:
+    async def _cluster_executions(self, executions: list[dict[str, Any]]) -> list[ExecutionCluster]:
         if not executions:
             return []
 
@@ -152,17 +151,18 @@ class SkillSynthesizer:
             cluster_score = (sum(scores) / len(scores)) if scores else 1.0
 
             import hashlib
-            cluster_id = hashlib.sha256(
-                anchor["command_preview"].encode()
-            ).hexdigest()[:8]
 
-            clusters.append(ExecutionCluster(
-                cluster_id=cluster_id,
-                execution_ids=[r["id"] for r in member_rows],
-                pattern_summary=anchor["command_preview"][:200],
-                avg_duration_seconds=avg_dur,
-                cosine_score=cluster_score,
-            ))
+            cluster_id = hashlib.sha256(anchor["command_preview"].encode()).hexdigest()[:8]
+
+            clusters.append(
+                ExecutionCluster(
+                    cluster_id=cluster_id,
+                    execution_ids=[r["id"] for r in member_rows],
+                    pattern_summary=anchor["command_preview"][:200],
+                    avg_duration_seconds=avg_dur,
+                    cosine_score=cluster_score,
+                )
+            )
 
         return clusters
 
@@ -211,17 +211,15 @@ class SkillSynthesizer:
         """)
 
     async def _call_llm(self, prompt: str) -> str:
-        from agent.transports.anthropic import AnthropicTransport
-        transport = AnthropicTransport(model="claude-sonnet-4-6")
-        response = await transport.complete(
-            messages=[{"role": "user", "content": prompt}],
+        response = await self._model_router.chat(
             system=_SYNTHESIS_SYSTEM,
+            messages=[{"role": "user", "content": prompt}],
             max_tokens=2000,
         )
         return response.text if hasattr(response, "text") else str(response)
 
     def _fallback_template(self, slug: str, cluster: ExecutionCluster) -> str:
-        now = datetime.now(tz=timezone.utc).isoformat()
+        now = datetime.now(tz=UTC).isoformat()
         skill_py = _SKILL_TEMPLATE.format(
             description=f"auto-gerada do cluster {cluster.cluster_id}",
             pattern_summary=cluster.pattern_summary[:100],
@@ -262,16 +260,14 @@ class SkillSynthesizer:
         """)
         return f"===SKILL_PY===\n{skill_py}\n===MANIFEST_YAML===\n{manifest_yaml}\n===END==="
 
-    def _parse_llm_output(
-        self, raw: str, slug: str, cluster: ExecutionCluster
-    ) -> tuple[str, str]:
+    def _parse_llm_output(self, raw: str, slug: str, cluster: ExecutionCluster) -> tuple[str, str]:
         try:
             skill_start = raw.index("===SKILL_PY===") + len("===SKILL_PY===")
             manifest_start = raw.index("===MANIFEST_YAML===")
             end = raw.index("===END===")
 
             skill_py = raw[skill_start:manifest_start].strip()
-            manifest_yaml = raw[manifest_start + len("===MANIFEST_YAML==="):end].strip()
+            manifest_yaml = raw[manifest_start + len("===MANIFEST_YAML===") : end].strip()
 
             if not skill_py or not manifest_yaml:
                 raise ValueError("blocos vazios")
