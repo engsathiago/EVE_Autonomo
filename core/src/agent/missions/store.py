@@ -13,9 +13,11 @@ from agent.observability.logger import get_logger
 log = get_logger(__name__)
 
 MissionStatus = Literal["active", "paused", "done", "abandoned", "failed"]
-StepStatus = Literal["pending", "running", "done", "failed", "skipped"]
+StepStatus = Literal["pending", "running", "done", "failed", "skipped", "failed_no_execution"]
+# failed_no_execution: LLM respondeu prosa sem invocar nenhuma tool call.
+# Distinto de "failed" (erro de infra/exception) para permitir análise separada.
 
-_TERMINAL_STATUSES = {"done", "abandoned", "failed"}
+_TERMINAL_STATUSES = {"done", "abandoned", "failed", "failed_no_execution"}
 
 
 class Mission(BaseModel):
@@ -231,7 +233,7 @@ class MissionStore:
     ) -> None:
         now = datetime.now(tz=UTC)
         started_at = now if status == "running" else None
-        completed_at = now if status in ("done", "failed", "skipped") else None
+        completed_at = now if status in ("done", "failed", "skipped", "failed_no_execution") else None
 
         await self._pool.execute(
             """

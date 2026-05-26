@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from agent.critic.critic import CriticRejected, Decision, needs_critic
+from agent.execution.validation import ExecutionVerdict, analyze_turn
 from agent.missions.store import MissionStep
 from agent.observability.logger import get_logger
 from agent.orchestrator.tiers import ExecutionTier
@@ -230,12 +231,6 @@ class AutonomousLoop:
             await self._task_store.create(task)
             await self._mission_store.update_step(step.id, status="running", task_id=task.id)
             result = await self._orchestrator.route(task)
-            await self._mission_store.update_step(
-                step.id,
-                status="done",
-                result={"text": (result.final_text or "")[:1000]},
-            )
-            return True
         except Exception as exc:
             log.warning(
                 "autonomous_loop.step.failed",
@@ -250,6 +245,58 @@ class AutonomousLoop:
                 increment_retry=True,
             )
             return False
+
+        # Valida se houve execução real (tool calls) ou apenas prosa
+        analysis = analyze_turn(result, allow_planning=False)
+
+        if analysis.verdict == ExecutionVerdict.EXECUTED:
+            await self._mission_store.update_step(
+                step.id,
+                status="done",
+                result={
+                    "verdict": analysis.verdict.value,
+                    "tools_invoked": analysis.tools_invoked,
+                    "tool_call_count": analysis.tool_call_count,
+                    "has_structured_output": analysis.has_structured_output,
+                    "text": (result.final_text or "")[:500],
+                },
+            )
+            log.info(
+                "autonomous_loop.step.done",
+                step_id=str(step.id),
+                tools=analysis.tools_invoked,
+            )
+            return True
+
+        if analysis.verdict == ExecutionVerdict.PROSE_ONLY:
+            report.steps_failed += 1
+            await self._mission_store.update_step(
+                step.id,
+                status="failed_no_execution",
+                result={
+                    "verdict": "prose_only",
+                    "raw_text": (result.final_text or "")[:500],
+                    "reason": analysis.reason,
+                },
+                increment_retry=True,
+            )
+            log.warning(
+                "autonomous_loop.step.prose_only",
+                step_id=str(step.id),
+                reason=analysis.reason,
+            )
+            return False
+
+        # EXCEPTION: result.exception preenchido (raro — route() normalmente lança)
+        report.steps_failed += 1
+        await self._mission_store.update_step(
+            step.id,
+            status="failed",
+            result={"verdict": "exception", "reason": analysis.reason},
+            error=result.exception or "unknown",
+            increment_retry=True,
+        )
+        return False
 
     async def _trigger_replan(self, mission: Any, step: MissionStep, report: LoopReport) -> None:
         if self._planner is None:
