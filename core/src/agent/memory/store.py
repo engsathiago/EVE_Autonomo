@@ -32,11 +32,17 @@ class MemoryStore:
     async def create(
         cls, dsn: str = DEFAULT_DSN, min_size: int = 2, max_size: int = 10
     ) -> MemoryStore:
+        # POSTGRES_SSL_DISABLE=1 desativa SSL no asyncpg (necessário em Docker
+        # Desktop no macOS onde sslmode=disable no DSN não é suficiente).
+        extra_kwargs: dict = {}
+        if os.getenv("POSTGRES_SSL_DISABLE"):
+            extra_kwargs["ssl"] = False
         pool = await asyncpg.create_pool(
             dsn,
             min_size=min_size,
             max_size=max_size,
             init=_init_connection,
+            **extra_kwargs,
         )
         return cls(pool)
 

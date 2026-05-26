@@ -341,21 +341,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             pass  # APScheduler pode não estar iniciado em alguns ambientes de teste
 
     # ── Fase 11: Web UI ───────────────────────────────────────────────────────
-    from agent.web.server import attach_web_routes
+    # AGENT_NO_WEB=1 pula o módulo web (útil em smoke tests onde o add_middleware
+    # dentro do lifespan já iniciado causaria RuntimeError).
+    if not os.getenv("AGENT_NO_WEB"):
+        from agent.web.server import attach_web_routes
 
-    attach_web_routes(
-        app,
-        missions_store=_mission_store,
-        missions_planner=_planner,
-        missions_reflector=_reflector,
-        skill_manager=_skill_manager,
-        memory_store=_memory_store,
-        task_store=_task_store,
-        db_pool=_memory_store._pool if _memory_store else None,
-        subagent_pool=_subagent_pool,
-        approval_manager=_approval_manager,
-        orchestrator=_orchestrator,
-    )
+        attach_web_routes(
+            app,
+            missions_store=_mission_store,
+            missions_planner=_planner,
+            missions_reflector=_reflector,
+            skill_manager=_skill_manager,
+            memory_store=_memory_store,
+            task_store=_task_store,
+            db_pool=_memory_store._pool if _memory_store else None,
+            subagent_pool=_subagent_pool,
+            approval_manager=_approval_manager,
+            orchestrator=_orchestrator,
+        )
 
     # ── Fase 12: canais extras ────────────────────────────────────────────────
     from agent.channels import bootstrap_channels
