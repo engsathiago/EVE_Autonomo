@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
-from agent.channels.base import Channel, InboundMessage
+from agent.channels.base import Channel
 from agent.observability.logger import get_logger
 
 log = get_logger(__name__)
@@ -46,8 +46,6 @@ def make_messages_router(get_agent_deps: Any) -> APIRouter:
         curator = deps["curator"]
         compressor = deps["compressor"]
         settings = deps["settings"]
-
-        from uuid import UUID
 
         from agent.core import AIAgent
         from agent.tools.registry import ToolRegistry, register_builtin, register_memory_tools
@@ -109,7 +107,7 @@ def make_messages_router(get_agent_deps: Any) -> APIRouter:
     return router
 
 
-async def _resolve_conversation(store: Any, session_id: str) -> "UUID":
+async def _resolve_conversation(store: Any, session_id: str) -> UUID:
     """Get-or-create de conversa pelo session_id estável do canal."""
     existing = await store.get_conversation_by_session_id(session_id)
     if existing:
@@ -119,6 +117,7 @@ async def _resolve_conversation(store: Any, session_id: str) -> "UUID":
 
 def _rows_to_messages(rows: list[dict]) -> list[dict]:
     import json
+
     messages = []
     for row in rows:
         role = row["role"]
@@ -126,7 +125,11 @@ def _rows_to_messages(rows: list[dict]) -> list[dict]:
         if role in ("user", "assistant", "system"):
             tool_calls_raw = row.get("tool_calls")
             if role == "assistant" and tool_calls_raw:
-                tool_calls = json.loads(tool_calls_raw) if isinstance(tool_calls_raw, str) else tool_calls_raw
+                tool_calls = (
+                    json.loads(tool_calls_raw)
+                    if isinstance(tool_calls_raw, str)
+                    else tool_calls_raw
+                )
                 messages.append({"role": role, "content": content, "tool_calls": tool_calls})
             else:
                 messages.append({"role": role, "content": content})

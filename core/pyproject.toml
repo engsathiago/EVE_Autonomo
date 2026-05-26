@@ -28,6 +28,16 @@ dependencies = [
   "croniter==2.0.5",
   "sqlalchemy==2.0.36",
   "psycopg2-binary==2.9.9",
+  # Phase 10: deploy
+  "prometheus_client>=0.21",  # métricas Prometheus: 12 séries do §5.3
+  "psutil>=6.1",              # RSS gauge (agent_memory_bytes)
+  # Phase 12: canais extras
+  "discord.py>=2.3.2",
+  "slack-bolt>=1.18.0",
+  "slack-sdk>=3.27.0",
+  "aioimaplib>=1.0.1",
+  "aiosmtplib>=3.0.1",
+  "email-validator>=2.1.0",
 ]
 
 [project.optional-dependencies]
@@ -38,6 +48,22 @@ dev = [
   "ruff>=0.8",
   "mypy>=1.13",
   "respx>=0.21",
+]
+# Dependências de fine-tuning — instalação separada para não impactar o core.
+# Versões pinned: testadas com Qwen 2.5 7B + RTX 4070 Ti Super, mai/2026.
+# unsloth>=2025.5: última release estável com suporte a Qwen 2.5 + 4-bit QLoRA.
+# peft>=0.14: requerido pelo unsloth; inclui LoraConfig com target_modules automático.
+# transformers>=4.46: suporte a Qwen 2.5 + chat template correto (<|im_start|>).
+# bitsandbytes>=0.44: quantização 4-bit em GPU NVIDIA (bnb_4bit_compute_dtype=bfloat16).
+# datasets>=3.0: API Dataset.from_list() estável; versões < 3.0 têm breaking changes.
+# rouge-score>=0.1.2: ROUGE-L F1 para eixo summarization_quality (alternativa ao LCS interno).
+finetune = [
+  "unsloth>=2025.5",
+  "peft>=0.14",
+  "transformers>=4.46",
+  "bitsandbytes>=0.44",
+  "datasets>=3.0",
+  "rouge-score>=0.1.2",
 ]
 
 [build-system]
@@ -60,6 +86,7 @@ testpaths = ["tests"]
 markers = [
   "integration: testes que requerem Postgres rodando (desabilitar com -m 'not integration')",
   "docker: testes que requerem Docker daemon disponível (desabilitar com -m 'not docker')",
+  "slow: testes que demoram (GPU, treino real) — desabilitar com -m 'not slow'",
 ]
 
 [tool.mypy]

@@ -1,6 +1,7 @@
 """
 Transport Anthropic — refatorado sobre o novo protocolo Transport.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -12,7 +13,6 @@ import httpx
 
 from agent.models.base import (
     Capabilities,
-    CapabilityMismatchError,
     ChatResponse,
     HealthStatus,
     Message,
@@ -60,8 +60,12 @@ class AnthropicTransport:
     @property
     def capabilities(self) -> Capabilities:
         return Capabilities(
-            tool_use=True, vision=True, json_mode=True, streaming=True,
-            max_context=200_000, parallel_tools=True,
+            tool_use=True,
+            vision=True,
+            json_mode=True,
+            streaming=True,
+            max_context=200_000,
+            parallel_tools=True,
         )
 
     # ------------------------------------------------------------------
@@ -194,18 +198,22 @@ class AnthropicTransport:
             alias = f"anthropic:{model_id}"
             caps = CLOUD_CAPABILITIES.get(alias, self.capabilities)
             from agent.models.pricing import PRICING_USD_PER_1M
+
             rates = PRICING_USD_PER_1M.get(alias, (0.0, 0.0))
-            result.append(ModelInfo(
-                provider="anthropic",
-                model_id=model_id,
-                capabilities=caps,
-                cost_input_per_1m=rates[0],
-                cost_output_per_1m=rates[1],
-            ))
+            result.append(
+                ModelInfo(
+                    provider="anthropic",
+                    model_id=model_id,
+                    capabilities=caps,
+                    cost_input_per_1m=rates[0],
+                    cost_output_per_1m=rates[1],
+                )
+            )
         return result
 
     async def health(self) -> HealthStatus:
         import time
+
         if not self._api_key:
             return HealthStatus(ok=False, message="ANTHROPIC_API_KEY não configurada")
         t0 = time.monotonic()
@@ -233,7 +241,9 @@ class AnthropicTransport:
             except sdk.APIStatusError as exc:
                 if exc.status_code not in _RETRYABLE_STATUSES or attempt == _MAX_RETRIES - 1:
                     raise
-                log.warning("anthropic.retry", attempt=attempt + 1, delay=delay, status=exc.status_code)
+                log.warning(
+                    "anthropic.retry", attempt=attempt + 1, delay=delay, status=exc.status_code
+                )
                 await asyncio.sleep(delay)
                 delay *= 2
         raise RuntimeError("unreachable")
@@ -242,6 +252,7 @@ class AnthropicTransport:
 # ------------------------------------------------------------------
 # helpers
 # ------------------------------------------------------------------
+
 
 def _split_system(messages: list[Message]) -> tuple[str, list[dict[str, Any]]]:
     """Separa mensagem system (parâmetro top-level na API Anthropic) do array."""

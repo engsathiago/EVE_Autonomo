@@ -1,6 +1,7 @@
 """
 Transport OpenRouter — herda OpenAITransport, muda só base_url e headers obrigatórios.
 """
+
 from __future__ import annotations
 
 import httpx
@@ -43,25 +44,37 @@ class OpenRouterTransport(OpenAITransport):
 
     async def list_models(self) -> list[ModelInfo]:
         from agent.models.capabilities import CLOUD_CAPABILITIES
+
         result = []
         for model_id in _KNOWN_MODELS:
             alias = f"openrouter:{model_id}"
-            caps = CLOUD_CAPABILITIES.get(alias, Capabilities(
-                tool_use=False, vision=False, json_mode=False, streaming=True,
-                max_context=32_000, parallel_tools=False,
-            ))
-            result.append(ModelInfo(
-                provider="openrouter",
-                model_id=model_id,
-                capabilities=caps,
-                cost_input_per_1m=0.0,
-                cost_output_per_1m=0.0,
-            ))
+            caps = CLOUD_CAPABILITIES.get(
+                alias,
+                Capabilities(
+                    tool_use=False,
+                    vision=False,
+                    json_mode=False,
+                    streaming=True,
+                    max_context=32_000,
+                    parallel_tools=False,
+                ),
+            )
+            result.append(
+                ModelInfo(
+                    provider="openrouter",
+                    model_id=model_id,
+                    capabilities=caps,
+                    cost_input_per_1m=0.0,
+                    cost_output_per_1m=0.0,
+                )
+            )
         return result
 
     async def health(self) -> HealthStatus:
         import time
+
         import openai
+
         if not self._api_key:
             return HealthStatus(ok=False, message="OPENROUTER_API_KEY não configurada")
         t0 = time.monotonic()

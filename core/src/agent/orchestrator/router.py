@@ -9,12 +9,12 @@ Integração sem quebrar Fase 5:
 Fase 8: lint de steps rejeita padrões proibidos (subprocess/os.system/eval/exec builtin).
 Use exec_tool (agent.tools.exec_tool) para toda execução de comandos arbitrários.
 """
+
 from __future__ import annotations
 
 import re
 import time
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -49,15 +49,15 @@ log = get_logger(__name__)
 class Orchestrator:
     def __init__(
         self,
-        model_router: "ModelRouter",
-        task_store: "TaskStore",
-        subagent_pool: "SubagentPool",
+        model_router: ModelRouter,
+        task_store: TaskStore,
+        subagent_pool: SubagentPool,
         classifier: TierClassifier,
-        memory_store: "MemoryStore | None" = None,
-        curator: "Curator | None" = None,
-        compressor: "ContextCompressor | None" = None,
-        skill_manager: "SkillManager | None" = None,
-        approval_manager: "ApprovalManager | None" = None,
+        memory_store: MemoryStore | None = None,
+        curator: Curator | None = None,
+        compressor: ContextCompressor | None = None,
+        skill_manager: SkillManager | None = None,
+        approval_manager: ApprovalManager | None = None,
         fast_max_iterations: int = 3,
         strategic_max_iterations: int = 8,
         epic_max_parallel: int = 4,
@@ -106,9 +106,7 @@ class Orchestrator:
             return result
 
         except Exception as exc:
-            await self._task_store.update_status(
-                task.id, TaskStatus.FAILED, error=str(exc)
-            )
+            await self._task_store.update_status(task.id, TaskStatus.FAILED, error=str(exc))
             raise
 
     async def _dispatch(self, task: Task, tier: ExecutionTier) -> AgentResult:
@@ -123,12 +121,15 @@ class Orchestrator:
 
     async def _run_inline(self, task: Task, max_iterations: int) -> AgentResult:
         """INSTANT/FAST: pai executa diretamente, sem subagente."""
+        from uuid import uuid4
+
         from agent.config import AgentSettings, get_settings
         from agent.transports.anthropic import AnthropicTransport
-        from uuid import uuid4
 
         settings = get_settings()
         registry = self._build_registry(task)
+        # Fallback inerte: AIAgent prefere self._model_router quando presente (core.py:_chat).
+        # Este transport só é usado se model_router=None — não é o caminho ativo em produção.
         transport = AnthropicTransport(model=settings.anthropic.planner_model)
 
         # Reutiliza conversation_id do canal de origem quando disponível;

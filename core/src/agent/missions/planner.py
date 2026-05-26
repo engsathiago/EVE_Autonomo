@@ -6,6 +6,7 @@ lições aprendidas de missões anteriores similares.
 
 Não cria a missão — só monta o plano. Quem cria é quem chamou.
 """
+
 from __future__ import annotations
 
 import json
@@ -222,7 +223,7 @@ def _extract_parallel(steps: list[str]) -> tuple[list[str], list[bool]]:
     for step in steps:
         if step.upper().startswith("[PARALELO"):
             colon = step.find(":")
-            cleaned.append(step[colon + 1:].strip() if colon != -1 else step)
+            cleaned.append(step[colon + 1 :].strip() if colon != -1 else step)
             flags.append(True)
         else:
             cleaned.append(step)

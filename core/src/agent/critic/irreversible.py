@@ -8,18 +8,20 @@ Para adicionar uma nova tool:
 Sem os dois, o Critic não intercepta.
 """
 
-IRREVERSIBLE_TOOLS: frozenset[str] = frozenset({
-    "send_telegram",
-    "send_email",
-    "post_social_media",
-    "git_push",
-    "fs_delete",
-    "execute_shell",
-    "transfer_money",
-    "delete_record",
-    "execute_sql_write",
-    "exec_sandbox",    # Fase 8: execução de código arbitrário em sandbox
-})
+IRREVERSIBLE_TOOLS: frozenset[str] = frozenset(
+    {
+        "send_telegram",
+        "send_email",
+        "post_social_media",
+        "git_push",
+        "fs_delete",
+        "execute_shell",
+        "transfer_money",
+        "delete_record",
+        "execute_sql_write",
+        "exec_sandbox",  # Fase 8: execução de código arbitrário em sandbox
+    }
+)
 
 
 def is_irreversible(tool_name: str) -> bool:

@@ -2,6 +2,7 @@
 Curator: decide se um turno de conversa vale a pena persistir.
 Usa Haiku 4.5 com saída JSON estruturada.
 """
+
 from __future__ import annotations
 
 import json
@@ -75,9 +76,7 @@ class Curator:
                 f"- {m}" for m in existing_memories[:10]
             )
 
-        content = (
-            f"TURNO A AVALIAR:\n[user]: {user_msg}\n[assistant]: {assistant_msg}{ctx_block}"
-        )
+        content = f"TURNO A AVALIAR:\n[user]: {user_msg}\n[assistant]: {assistant_msg}{ctx_block}"
 
         try:
             resp = await self._client.messages.create(

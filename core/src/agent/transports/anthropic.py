@@ -56,9 +56,7 @@ class AnthropicTransport(BaseTransport):
             if block.type == "text":
                 text = block.text
             elif block.type == "tool_use":
-                tool_calls.append(
-                    {"id": block.id, "name": block.name, "input": block.input}
-                )
+                tool_calls.append({"id": block.id, "name": block.name, "input": block.input})
 
         usage = {
             "input_tokens": resp.usage.input_tokens,
@@ -71,9 +69,7 @@ class AnthropicTransport(BaseTransport):
             output_tokens=usage["output_tokens"],
             tool_calls=len(tool_calls),
         )
-        return ChatResponse(
-            text=text, tool_calls=tool_calls, raw=resp.model_dump(), usage=usage
-        )
+        return ChatResponse(text=text, tool_calls=tool_calls, raw=resp.model_dump(), usage=usage)
 
     async def stream(
         self,

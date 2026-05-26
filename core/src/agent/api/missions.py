@@ -1,4 +1,5 @@
 """Rotas REST para Missões (F7)."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -118,9 +119,7 @@ def make_missions_router(
 
     @router.post("/{mission_id}/replan")
     async def replan_mission(mission_id: UUID, req: ReplanRequest) -> dict:
-        plan = await planner.replan(
-            mission_id, reason=req.reason, mission_store=mission_store
-        )
+        plan = await planner.replan(mission_id, reason=req.reason, mission_store=mission_store)
         all_steps = await mission_store.get_all_steps(mission_id)
         next_seq = max((s.sequence for s in all_steps), default=-1) + 1
         for i, desc in enumerate(plan.steps):

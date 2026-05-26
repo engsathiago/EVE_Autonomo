@@ -1,0 +1,7 @@
+# Datasets contêm dados de treinamento — não commitar
+_curated/
+_raw/
+_rejected/
+!_curated/.gitkeep
+!_raw/.gitkeep
+!_rejected/.gitkeep

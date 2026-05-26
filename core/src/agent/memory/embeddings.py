@@ -2,6 +2,7 @@
 Singleton lazy-load para sentence-transformers.
 Carrega o modelo uma vez por processo (~120 MB); thread-safe.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -19,15 +20,16 @@ MODEL_NAME = os.getenv(
 EMBEDDING_DIM = 384
 
 _lock = threading.Lock()
-_model: "SentenceTransformer | None" = None
+_model: SentenceTransformer | None = None
 
 
-def _get_model() -> "SentenceTransformer":
+def _get_model() -> SentenceTransformer:
     global _model
     if _model is None:
         with _lock:
             if _model is None:
                 from sentence_transformers import SentenceTransformer
+
                 _model = SentenceTransformer(MODEL_NAME)
     return _model
 

@@ -2,12 +2,12 @@
 Tools nativas: salvar_memoria + ler_memoria.
 Seguem o protocolo BaseTool da Fase 1 (async execute).
 """
+
 from __future__ import annotations
 
 from typing import Any
 from uuid import UUID
 
-from agent.memory.schemas import MemoryKind
 from agent.memory.store import MemoryStore
 from agent.observability.logger import get_logger
 from agent.tools.base import BaseTool, ToolResult

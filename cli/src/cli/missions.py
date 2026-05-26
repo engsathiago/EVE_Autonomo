@@ -1,12 +1,11 @@
 """
 Subcomando `agent mission` — gerencia missões persistentes.
 """
+
 from __future__ import annotations
 
 import asyncio
 import os
-from typing import Optional
-from uuid import UUID
 
 import typer
 from rich.console import Console
@@ -20,23 +19,28 @@ _CORE_URL = os.getenv("AGENT_CORE_URL", "http://localhost:8000")
 
 def _http():
     import httpx
+
     return httpx.AsyncClient(base_url=_CORE_URL, timeout=60)
 
 
 @app.command("create")
 def mission_create(
     objective: str = typer.Option(..., "--objective", "-o", help="Objetivo em linguagem natural"),
-    deadline: Optional[str] = typer.Option(None, "--deadline", "-d", help="Prazo (YYYY-MM-DD)"),
+    deadline: str | None = typer.Option(None, "--deadline", "-d", help="Prazo (YYYY-MM-DD)"),
     source: str = typer.Option("cli", "--source", "-s"),
 ) -> None:
     """Cria missão: roda MissionPlanner, exibe plano, pede confirmação."""
+
     async def _run() -> None:
         async with _http() as client:
-            resp = await client.post("/v1/missions/plan", json={
-                "objective": objective,
-                "deadline": deadline,
-                "source": source,
-            })
+            resp = await client.post(
+                "/v1/missions/plan",
+                json={
+                    "objective": objective,
+                    "deadline": deadline,
+                    "source": source,
+                },
+            )
             resp.raise_for_status()
             plan = resp.json()
 
@@ -48,11 +52,13 @@ def mission_create(
         console.print(f"\n[bold cyan]Plano proposto:[/bold cyan] {plan['title']}")
         console.print("\n[bold]Critérios de sucesso:[/bold]")
         for c in plan["success_criteria"]:
-            console.print(f"  • {c['criterion']} [dim]({c.get('verifiable_via','?')})[/dim]")
+            console.print(f"  • {c['criterion']} [dim]({c.get('verifiable_via', '?')})[/dim]")
 
         console.print("\n[bold]Steps:[/bold]")
         for i, step in enumerate(plan["steps"], 1):
-            parallel = " [dim][PARALELO][/dim]" if plan.get("is_parallel", [])[i - 1:i] == [True] else ""
+            parallel = (
+                " [dim][PARALELO][/dim]" if plan.get("is_parallel", [])[i - 1 : i] == [True] else ""
+            )
             console.print(f"  {i}. {step}{parallel}")
 
         confirmed = typer.confirm("\nConfirmar criação da missão?", default=True)
@@ -61,12 +67,15 @@ def mission_create(
             raise typer.Exit(0)
 
         async with _http() as client:
-            resp = await client.post("/v1/missions", json={
-                "objective": objective,
-                "deadline": deadline,
-                "source": source,
-                "plan": plan,
-            })
+            resp = await client.post(
+                "/v1/missions",
+                json={
+                    "objective": objective,
+                    "deadline": deadline,
+                    "source": source,
+                    "plan": plan,
+                },
+            )
             resp.raise_for_status()
             mission = resp.json()
 
@@ -78,10 +87,12 @@ def mission_create(
 
 @app.command("list")
 def mission_list(
-    status: Optional[str] = typer.Option(None, "--status", "-s",
-        help="active, done, abandoned, failed, all"),
+    status: str | None = typer.Option(
+        None, "--status", "-s", help="active, done, abandoned, failed, all"
+    ),
 ) -> None:
     """Lista missões."""
+
     async def _run() -> None:
         async with _http() as client:
             params = {} if not status or status == "all" else {"status": status}
@@ -101,8 +112,11 @@ def mission_list(
         table.add_column("Criada")
 
         status_colors = {
-            "active": "green", "done": "blue",
-            "paused": "yellow", "failed": "red", "abandoned": "dim"
+            "active": "green",
+            "done": "blue",
+            "paused": "yellow",
+            "failed": "red",
+            "abandoned": "dim",
         }
         for m in missions:
             color = status_colors.get(m["status"], "white")
@@ -121,6 +135,7 @@ def mission_list(
 @app.command("show")
 def mission_show(mission_id: str = typer.Argument(...)) -> None:
     """Exibe detalhes de uma missão: objetivo, critérios, steps, status."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.get(f"/v1/missions/{mission_id}")
@@ -141,6 +156,7 @@ def mission_show(mission_id: str = typer.Argument(...)) -> None:
 @app.command("steps")
 def mission_steps(mission_id: str = typer.Argument(...)) -> None:
     """Lista os steps de uma missão com status colorido."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.get(f"/v1/missions/{mission_id}/steps")
@@ -148,13 +164,18 @@ def mission_steps(mission_id: str = typer.Argument(...)) -> None:
             steps = resp.json()
 
         status_colors = {
-            "pending": "dim", "running": "yellow", "done": "green",
-            "failed": "red", "skipped": "blue"
+            "pending": "dim",
+            "running": "yellow",
+            "done": "green",
+            "failed": "red",
+            "skipped": "blue",
         }
         for s in steps:
             color = status_colors.get(s["status"], "white")
             retries = f" [dim](retry={s['retry_count']})[/dim]" if s["retry_count"] else ""
-            console.print(f"  [{s['sequence']}] [{color}]{s['status']}[/{color}] {s['description']}{retries}")
+            console.print(
+                f"  [{s['sequence']}] [{color}]{s['status']}[/{color}] {s['description']}{retries}"
+            )
 
     asyncio.run(_run())
 
@@ -186,10 +207,10 @@ def mission_replan(
     reason: str = typer.Option(..., "--reason", "-r"),
 ) -> None:
     """Força MissionPlanner.replan() para a missão."""
+
     async def _run() -> None:
         async with _http() as client:
-            resp = await client.post(f"/v1/missions/{mission_id}/replan",
-                                     json={"reason": reason})
+            resp = await client.post(f"/v1/missions/{mission_id}/replan", json={"reason": reason})
             resp.raise_for_status()
             console.print("[green]✓[/green] Replan concluído.")
 
@@ -199,6 +220,7 @@ def mission_replan(
 @app.command("reflect")
 def mission_reflect(mission_id: str = typer.Argument(...)) -> None:
     """Força MissionReflector para a missão (mesmo que não esteja terminada)."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.post(f"/v1/missions/{mission_id}/reflect")
@@ -215,7 +237,8 @@ def mission_reflect(mission_id: str = typer.Argument(...)) -> None:
 
 async def _update_status(mission_id: str, status: str, reason: str | None = None) -> None:
     async with _http() as client:
-        resp = await client.patch(f"/v1/missions/{mission_id}/status",
-                                  json={"status": status, "reason": reason})
+        resp = await client.patch(
+            f"/v1/missions/{mission_id}/status", json={"status": status, "reason": reason}
+        )
         resp.raise_for_status()
     console.print(f"[green]✓[/green] Missão → {status}")

@@ -7,9 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-_MODEL_RE = re.compile(
-    r"^(anthropic|openai|openrouter|ollama):[\w./\-]+(:[\w.\-]+)?$"
-)
+_MODEL_RE = re.compile(r"^(anthropic|openai|openrouter|ollama):[\w./\-]+(:[\w.\-]+)?$")
 
 ArgumentType = Literal["string", "integer", "float", "boolean", "enum", "datetime"]
 
@@ -32,7 +30,7 @@ class SkillManifest(BaseModel):
     tags: list[str] = Field(default_factory=list)
     requires_approval: bool = False
     irreversible: bool = False  # True → Critic intercepta antes de executar
-    model: str | None = None   # ex: 'ollama:qwen2.5:7b' — None herda DEFAULT_MODEL
+    model: str | None = None  # ex: 'ollama:qwen2.5:7b' — None herda DEFAULT_MODEL
     # Preenchido pelo loader — não vem do frontmatter
     prompt: str = ""
     source_path: str = ""
@@ -65,6 +63,7 @@ class SkillResult(BaseModel):
 
 class SkillInvocationRecord(BaseModel):
     """Registro para persistir em skill_invocations."""
+
     session_id: UUID
     skill_name: str
     skill_version: int
@@ -89,7 +88,7 @@ class SkillRequiresApproval(Exception):
 class ApprovalCreated(Exception):
     """Raised when a skill approval was created and execution is deferred."""
 
-    def __init__(self, request: "Any") -> None:
+    def __init__(self, request: Any) -> None:
         self.request = request
         super().__init__(f"Approval criado: {getattr(request, 'approval_id', '?')}")
 

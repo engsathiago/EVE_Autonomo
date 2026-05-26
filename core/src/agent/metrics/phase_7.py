@@ -9,6 +9,7 @@ Alertas documentados nos docstrings (sem notificação de prod ainda):
 - critic_reject_rate > 0.40 por 24h → crítico paranoico ou tool mal classificada
 - step_success_rate < 0.50 por 7d → planner gerando passos inviáveis
 """
+
 from __future__ import annotations
 
 import time
@@ -32,6 +33,7 @@ class _TimedValue:
 
 class _RollingCounter:
     """Contador com janela de tempo deslizante."""
+
     def __init__(self, window_s: float = _24H_S) -> None:
         self._window = window_s
         self._events: deque[float] = deque()
@@ -50,6 +52,7 @@ class _RollingCounter:
 
 class _RollingHistogram:
     """Histograma simples com valores em janela deslizante."""
+
     def __init__(self, window_s: float = _24H_S) -> None:
         self._window = window_s
         self._data: deque[_TimedValue] = deque()
@@ -208,7 +211,8 @@ class Phase7Metrics:
             "missions_abandoned_24h": self._missions_abandoned.value(),
             "steps_per_tick_avg": (
                 sum(c for c, _ in self._steps_per_tick) / len(self._steps_per_tick)
-                if self._steps_per_tick else 0.0
+                if self._steps_per_tick
+                else 0.0
             ),
             "step_success_rate_7d": steps_done / steps_total if steps_total > 0 else 1.0,
             "critic_evaluations_total_24h": total_critic,
@@ -225,7 +229,8 @@ class Phase7Metrics:
             "critic_latency_p95_ms": self._critic_latency.p95(),
             "critic_cost_usd_avg": (
                 sum(v.value for v in self._critic_cost._data) / len(self._critic_cost._data)
-                if self._critic_cost._data else 0.0
+                if self._critic_cost._data
+                else 0.0
             ),
             "reflexive_insights_total": self.reflexive_insights_total,
             "reflexive_recall_count_24h": self._reflexive_recalls.value(),

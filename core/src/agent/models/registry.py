@@ -1,6 +1,7 @@
 """
 Registry lazy de transports. Instancia cada provider apenas quando necessário.
 """
+
 from __future__ import annotations
 
 from agent.models.base import HealthStatus, Transport
@@ -21,9 +22,7 @@ class TransportRegistry:
         if name not in self._instances:
             if name not in self._factories:
                 available = list(self._factories)
-                raise KeyError(
-                    f"Provider '{name}' não registrado. Disponíveis: {available}"
-                )
+                raise KeyError(f"Provider '{name}' não registrado. Disponíveis: {available}")
             factory = self._factories[name]
             self._instances[name] = factory()  # type: ignore[operator]
             log.debug("transport.registry.instantiated", provider=name)

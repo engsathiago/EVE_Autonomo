@@ -420,6 +420,43 @@ npm test
 | 13 | Fine-tuning local periódico (LoRA + benchmark gates) | ✅ |
 | 14 | RLAIF (Reinforcement Learning from AI Feedback) | Em breve |
 
+## Fine-tuning local
+
+O agente pode ser periodicamente ajustado (LoRA) sobre o modelo local (Qwen 2.5 7B / Llama 3.x)
+usando traces reais de missões e skills executadas.
+
+**Regra principal: sem benchmark aprovado, nenhum checkpoint é ativado.**
+
+```bash
+# 1. Instalar dependências de fine-tuning (separado da instalação base)
+pip install 'agent-core[finetune]'
+
+# 2. Estabelecer baseline do modelo base
+agent finetune bench --model base
+
+# 3. Executar um ciclo completo
+agent finetune run
+
+# 4. Ver resultado
+agent finetune list
+agent finetune report <run_id>
+
+# 5. Ativar manualmente (sempre manual nas 5 primeiras rodadas)
+agent finetune activate <checkpoint_id>
+
+# 6. Rollback se necessário
+agent finetune rollback
+```
+
+Cada run:
+- Coleta traces da F7 (missões) e F9 (skills) dos últimos 30 dias
+- Filtra PII básico (email, CPF, telefone) e deduplica
+- Avalia base e candidato com 62 tasks fixas distribuídas em 6 eixos
+- Rejeita automaticamente se score < base+3%, qualquer eixo caiu >5%, ou safety regrediu
+- Gera relatório markdown em `models/checkpoints/<id>/benchmark_report.md`
+
+Veja `docs/finetune.md` para o runbook completo, troubleshooting de VRAM e custo Claude por run.
+
 ## Licença
 
 Este projeto está licenciado sob a [MIT License](LICENSE).

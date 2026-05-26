@@ -1,18 +1,19 @@
 """
 Protocolo unificado de transports. Todos os providers implementam essa interface.
 """
+
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel
 
-
 # ---------------------------------------------------------------------------
 # Mensagem unificada
 # ---------------------------------------------------------------------------
+
 
 class Message(BaseModel):
     role: Literal["system", "user", "assistant", "tool"]
@@ -25,6 +26,7 @@ class Message(BaseModel):
 # Schema de tool (subset do formato Anthropic/OpenAI)
 # ---------------------------------------------------------------------------
 
+
 class ToolSchema(BaseModel):
     name: str
     description: str
@@ -34,6 +36,7 @@ class ToolSchema(BaseModel):
 # ---------------------------------------------------------------------------
 # Uso de tokens
 # ---------------------------------------------------------------------------
+
 
 class Usage(BaseModel):
     input_tokens: int = 0
@@ -48,6 +51,7 @@ class Usage(BaseModel):
 # Resposta de chat (unificada)
 # ---------------------------------------------------------------------------
 
+
 class ChatResponse(BaseModel):
     text: str
     tool_calls: list[dict[str, Any]] = []
@@ -61,6 +65,7 @@ class ChatResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Chunks de streaming
 # ---------------------------------------------------------------------------
+
 
 class StreamChunk(BaseModel):
     type: Literal[
@@ -83,6 +88,7 @@ class StreamChunk(BaseModel):
 # Capabilities por modelo
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class Capabilities:
     tool_use: bool = False
@@ -96,6 +102,7 @@ class Capabilities:
 # ---------------------------------------------------------------------------
 # Informação de modelo disponível
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ModelInfo:
@@ -114,6 +121,7 @@ class ModelInfo:
 # Status de health
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class HealthStatus:
     ok: bool
@@ -126,17 +134,18 @@ class HealthStatus:
 # Erros tipados
 # ---------------------------------------------------------------------------
 
+
 class ModelNotPulledError(Exception):
     """Modelo Ollama existe no registro mas não foi baixado localmente."""
+
     def __init__(self, model: str) -> None:
-        super().__init__(
-            f"Modelo Ollama '{model}' não encontrado. Execute: ollama pull {model}"
-        )
+        super().__init__(f"Modelo Ollama '{model}' não encontrado. Execute: ollama pull {model}")
         self.model = model
 
 
 class ModelNotFoundError(Exception):
     """Modelo não existe no provider."""
+
     def __init__(self, model: str, provider: str) -> None:
         super().__init__(f"Modelo '{model}' não encontrado no provider '{provider}'")
         self.model = model
@@ -145,6 +154,7 @@ class ModelNotFoundError(Exception):
 
 class CapabilityMismatchError(Exception):
     """Modelo não possui a capability exigida."""
+
     def __init__(self, model: str, required: str) -> None:
         super().__init__(
             f"Modelo '{model}' não suporta '{required}'. "
@@ -157,6 +167,7 @@ class CapabilityMismatchError(Exception):
 # ---------------------------------------------------------------------------
 # Protocol Transport
 # ---------------------------------------------------------------------------
+
 
 @runtime_checkable
 class Transport(Protocol):

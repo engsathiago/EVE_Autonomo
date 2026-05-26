@@ -5,6 +5,7 @@ Aprovações: quando o filho retorna AgentResult.approval_request preenchido,
 o pool cria o approval via ApprovalManager (com channel_ref do pai) e aguarda
 decisão via asyncio.Event registrado no manager.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -12,6 +13,7 @@ import time
 from typing import TYPE_CHECKING
 
 from agent.core import AgentResult
+from agent.execution.validation import ExecutionVerdict, analyze_turn
 from agent.observability.logger import get_logger
 from agent.subagents.context import SubAgentContext
 from agent.subagents.subagent import build_subagent
@@ -28,9 +30,9 @@ log = get_logger(__name__)
 class SubagentPool:
     def __init__(
         self,
-        model_router: "ModelRouter",
-        task_store: "TaskStore",
-        approval_manager: "ApprovalManager | None" = None,
+        model_router: ModelRouter,
+        task_store: TaskStore,
+        approval_manager: ApprovalManager | None = None,
         max_concurrent: int = 8,
         hard_timeout_s: int = 300,
     ) -> None:
@@ -91,7 +93,7 @@ class SubagentPool:
                 ),
                 timeout=self._hard_timeout_s,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             duration_ms = int(time.monotonic() * 1000) - start_ms
             await self._task_store.update_status(
                 child_task.id,
@@ -102,10 +104,11 @@ class SubagentPool:
             await self._task_store.record_subagent_run(
                 task_id=child_task.id,
                 parent_task=parent_task.id,
-                tools_used=context.tools_allowed,
+                tools_used=[],  # timeout — nenhuma tool confirmada como executada
                 duration_ms=duration_ms,
                 success=False,
                 summary="timeout",
+                verdict="exception",
             )
             log.info("subagent.timeout", child_id=str(child_task.id))
             # Retorna resultado de timeout mas não lança exceção — pai decide retry
@@ -124,14 +127,20 @@ class SubagentPool:
 
         # Approval propagation: filho encontrou tool sensível
         if result.approval_request and self._approval_manager:
-            result = await self._handle_approval(
-                result, child_task, parent_task, context
-            )
+            result = await self._handle_approval(result, child_task, parent_task, context)
 
-        status = TaskStatus.DONE if not result.approval_request else TaskStatus.FAILED
+        # Analisa execução real (tool calls) vs prosa.
+        # allow_planning=True: subagentes podem retornar intent="planning" como
+        # saída válida — o orquestrador pai decide o próximo passo.
+        analysis = analyze_turn(result, allow_planning=True)
+        tools_called = [tc.tool_name for tc in result.tool_calls_made]
+        executed = analysis.verdict in (ExecutionVerdict.EXECUTED, ExecutionVerdict.INTENT_PLANNING)
+
+        # success = DONE no task store (sem approval pendente) E houve execução real
+        task_status = TaskStatus.DONE if not result.approval_request else TaskStatus.FAILED
         await self._task_store.update_status(
             child_task.id,
-            status,
+            task_status,
             iterations=result.iterations,
             tokens_in=result.total_input_tokens,
             tokens_out=result.total_output_tokens,
@@ -139,17 +148,24 @@ class SubagentPool:
         await self._task_store.record_subagent_run(
             task_id=child_task.id,
             parent_task=parent_task.id,
-            tools_used=context.tools_allowed,
+            tools_used=tools_called,          # tools EFETIVAMENTE chamadas
             duration_ms=duration_ms,
-            success=(status == TaskStatus.DONE),
+            success=(task_status == TaskStatus.DONE and executed),
             summary=result.final_text[:500] if result.final_text else "",
-            raw_trace={"iterations": result.iterations, "cost_usd": result.estimated_cost_usd},
+            raw_trace={
+                "iterations": result.iterations,
+                "cost_usd": result.estimated_cost_usd,
+                "tool_call_count": analysis.tool_call_count,
+            },
+            verdict=analysis.verdict.value,   # "executed", "prose_only", etc.
         )
 
         log.info(
             "subagent.finished",
             child_id=str(child_task.id),
-            success=(status == TaskStatus.DONE),
+            success=(task_status == TaskStatus.DONE and executed),
+            verdict=analysis.verdict.value,
+            tool_calls=analysis.tool_call_count,
             iterations=result.iterations,
             tokens=result.total_input_tokens + result.total_output_tokens,
         )
@@ -190,7 +206,7 @@ class SubagentPool:
 
             try:
                 await asyncio.wait_for(event.wait(), timeout=self._hard_timeout_s)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 return AgentResult(
                     final_text="",
                     iterations=result.iterations,

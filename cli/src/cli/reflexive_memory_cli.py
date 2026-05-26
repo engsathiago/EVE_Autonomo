@@ -1,11 +1,11 @@
 """
 Subcomando `agent memory reflexive` — gerencia memória reflexiva.
 """
+
 from __future__ import annotations
 
 import asyncio
 import os
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -19,6 +19,7 @@ _CORE_URL = os.getenv("AGENT_CORE_URL", "http://localhost:8000")
 
 def _http():
     import httpx
+
     return httpx.AsyncClient(base_url=_CORE_URL, timeout=30)
 
 
@@ -28,6 +29,7 @@ def reflexive_list(
     include_forgotten: bool = typer.Option(False, "--all", "-a", help="Incluir esquecidos"),
 ) -> None:
     """Lista insights da memória reflexiva."""
+
     async def _run() -> None:
         async with _http() as client:
             params = {"limit": str(limit)}
@@ -68,10 +70,12 @@ def reflexive_search(
     top_k: int = typer.Option(5, "--top-k", "-k"),
 ) -> None:
     """Busca insights relevantes por similaridade semântica."""
+
     async def _run() -> None:
         async with _http() as client:
-            resp = await client.post("/v1/memory/reflexive/search",
-                                     json={"query": query, "top_k": top_k})
+            resp = await client.post(
+                "/v1/memory/reflexive/search", json={"query": query, "top_k": top_k}
+            )
             resp.raise_for_status()
             results = resp.json()
 
@@ -81,7 +85,9 @@ def reflexive_search(
 
         for i, r in enumerate(results, 1):
             console.print(f"\n[bold]{i}.[/bold] {r['insight']}")
-            console.print(f"   [dim]relevância={r['relevance_score']:.2f}  recalls={r['times_recalled']}[/dim]")
+            console.print(
+                f"   [dim]relevância={r['relevance_score']:.2f}  recalls={r['times_recalled']}[/dim]"
+            )
 
     asyncio.run(_run())
 
@@ -89,6 +95,7 @@ def reflexive_search(
 @app.command("forget")
 def reflexive_forget(insight_id: str = typer.Argument(...)) -> None:
     """Marca um insight como esquecido manualmente."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.delete(f"/v1/memory/reflexive/{insight_id}")

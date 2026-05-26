@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/css/term.css">
+</head>
+<body>
+  <div id="auth-overlay" class="hidden">
+    <div class="auth-box">
+      <div class="auth-title">[AGENT DASHBOARD]</div>
+      <div class="auth-subtitle">Token de acesso requerido</div>
+      <input type="password" id="token-input" placeholder="X-Agent-Token" autocomplete="off">
+      <button id="token-submit">CONECTAR</button>
+      <div id="auth-error" class="error hidden"></div>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <!-- Barra de métricas no topo -->
+    <header class="metrics-bar">
+      <span class="metric-item">
+        <span class="label">SKILLS 7d</span>
+        <span id="m-skills-7d" class="value">—</span>
+      </span>
+      <span class="metric-item">
+        <span class="label">MISSÕES</span>
+        <span id="m-missions" class="value">—</span>
+      </span>
+      <span class="metric-item">
+        <span class="label">APROVAÇÃO CRÍTICO</span>
+        <span id="m-critic-rate" class="value">—</span>
+      </span>
+      <span class="metric-item">
+        <span class="label">UPTIME</span>
+        <span id="m-uptime" class="value">—</span>
+      </span>
+      <span class="metric-item">
+        <span class="label">WS</span>
+        <span id="m-ws-status" class="value ws-indicator">●</span>
+      </span>
+      <span class="metric-item right">
+        <span id="m-version" class="value dim">v?</span>
+      </span>
+    </header>
+
+    <!-- Grid 4×2 dos painéis -->
+    <main class="panels-grid">
+      <section class="panel" id="panel-chat">
+        <div class="panel-header">CHAT</div>
+        <div class="panel-body" id="chat-messages"></div>
+        <div class="panel-footer">
+          <input type="text" id="chat-input" placeholder="Mensagem...">
+          <button id="chat-send">›</button>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-missions">
+        <div class="panel-header">
+          MISSÕES
+          <span class="panel-controls">
+            <select id="missions-filter">
+              <option value="">todas</option>
+              <option value="active">ativas</option>
+              <option value="paused">pausadas</option>
+              <option value="done">concluídas</option>
+            </select>
+          </span>
+        </div>
+        <div class="panel-body" id="missions-list"></div>
+      </section>
+
+      <section class="panel" id="panel-skills">
+        <div class="panel-header">SKILLS</div>
+        <div class="panel-body" id="skills-list"></div>
+      </section>
+
+      <section class="panel" id="panel-memory">
+        <div class="panel-header">MEMÓRIA</div>
+        <div class="panel-body" id="memory-results"></div>
+        <div class="panel-footer">
+          <input type="text" id="memory-query" placeholder="Busca semântica...">
+          <button id="memory-search">›</button>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-traces">
+        <div class="panel-header">TRACES</div>
+        <div class="panel-body" id="traces-list"></div>
+      </section>
+
+      <section class="panel" id="panel-critic">
+        <div class="panel-header">CRÍTICO</div>
+        <div class="panel-body" id="critic-list"></div>
+      </section>
+
+      <section class="panel" id="panel-subagents">
+        <div class="panel-header">SUBAGENTES</div>
+        <div class="panel-body" id="subagents-info"></div>
+      </section>
+
+      <section class="panel" id="panel-approvals">
+        <div class="panel-header">APROVAÇÕES</div>
+        <div class="panel-body" id="approvals-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

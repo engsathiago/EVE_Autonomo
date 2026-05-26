@@ -1,6 +1,7 @@
 """
 Tabela de preços por modelo (USD/1M tokens). Última atualização: 2026-05.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -9,12 +10,12 @@ from decimal import Decimal
 PRICING_USD_PER_1M: dict[str, tuple[float, float]] = {
     # Anthropic
     "anthropic:claude-sonnet-4-7": (3.00, 15.00),
-    "anthropic:claude-opus-4-7":   (15.00, 75.00),
-    "anthropic:claude-haiku-4-5":  (0.80, 4.00),
+    "anthropic:claude-opus-4-7": (15.00, 75.00),
+    "anthropic:claude-haiku-4-5": (0.80, 4.00),
     "anthropic:claude-sonnet-4-6": (3.00, 15.00),
     # OpenAI
-    "openai:gpt-4o":               (2.50, 10.00),
-    "openai:gpt-4o-mini":          (0.15, 0.60),
+    "openai:gpt-4o": (2.50, 10.00),
+    "openai:gpt-4o-mini": (0.15, 0.60),
     # OpenRouter: custo vem direto no response (campo usage.cost)
     # Ollama: custo zero (local)
 }
@@ -44,6 +45,6 @@ def cost_usd(
 
     in_rate, out_rate = rates
     return (
-        Decimal(input_tokens)  * Decimal(str(in_rate))  / Decimal("1000000") +
-        Decimal(output_tokens) * Decimal(str(out_rate)) / Decimal("1000000")
+        Decimal(input_tokens) * Decimal(str(in_rate)) / Decimal("1000000")
+        + Decimal(output_tokens) * Decimal(str(out_rate)) / Decimal("1000000")
     ).quantize(Decimal("0.000001"))

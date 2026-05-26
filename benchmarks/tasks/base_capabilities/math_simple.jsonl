@@ -1,0 +1,8 @@
+{"id": "math_001", "prompt": "Quanto é 17 + 28?", "expected": "45", "keywords": ["45"], "source": "handwritten", "tags": ["math"]}
+{"id": "math_002", "prompt": "Quanto é 144 dividido por 12?", "expected": "12", "keywords": ["12"], "source": "handwritten", "tags": ["math"]}
+{"id": "math_003", "prompt": "Quanto é 7 vezes 8?", "expected": "56", "keywords": ["56"], "source": "handwritten", "tags": ["math"]}
+{"id": "math_004", "prompt": "Quanto é 100 menos 37?", "expected": "63", "keywords": ["63"], "source": "handwritten", "tags": ["math"]}
+{"id": "math_005", "prompt": "Qual é a raiz quadrada de 81?", "expected": "9", "keywords": ["9"], "source": "handwritten", "tags": ["math"]}
+{"id": "math_006", "prompt": "Quanto é 2 elevado a 8?", "expected": "256", "keywords": ["256"], "source": "handwritten", "tags": ["math"]}
+{"id": "math_007", "prompt": "Quanto é 15% de 200?", "expected": "30", "keywords": ["30"], "source": "handwritten", "tags": ["math"]}
+{"id": "math_008", "prompt": "Se uma pizza tem 8 fatias e você come 3, quantas sobram?", "expected": "5", "keywords": ["5"], "source": "handwritten", "tags": ["math", "reasoning"]}

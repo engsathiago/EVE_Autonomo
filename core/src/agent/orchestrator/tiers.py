@@ -4,12 +4,13 @@ Classificação de tiers de execução.
 Cache em memória (TTL 5min) reduz custo do classifier — 1 chamada LLM por
 mensagem única, mas mensagens idênticas dentro do TTL são reutilizadas.
 """
+
 from __future__ import annotations
 
 import hashlib
 import time
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from agent.observability.logger import get_logger
 
@@ -44,7 +45,7 @@ _DEFAULT_ON_PARSE_ERROR = ExecutionTier.STRATEGIC  # mais seguro que EPIC
 class TierClassifier:
     def __init__(
         self,
-        model_router: "ModelRouter",
+        model_router: ModelRouter,
         model: str = "anthropic:claude-haiku-4-5",
         max_tokens: int = 200,
         cache_ttl_s: int = 300,

@@ -5,10 +5,11 @@ Validação dupla:
 1. Sintática: croniter.is_valid()
 2. Semântica: calcula 3 próximas execuções e verifica que são datas razoáveis
 """
+
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from croniter import croniter
 
@@ -44,7 +45,7 @@ class CronParseError(Exception):
     pass
 
 
-async def parse_natural(expression: str, llm: "Any") -> str:
+async def parse_natural(expression: str, llm: Any) -> str:
     """
     Converte linguagem natural → cron expression.
 
@@ -98,23 +99,19 @@ def _extract_cron(raw: str) -> str:
 def _validate_cron(expr: str, original: str) -> None:
     """Validação sintática + semântica."""
     if not croniter.is_valid(expr):
-        raise CronParseError(
-            f"Expressão cron inválida '{expr}' (original: '{original}')"
-        )
+        raise CronParseError(f"Expressão cron inválida '{expr}' (original: '{original}')")
 
     # Validação semântica: calcula 3 próximas execuções
-    base = datetime.now(tz=timezone.utc)
+    base = datetime.now(tz=UTC)
     it = croniter(expr, base)
     for _ in range(3):
         next_dt = it.get_next(datetime)
         if not (_YEAR_MIN <= next_dt.year <= _YEAR_MAX):
-            raise CronParseError(
-                f"Expressão cron '{expr}' produz data implausível: {next_dt}"
-            )
+            raise CronParseError(f"Expressão cron '{expr}' produz data implausível: {next_dt}")
 
 
 def next_runs(expr: str, n: int = 5) -> list[datetime]:
     """Calcula as próximas N execuções a partir de agora."""
-    base = datetime.now(tz=timezone.utc)
+    base = datetime.now(tz=UTC)
     it = croniter(expr, base)
     return [it.get_next(datetime) for _ in range(n)]

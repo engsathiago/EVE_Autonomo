@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 from pydantic import BaseModel
@@ -83,7 +83,7 @@ class ApprovalManager:
     ) -> ApprovalRequest:
         approval_id = str(uuid.uuid4())
         timeout = expires_in_s if expires_in_s is not None else self._timeout_s
-        expires_at = datetime.now(tz=timezone.utc) + timedelta(seconds=timeout)
+        expires_at = datetime.now(tz=UTC) + timedelta(seconds=timeout)
 
         async with self._pool.acquire() as conn:
             await conn.execute(
@@ -126,7 +126,7 @@ class ApprovalManager:
         decision: Literal["approve", "reject"],
         decided_by: str,
     ) -> ApprovalState:
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
 
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
@@ -170,7 +170,7 @@ class ApprovalManager:
 
     async def expire_stale(self) -> int:
         """Marca como 'expired' todos os approvals pendentes que já passaram do prazo."""
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         async with self._pool.acquire() as conn:
             result = await conn.execute(
                 """

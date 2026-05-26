@@ -13,6 +13,7 @@ from agent.autonomous.loop import (
     AutonomousLoop,
     LoopReport,
 )
+from agent.core import AgentResult, ToolCallSummary
 from agent.missions.store import MissionStep
 
 
@@ -35,6 +36,21 @@ def _make_step(seq=0, status="pending", retry_count=0):
     return s
 
 
+def _make_executed_result(final_text: str = "resultado") -> AgentResult:
+    """AgentResult que simula execução real — tem pelo menos 1 tool call."""
+    return AgentResult(
+        final_text=final_text,
+        iterations=1,
+        total_input_tokens=50,
+        total_output_tokens=30,
+        estimated_cost_usd=0.001,
+        duration_s=0.5,
+        tool_calls_made=[
+            ToolCallSummary(tool_name="read_file", succeeded=True),
+        ],
+    )
+
+
 def _make_loop(pending_steps=None, active_missions=None):
     mission_store = MagicMock()
     orchestrator = MagicMock()
@@ -52,9 +68,10 @@ def _make_loop(pending_steps=None, active_missions=None):
 
     task_store.create = AsyncMock()
 
-    result = MagicMock()
-    result.final_text = "resultado"
-    orchestrator.route = AsyncMock(return_value=result)
+    # Usa AgentResult real com tool call — simula execução bem-sucedida.
+    # O comportamento antes de B.2 (MagicMock) não é mais válido:
+    # analyze_turn precisa de AgentResult tipado para distinguir prosa de execução.
+    orchestrator.route = AsyncMock(return_value=_make_executed_result())
 
     return AutonomousLoop(
         mission_store=mission_store,

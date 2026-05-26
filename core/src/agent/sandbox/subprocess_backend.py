@@ -12,6 +12,7 @@ Limitações de segurança (documentadas — não são bugs):
 Adequado para: desenvolvimento local, CI sem Docker-in-Docker, testes.
 NÃO adequado para: execução de código não confiável em produção.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -38,25 +39,25 @@ def _apply_rlimits(config: SandboxConfig) -> None:
         # RLIMIT_AS: tamanho máximo do espaço de endereços virtual (Linux only)
         if hasattr(resource, "RLIMIT_AS"):
             resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))
-    except (ValueError, resource.error):
+    except (OSError, ValueError):
         pass
 
     try:
         # RLIMIT_CPU: segundos de CPU (arredondado pra cima do wall_time)
         cpu_s = max(1, config.wall_time_seconds)
         resource.setrlimit(resource.RLIMIT_CPU, (cpu_s, cpu_s + 5))
-    except (ValueError, resource.error):
+    except (OSError, ValueError):
         pass
 
     try:
         fs_bytes = config.fs_size_mb * _BYTES_PER_MB
         resource.setrlimit(resource.RLIMIT_FSIZE, (fs_bytes, fs_bytes))
-    except (ValueError, resource.error):
+    except (OSError, ValueError):
         pass
 
     try:
         resource.setrlimit(resource.RLIMIT_NPROC, (256, 256))
-    except (ValueError, resource.error):
+    except (OSError, ValueError):
         pass
 
 
@@ -133,7 +134,7 @@ class SubprocessSandbox(Sandbox):
                     proc.communicate(input=stdin),
                     timeout=self._config.wall_time_seconds,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 timed_out = True
                 try:
                     proc.kill()

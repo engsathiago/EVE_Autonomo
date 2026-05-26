@@ -100,9 +100,7 @@ class CronStore:
         )
 
     async def get(self, job_id: UUID) -> CronJob | None:
-        row = await self._pool.fetchrow(
-            "SELECT * FROM cron_jobs WHERE id = $1", job_id
-        )
+        row = await self._pool.fetchrow("SELECT * FROM cron_jobs WHERE id = $1", job_id)
         return _row_to_job(row) if row else None
 
     async def list(self, enabled_only: bool = False) -> list[CronJob]:
@@ -111,9 +109,7 @@ class CronStore:
                 "SELECT * FROM cron_jobs WHERE enabled = TRUE ORDER BY created_at DESC"
             )
         else:
-            rows = await self._pool.fetch(
-                "SELECT * FROM cron_jobs ORDER BY created_at DESC"
-            )
+            rows = await self._pool.fetch("SELECT * FROM cron_jobs ORDER BY created_at DESC")
         return [_row_to_job(r) for r in rows]
 
     async def set_enabled(self, job_id: UUID, enabled: bool) -> bool:
@@ -151,9 +147,7 @@ class CronStore:
         )
 
     async def delete(self, job_id: UUID) -> bool:
-        result = await self._pool.execute(
-            "DELETE FROM cron_jobs WHERE id = $1", job_id
-        )
+        result = await self._pool.execute("DELETE FROM cron_jobs WHERE id = $1", job_id)
         return result == "DELETE 1"
 
 

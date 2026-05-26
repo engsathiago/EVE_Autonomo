@@ -4,12 +4,13 @@ SandboxRegistry: rastreia execuções ativas e persiste registros no banco.
 Cada execução gera 1 linha em sandbox_executions. Stdout/stderr completos
 são escritos em logs/sandbox/<id>.{out,err} com rotação por dia.
 """
+
 from __future__ import annotations
 
 import asyncio
 import hashlib
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
@@ -69,7 +70,7 @@ class SandboxRegistry:
         policy_name: str,
         backend: str,
         command: list[str] | str,
-        result: "SandboxResult",
+        result: SandboxResult,
         mission_id: str | None = None,
         subagent_id: str | None = None,
     ) -> None:
@@ -95,7 +96,7 @@ class SandboxRegistry:
                 )
                 """,
                 sandbox_id,
-                datetime.now(tz=timezone.utc),
+                datetime.now(tz=UTC),
                 policy_name,
                 backend,
                 self.command_hash(command),
@@ -117,7 +118,7 @@ class SandboxRegistry:
 
     async def _write_logs(self, sandbox_id: str, stdout: str, stderr: str) -> None:
         try:
-            today = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
+            today = datetime.now(tz=UTC).strftime("%Y-%m-%d")
             day_dir = self._log_dir / today
             await asyncio.get_running_loop().run_in_executor(
                 None, lambda: _write_log_files(day_dir, sandbox_id, stdout, stderr)
@@ -128,6 +129,7 @@ class SandboxRegistry:
     async def cleanup_old_logs(self) -> int:
         """Remove diretórios de log mais antigos que _RETENTION_DAYS. Retorna quantos removidos."""
         import shutil
+
         removed = 0
         try:
             cutoff = time.time() - _RETENTION_DAYS * 86400

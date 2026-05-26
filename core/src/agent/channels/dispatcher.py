@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import uuid
 
 from agent.channels.base import Channel, OutboundMessage
@@ -12,7 +11,7 @@ log = get_logger(__name__)
 class OutboundDispatcher:
     """Publica mensagens de saída no Redis para o gateway consumir."""
 
-    def __init__(self, redis_client: "redis.asyncio.Redis") -> None:  # type: ignore[name-defined]
+    def __init__(self, redis_client: redis.asyncio.Redis) -> None:  # type: ignore[name-defined]
         self._redis = redis_client
 
     async def send(self, message: OutboundMessage) -> None:

@@ -1,4 +1,5 @@
 """Rotas REST para Memória Reflexiva (F7)."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -25,9 +26,7 @@ def make_reflexive_memory_router(reflexive_memory: Any) -> APIRouter:
         limit: int = 20,
         include_forgotten: bool = False,
     ) -> list[dict]:
-        insights = await reflexive_memory.list_all(
-            include_forgotten=include_forgotten, limit=limit
-        )
+        insights = await reflexive_memory.list_all(include_forgotten=include_forgotten, limit=limit)
         return [_insight_dict(i) for i in insights]
 
     @router.post("/search")

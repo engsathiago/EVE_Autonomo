@@ -1,4 +1,5 @@
 """Rotas REST para o AutonomousLoop (F7)."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -23,14 +24,17 @@ def make_loop_router(autonomous_loop: Any, mission_store: Any) -> APIRouter:
         for m in missions[:5]:
             pending = await mission_store.get_pending_steps(m.id)
             for step in pending[:2]:
-                upcoming.append({
-                    "mission_id": str(m.id),
-                    "mission_title": m.title,
-                    "sequence": step.sequence,
-                    "description": step.description,
-                })
+                upcoming.append(
+                    {
+                        "mission_id": str(m.id),
+                        "mission_title": m.title,
+                        "sequence": step.sequence,
+                        "description": step.description,
+                    }
+                )
 
         from agent.autonomous.loop import TICK_INTERVAL_MINUTES
+
         return {
             "running": not _loop_paused,
             "missions_active": len(missions),

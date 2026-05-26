@@ -2,12 +2,11 @@
 ModelRouter: resolve string 'provider:model', valida capabilities,
 executa fallback chain e loga cada invocação em model_invocations.
 """
+
 from __future__ import annotations
 
 import asyncio
-import time
-from decimal import Decimal
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from agent.models.base import (
     CapabilityMismatchError,
@@ -16,17 +15,15 @@ from agent.models.base import (
     Message,
     ModelInfo,
     ModelNotPulledError,
-    StreamChunk,
     ToolSchema,
-    Usage,
 )
-from agent.models.capabilities import get_cloud_capabilities, get_ollama_family_capabilities
+from agent.models.capabilities import get_cloud_capabilities
 from agent.models.pricing import cost_usd
 from agent.models.registry import TransportRegistry
 from agent.observability.logger import get_logger
 
 if TYPE_CHECKING:
-    from agent.memory.store import MemoryStore
+    pass
 
 log = get_logger(__name__)
 
@@ -128,7 +125,7 @@ class ModelRouter:
         model: str | None = None,
         session_id: str | None = None,
         skill_invocation_id: int | None = None,
-    ) -> "LegacyChatResponse":
+    ) -> LegacyChatResponse:
         """Assinatura compatível com BaseTransport. Usa model= como override opcional."""
         from agent.transports.base import ChatResponse as LegacyResponse
 
@@ -206,7 +203,7 @@ class ModelRouter:
         fallback_info: dict[str, Any] = {"used": False, "from": None}
         last_exc: Exception | None = None
 
-        for i, alias in enumerate(chain[:MAX_FALLBACK_DEPTH + 1]):
+        for i, alias in enumerate(chain[: MAX_FALLBACK_DEPTH + 1]):
             if i > 0:
                 log.warning(
                     "router.fallback",
@@ -253,7 +250,6 @@ class ModelRouter:
         model_id: str,
         transport: Any,
     ) -> Any:
-        from agent.models.base import Capabilities
         if provider == "ollama":
             return await transport.get_model_capabilities(model_id)
         caps = get_cloud_capabilities(alias)
@@ -301,11 +297,17 @@ class ModelRouter:
                         $10, $11, $12, $13, NOW()
                     )
                     """,
-                    session_id, skill_invocation_id, provider, model_id,
+                    session_id,
+                    skill_invocation_id,
+                    provider,
+                    model_id,
                     response.model or model_alias,
-                    response.usage.input_tokens, response.usage.output_tokens,
-                    float(c), latency_ms,
-                    success, error_kind,
+                    response.usage.input_tokens,
+                    response.usage.output_tokens,
+                    float(c),
+                    latency_ms,
+                    success,
+                    error_kind,
                     fallback_info.get("used", False),
                     fallback_info.get("from"),
                 )
@@ -337,6 +339,7 @@ class ModelRouter:
 # helpers de conversão legado → unificado
 # ------------------------------------------------------------------
 
+
 def _convert_legacy_messages(system: str, messages: list[dict[str, Any]]) -> list[Message]:
     """Converte o formato dict legado (BaseTransport) para Message unificado."""
     result: list[Message] = []
@@ -353,11 +356,13 @@ def _convert_legacy_tools(tools: list[dict[str, Any]]) -> list[ToolSchema]:
     """Converte schemas de tool do formato Anthropic/legado para ToolSchema unificado."""
     result = []
     for t in tools:
-        result.append(ToolSchema(
-            name=t.get("name", ""),
-            description=t.get("description", ""),
-            input_schema=t.get("input_schema", t.get("parameters", {})),
-        ))
+        result.append(
+            ToolSchema(
+                name=t.get("name", ""),
+                description=t.get("description", ""),
+                input_schema=t.get("input_schema", t.get("parameters", {})),
+            )
+        )
     return result
 
 

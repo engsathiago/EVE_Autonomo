@@ -7,6 +7,8 @@ import structlog
 
 def configure_logging(level: str = "INFO", *, json: bool = False) -> None:
     """Configura structlog com stdlib integration. JSON em prod, colorido em dev."""
+    from agent.channels.redaction import redact_secrets
+
     log_level = getattr(logging, level.upper(), logging.INFO)
 
     shared_processors: list[Any] = [
@@ -16,6 +18,7 @@ def configure_logging(level: str = "INFO", *, json: bool = False) -> None:
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.StackInfoRenderer(),
+        redact_secrets,  # F12: nunca loga tokens em nenhum canal
     ]
 
     if json:

@@ -15,8 +15,8 @@ log = get_logger(__name__)
 
 class CronJobCreate(BaseModel):
     name: str
-    schedule: str          # cron expression ou linguagem natural
-    task: str              # prompt que vira Task
+    schedule: str  # cron expression ou linguagem natural
+    task: str  # prompt que vira Task
     source: str = "telegram"
     target: str | None = None
     metadata: dict[str, Any] = {}
@@ -55,6 +55,7 @@ def make_cron_router(
         nl_original: str | None = None
 
         import re
+
         is_cron = bool(re.match(r"^([\d\*\/,\-]+\s+){4}[\d\*\/,\-]+\s*$", schedule))
         if not is_cron:
             nl_original = schedule
@@ -134,6 +135,7 @@ def make_cron_router(
         if not job:
             raise HTTPException(status_code=404, detail="job não encontrado")
         import asyncio
+
         asyncio.create_task(cron_worker._fire(job_id))
         return {"ok": True, "message": "job disparado em background"}
 

@@ -8,9 +8,9 @@ executar um handler local.
 Se o pai usar sem Orchestrator (ex: testes), a tool executa via pool
 passado na inicialização.
 """
+
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Any
 
 from agent.tools.base import BaseTool, ToolResult
@@ -69,7 +69,7 @@ class DelegateTool(BaseTool):
     input_schema: dict[str, Any] = DELEGATE_SCHEMA["input_schema"]
     requires_confirmation = False
 
-    def __init__(self, pool: "SubagentPool", parent_task: "Task") -> None:
+    def __init__(self, pool: SubagentPool, parent_task: Task) -> None:
         self._pool = pool
         self._parent_task = parent_task
 

@@ -1,12 +1,12 @@
 """
 Comandos CLI para o sistema de skills: list, show, run, review, create-from-session, validate.
 """
+
 from __future__ import annotations
 
 import asyncio
-import json
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 from uuid import UUID
 
 import typer
@@ -20,15 +20,17 @@ console = Console()
 
 def _get_skills_dir() -> Path:
     from agent.config import get_settings
+
     return Path(get_settings().skills.skills_dir)
 
 
 def _get_drafts_dir() -> Path:
     from agent.config import get_settings
+
     return Path(get_settings().skills.skills_drafts_dir)
 
 
-def _build_manager_sync() -> "SkillManager":  # type: ignore[name-defined]  # noqa: F821
+def _build_manager_sync() -> SkillManager:  # type: ignore[name-defined]  # noqa: F821
     from agent.config import get_settings
     from agent.skills.manager import SkillManager
     from agent.transports.anthropic import AnthropicTransport
@@ -47,7 +49,7 @@ def _build_manager_sync() -> "SkillManager":  # type: ignore[name-defined]  # no
 
 @app.command("list")
 def skill_list(
-    tag: Annotated[Optional[str], typer.Option("--tag", "-t", help="Filtrar por tag")] = None,
+    tag: Annotated[str | None, typer.Option("--tag", "-t", help="Filtrar por tag")] = None,
 ) -> None:
     """Lista todas as skills disponíveis."""
     from agent.skills.loader import load_all_from_dir
@@ -90,7 +92,6 @@ def skill_list(
 def skill_show(name: str) -> None:
     """Exibe manifest e prompt de uma skill."""
     from agent.skills.loader import load_all_from_dir
-    from agent.skills.schema import SkillNotFound
 
     skills = {s.name: s for s in load_all_from_dir(_get_skills_dir())}
     skill = skills.get(name)
@@ -171,10 +172,10 @@ def skill_validate(path: str) -> None:
 @app.command("review")
 def skill_review(
     promote: Annotated[
-        Optional[str], typer.Option("--promote", help="Promover draft pelo nome")
+        str | None, typer.Option("--promote", help="Promover draft pelo nome")
     ] = None,
     discard: Annotated[
-        Optional[str], typer.Option("--discard", help="Descartar draft pelo nome")
+        str | None, typer.Option("--discard", help="Descartar draft pelo nome")
     ] = None,
 ) -> None:
     """Lista, promove ou descarta drafts de skills auto-criadas."""
@@ -232,7 +233,7 @@ def skill_review(
 def skill_create_from_session(
     session_id: str,
     description: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--description", "-d", help="Descrição do que a sessão completou"),
     ] = None,
 ) -> None:
@@ -250,6 +251,7 @@ def skill_create_from_session(
 
         settings = get_settings()
         from agent.transports.anthropic import AnthropicTransport
+
         transport = AnthropicTransport(
             model=settings.anthropic.planner_model,
         )

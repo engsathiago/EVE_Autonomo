@@ -52,9 +52,7 @@ def register_memory_tools(
     store: "MemoryStore",  # type: ignore[name-defined]  # noqa: F821
     conversation_id: "UUID | None" = None,  # type: ignore[name-defined]  # noqa: F821
 ) -> None:
-    from uuid import UUID
 
-    from agent.memory.store import MemoryStore
     from agent.tools.builtin.memory_tools import LerMemoriaTool, SalvarMemoriaTool
 
     registry.register(SalvarMemoriaTool(store=store, conversation_id=conversation_id))

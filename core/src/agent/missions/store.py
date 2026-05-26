@@ -13,9 +13,11 @@ from agent.observability.logger import get_logger
 log = get_logger(__name__)
 
 MissionStatus = Literal["active", "paused", "done", "abandoned", "failed"]
-StepStatus = Literal["pending", "running", "done", "failed", "skipped"]
+StepStatus = Literal["pending", "running", "done", "failed", "skipped", "failed_no_execution"]
+# failed_no_execution: LLM respondeu prosa sem invocar nenhuma tool call.
+# Distinto de "failed" (erro de infra/exception) para permitir análise separada.
 
-_TERMINAL_STATUSES = {"done", "abandoned", "failed"}
+_TERMINAL_STATUSES = {"done", "abandoned", "failed", "failed_no_execution"}
 
 
 class Mission(BaseModel):
@@ -112,9 +114,7 @@ class MissionStore:
         return await self.get(mission_id)
 
     async def get(self, mission_id: UUID) -> Mission:
-        row = await self._pool.fetchrow(
-            "SELECT * FROM missions WHERE id = $1", mission_id
-        )
+        row = await self._pool.fetchrow("SELECT * FROM missions WHERE id = $1", mission_id)
         if row is None:
             raise KeyError(f"Mission {mission_id} não encontrada")
         return _row_to_mission(row)
@@ -233,7 +233,7 @@ class MissionStore:
     ) -> None:
         now = datetime.now(tz=UTC)
         started_at = now if status == "running" else None
-        completed_at = now if status in ("done", "failed", "skipped") else None
+        completed_at = now if status in ("done", "failed", "skipped", "failed_no_execution") else None
 
         await self._pool.execute(
             """
@@ -257,9 +257,7 @@ class MissionStore:
             completed_at,
         )
 
-    async def add_reflection(
-        self, mission_id: UUID, reflection: MissionReflection
-    ) -> None:
+    async def add_reflection(self, mission_id: UUID, reflection: MissionReflection) -> None:
         await self._pool.execute(
             """
             INSERT INTO mission_reflections
@@ -287,9 +285,7 @@ class MissionStore:
         return [dict(r) for r in rows]
 
     async def _get_step(self, step_id: UUID) -> MissionStep:
-        row = await self._pool.fetchrow(
-            "SELECT * FROM mission_steps WHERE id = $1", step_id
-        )
+        row = await self._pool.fetchrow("SELECT * FROM mission_steps WHERE id = $1", step_id)
         if row is None:
             raise KeyError(f"MissionStep {step_id} não encontrado")
         return _row_to_step(row)

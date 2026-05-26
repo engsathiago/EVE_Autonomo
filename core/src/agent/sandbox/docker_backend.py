@@ -20,11 +20,10 @@ Limitações:
   configure uma Docker network com egress filtering.
 - Métricas de CPU/memória são aproximadas (via /proc do container após execução).
 """
+
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import json
 import shlex
 import shutil
 import tempfile
@@ -45,6 +44,7 @@ def _docker_daemon_responsive() -> bool:
     """Verifica se o daemon Docker está acessível."""
     try:
         import subprocess
+
         result = subprocess.run(
             ["docker", "info", "--format", "{{.ServerVersion}}"],
             capture_output=True,
@@ -61,17 +61,20 @@ def get_default_backend() -> type[Sandbox]:
     Override via env var AGENT_SANDBOX_BACKEND=docker|subprocess.
     """
     import os
+
     override = os.environ.get("AGENT_SANDBOX_BACKEND", "").lower()
     if override == "docker":
         return DockerSandbox
     if override == "subprocess":
         from agent.sandbox.subprocess_backend import SubprocessSandbox
+
         return SubprocessSandbox
 
     if shutil.which("docker") and _docker_daemon_responsive():
         return DockerSandbox
 
     from agent.sandbox.subprocess_backend import SubprocessSandbox
+
     return SubprocessSandbox
 
 
@@ -99,14 +102,15 @@ class DockerSandbox(Sandbox):
     ) -> list[str]:
         cfg = self._config
         args = [
-            "docker", "run",
+            "docker",
+            "run",
             "--rm",
             f"--name={container_name}",
             "--user=65534:65534",
             "--cap-drop=ALL",
             "--security-opt=no-new-privileges",
             f"--memory={cfg.memory_limit_mb}m",
-            f"--memory-swap={cfg.memory_limit_mb}m",   # desabilita swap
+            f"--memory-swap={cfg.memory_limit_mb}m",  # desabilita swap
             f"--cpus={cfg.cpu_limit}",
             "--pids-limit=256",
         ]
@@ -195,12 +199,12 @@ class DockerSandbox(Sandbox):
                     timeout=self._config.wall_time_seconds,
                 )
                 exit_code = proc.returncode if proc.returncode is not None else -1
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 timed_out = True
                 await self._kill_container(container_name)
                 try:
                     await asyncio.wait_for(proc.wait(), timeout=_DOCKER_KILL_TIMEOUT_S)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     pass
 
         except Exception as exc:
@@ -263,7 +267,9 @@ class DockerSandbox(Sandbox):
     async def _kill_container(self, container_name: str) -> None:
         try:
             proc = await asyncio.create_subprocess_exec(
-                "docker", "kill", container_name,
+                "docker",
+                "kill",
+                container_name,
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
             )

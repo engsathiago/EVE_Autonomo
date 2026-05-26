@@ -1,12 +1,11 @@
 """
 Subcomando `agent cron` — gerencia cron jobs.
 """
+
 from __future__ import annotations
 
 import asyncio
 import os
-from typing import Optional
-from uuid import UUID
 
 import typer
 from rich.console import Console
@@ -18,31 +17,39 @@ console = Console()
 _CORE_URL = os.getenv("AGENT_CORE_URL", "http://localhost:8000")
 
 
-def _http() -> "Any":
+def _http() -> Any:
     import httpx
+
     return httpx.AsyncClient(base_url=_CORE_URL, timeout=30)
 
 
 @app.command("add")
 def cron_add(
-    schedule: str = typer.Argument(..., help="Cron expression ou linguagem natural (ex: 'toda segunda às 9h')"),
+    schedule: str = typer.Argument(
+        ..., help="Cron expression ou linguagem natural (ex: 'toda segunda às 9h')"
+    ),
     task: str = typer.Option(..., "--task", "-t", help="Prompt da tarefa a executar"),
-    name: str = typer.Option("", "--name", "-n", help="Nome do job (default: primeiras palavras do schedule)"),
+    name: str = typer.Option(
+        "", "--name", "-n", help="Nome do job (default: primeiras palavras do schedule)"
+    ),
     source: str = typer.Option("telegram", "--source", "-s", help="Canal de saída"),
-    target: Optional[str] = typer.Option(None, "--target", help="chat_id ou user_id do destino"),
+    target: str | None = typer.Option(None, "--target", help="chat_id ou user_id do destino"),
 ) -> None:
     """Adiciona um novo cron job."""
     job_name = name or schedule[:40]
 
     async def _run() -> None:
         async with _http() as client:
-            resp = await client.post("/v1/cron/jobs", json={
-                "name": job_name,
-                "schedule": schedule,
-                "task": task,
-                "source": source,
-                "target": target,
-            })
+            resp = await client.post(
+                "/v1/cron/jobs",
+                json={
+                    "name": job_name,
+                    "schedule": schedule,
+                    "task": task,
+                    "source": source,
+                    "target": target,
+                },
+            )
             if resp.status_code == 201:
                 data = resp.json()
                 console.print(f"[green]✓[/green] Job criado: [bold]{data['id']}[/bold]")
@@ -61,6 +68,7 @@ def cron_list(
     all_jobs: bool = typer.Option(False, "--all", "-a", help="Incluir jobs desabilitados"),
 ) -> None:
     """Lista todos os cron jobs."""
+
     async def _run() -> None:
         async with _http() as client:
             params = {} if all_jobs else {"enabled_only": "true"}
@@ -95,6 +103,7 @@ def cron_list(
 @app.command("show")
 def cron_show(job_id: str = typer.Argument(..., help="ID do cron job")) -> None:
     """Mostra detalhes de um cron job."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.get(f"/v1/cron/jobs/{job_id}")
@@ -121,6 +130,7 @@ def cron_show(job_id: str = typer.Argument(..., help="ID do cron job")) -> None:
 @app.command("enable")
 def cron_enable(job_id: str = typer.Argument(..., help="ID do cron job")) -> None:
     """Habilita um cron job."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.patch(f"/v1/cron/jobs/{job_id}/enable")
@@ -133,6 +143,7 @@ def cron_enable(job_id: str = typer.Argument(..., help="ID do cron job")) -> Non
 @app.command("disable")
 def cron_disable(job_id: str = typer.Argument(..., help="ID do cron job")) -> None:
     """Desabilita um cron job (mantém no banco, remove do scheduler)."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.patch(f"/v1/cron/jobs/{job_id}/disable")
@@ -167,6 +178,7 @@ def cron_remove(
 @app.command("run-now")
 def cron_run_now(job_id: str = typer.Argument(..., help="ID do cron job")) -> None:
     """Dispara o job imediatamente fora do horário (debug)."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.post(f"/v1/cron/jobs/{job_id}/run-now")
