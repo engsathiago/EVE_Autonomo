@@ -38,7 +38,7 @@ _channel_statuses: dict[str, str] = {}  # channel_name → "up" | "disabled" | "
 
 async def bootstrap_channels(
     orchestrator: Any | None = None,
-    approval_manager: "ApprovalManager | None" = None,
+    approval_manager: ApprovalManager | None = None,
     db_pool: Any = None,
 ) -> list[ChannelAdapter]:
     """Inicializa os adapters habilitados em CHANNELS_ENABLED.
@@ -134,14 +134,19 @@ def _create_adapter(channel_name: str) -> ChannelAdapter:
     """Factory: cria o adapter correto para o canal dado."""
     if channel_name == "discord":
         from agent.channels.discord_adapter import DiscordAdapter
+
         return DiscordAdapter.from_env()
 
     if channel_name == "slack":
         from agent.channels.slack_adapter import SlackAdapter
+
         return SlackAdapter.from_env()
 
     if channel_name == "email":
         from agent.channels.email_adapter import EmailAdapter
+
         return EmailAdapter.from_env()
 
-    raise ConfigError(f"Canal desconhecido: '{channel_name}'. Valores válidos: discord, slack, email")
+    raise ConfigError(
+        f"Canal desconhecido: '{channel_name}'. Valores válidos: discord, slack, email"
+    )

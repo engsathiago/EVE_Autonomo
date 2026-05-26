@@ -2,6 +2,7 @@
 SkillCreator: extrai skills reutilizáveis de sessões bem-sucedidas.
 Drafts ficam em _drafts/ e requerem aprovação manual via CLI.
 """
+
 from __future__ import annotations
 
 import json
@@ -27,9 +28,9 @@ _NO_SKILL_SENTINEL = "NO_SKILL"
 class SkillCreator:
     def __init__(
         self,
-        manager: "SkillManager",
-        transport: "BaseTransport",
-        memory_store: "MemoryStore",
+        manager: SkillManager,
+        transport: BaseTransport,
+        memory_store: MemoryStore,
         drafts_dir: Path,
     ) -> None:
         self._manager = manager
@@ -60,6 +61,7 @@ class SkillCreator:
 
         extract_skill = self._manager.get("extract_skill")
         from agent.skills.template_runner import TemplateSkillRunner as SkillRunner
+
         runner = SkillRunner(transport=self._transport)
 
         try:

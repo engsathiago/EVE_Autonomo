@@ -3,6 +3,7 @@
 Usa registry separado para evitar conflitos com o registry padrão.
 Integrado ao endpoint /metrics do server.py principal.
 """
+
 from __future__ import annotations
 
 import prometheus_client as prom

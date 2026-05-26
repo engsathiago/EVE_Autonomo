@@ -7,8 +7,8 @@ from enum import Enum
 
 class NetworkPolicy(Enum):
     DENY_ALL = "deny_all"
-    ALLOWLIST = "allowlist"   # usa SandboxConfig.allowed_domains
-    OPEN = "open"             # requer allow_open_network=True na SandboxPolicy
+    ALLOWLIST = "allowlist"  # usa SandboxConfig.allowed_domains
+    OPEN = "open"  # requer allow_open_network=True na SandboxPolicy
 
 
 @dataclass
@@ -17,7 +17,7 @@ class SandboxConfig:
     cpu_limit: float = 1.0
     memory_limit_mb: int = 512
     wall_time_seconds: int = 30
-    max_output_bytes: int = 1_000_000   # 1 MB stdout + stderr combinados
+    max_output_bytes: int = 1_000_000  # 1 MB stdout + stderr combinados
     fs_size_mb: int = 256
     network: NetworkPolicy = NetworkPolicy.DENY_ALL
     allowed_domains: list[str] = field(default_factory=list)

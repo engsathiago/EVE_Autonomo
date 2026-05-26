@@ -10,8 +10,10 @@ __all__ = ["SkillManifest", "SkillMatch", "SkillResult"]
 def __getattr__(name: str) -> object:
     if name == "SkillCreator":
         from agent.skills.creator import SkillCreator
+
         return SkillCreator
     if name == "SkillManager":
         from agent.skills.manager import SkillManager
+
         return SkillManager
     raise AttributeError(f"module 'agent.skills' has no attribute {name!r}")

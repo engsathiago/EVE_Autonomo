@@ -8,15 +8,16 @@ Padrões redatados:
 - xox[abp]-... (tokens Slack)
 - Strings de 50+ chars alfanuméricos (tokens de API em geral: Discord, etc.)
 """
+
 from __future__ import annotations
 
 import re
 from typing import Any
 
 _PATTERNS = [
-    re.compile(r"xox[abp]-[A-Za-z0-9\-]+"),   # Slack bot/user/app tokens (xoxb, xoxp, xoxa)
-    re.compile(r"xapp-[A-Za-z0-9\-]+"),         # Slack Socket Mode app tokens (xapp-)
-    re.compile(r"[A-Za-z0-9]{50,}"),            # qualquer string 50+ chars alfanuméricos
+    re.compile(r"xox[abp]-[A-Za-z0-9\-]+"),  # Slack bot/user/app tokens (xoxb, xoxp, xoxa)
+    re.compile(r"xapp-[A-Za-z0-9\-]+"),  # Slack Socket Mode app tokens (xapp-)
+    re.compile(r"[A-Za-z0-9]{50,}"),  # qualquer string 50+ chars alfanuméricos
 ]
 
 _REPLACEMENT = "***REDACTED***"

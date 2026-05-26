@@ -67,11 +67,12 @@ class OpenRouterSettings(BaseSettings):
 class OllamaSettings(BaseSettings):
     base_url: str = "http://localhost:11434"
     timeout: int = 120
+    api_key: str = ""
 
 
 class ModelSettings(BaseSettings):
     default_model: str = "anthropic:claude-sonnet-4-7"
-    fallback_chain: str = ""        # CSV: "ollama:qwen2.5:7b,anthropic:claude-haiku-4-5"
+    fallback_chain: str = ""  # CSV: "ollama:qwen2.5:7b,anthropic:claude-haiku-4-5"
     timeout_s: int = 60
 
     def fallback_list(self) -> list[str]:
@@ -182,6 +183,7 @@ class Settings(BaseSettings):
         search_data = data.get("search", {})
         skills_data = data.get("skills", {})
 
+        missions_data = data.get("missions", {})
         orchestrator_data = data.get("orchestrator", {})
         scheduler_data = data.get("scheduler", {})
         subagents_data = data.get("subagents", {})
@@ -193,9 +195,7 @@ class Settings(BaseSettings):
                 default_model=agent_data.get("default_model", "claude-haiku-4-5"),
                 max_iterations=agent_data.get("max_iterations", 15),
                 reflection_every=agent_data.get("reflection_every", 3),
-                context_compression_threshold=agent_data.get(
-                    "context_compression_threshold", 0.5
-                ),
+                context_compression_threshold=agent_data.get("context_compression_threshold", 0.5),
                 workspace_paths=agent_data.get(
                     "workspace_paths", ["/workspace", "/tmp/agent", "."]
                 ),
@@ -212,34 +212,49 @@ class Settings(BaseSettings):
             ),
             openrouter=OpenRouterSettings(
                 api_key=openrouter_data.get("api_key") or os.environ.get("OPENROUTER_API_KEY", ""),
-                http_referer=openrouter_data.get("http_referer") or os.environ.get("OPENROUTER_HTTP_REFERER", "https://github.com/agent"),
-                x_title=openrouter_data.get("x_title") or os.environ.get("OPENROUTER_X_TITLE", "agent"),
+                http_referer=openrouter_data.get("http_referer")
+                or os.environ.get("OPENROUTER_HTTP_REFERER", "https://github.com/agent"),
+                x_title=openrouter_data.get("x_title")
+                or os.environ.get("OPENROUTER_X_TITLE", "agent"),
                 timeout=openrouter_data.get("timeout", 120),
             ),
             ollama=OllamaSettings(
-                base_url=ollama_data.get("base_url") or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
+                base_url=ollama_data.get("base_url")
+                or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
                 timeout=ollama_data.get("timeout", 120),
+                api_key=ollama_data.get("api_key") or os.environ.get("OLLAMA_API_KEY", ""),
             ),
             models=ModelSettings(
-                default_model=models_data.get("default_model") or os.environ.get("DEFAULT_MODEL", "anthropic:claude-sonnet-4-7"),
-                fallback_chain=models_data.get("fallback_chain") or os.environ.get("MODEL_FALLBACK_CHAIN", ""),
-                timeout_s=int(models_data.get("timeout_s") or os.environ.get("MODEL_TIMEOUT_S", 60)),
+                default_model=models_data.get("default_model")
+                or os.environ.get("DEFAULT_MODEL", "anthropic:claude-sonnet-4-7"),
+                fallback_chain=models_data.get("fallback_chain")
+                or os.environ.get("MODEL_FALLBACK_CHAIN", ""),
+                timeout_s=int(
+                    models_data.get("timeout_s") or os.environ.get("MODEL_TIMEOUT_S", 60)
+                ),
             ),
             search=SearchSettings(
                 provider=search_data.get("provider", "tavily"),
-                tavily_api_key=search_data.get("tavily_api_key") or os.environ.get("TAVILY_API_KEY", ""),
-                brave_api_key=search_data.get("brave_api_key") or os.environ.get("BRAVE_API_KEY", ""),
+                tavily_api_key=search_data.get("tavily_api_key")
+                or os.environ.get("TAVILY_API_KEY", ""),
+                brave_api_key=search_data.get("brave_api_key")
+                or os.environ.get("BRAVE_API_KEY", ""),
             ),
             skills=SkillsSettings(
                 skills_dir=skills_data.get("skills_dir", "core/src/agent/skills"),
-                skills_drafts_dir=skills_data.get("skills_drafts_dir", "core/src/agent/skills/_drafts"),
+                skills_drafts_dir=skills_data.get(
+                    "skills_drafts_dir", "core/src/agent/skills/_drafts"
+                ),
                 skills_auto_create=skills_data.get("skills_auto_create", True),
                 skills_auto_create_threshold=skills_data.get("skills_auto_create_threshold", 3),
-                skills_embedding_cache_dir=skills_data.get("skills_embedding_cache_dir", ".cache/skill_embeddings"),
+                skills_embedding_cache_dir=skills_data.get(
+                    "skills_embedding_cache_dir", ".cache/skill_embeddings"
+                ),
                 skills_match_k=skills_data.get("skills_match_k", 3),
             ),
             redis=RedisSettings(
-                url=data.get("redis", {}).get("url") or os.environ.get("REDIS_URL", "redis://redis:6379/0"),
+                url=data.get("redis", {}).get("url")
+                or os.environ.get("REDIS_URL", "redis://redis:6379/0"),
             ),
             approvals=ApprovalsSettings(
                 default_timeout_s=int(
@@ -248,17 +263,21 @@ class Settings(BaseSettings):
                 ),
             ),
             orchestrator=OrchestratorSettings(
-                classifier_model=orchestrator_data.get("classifier_model") or os.environ.get("ORCHESTRATOR_CLASSIFIER_MODEL", "anthropic:claude-haiku-4-5"),
+                classifier_model=orchestrator_data.get("classifier_model")
+                or os.environ.get("ORCHESTRATOR_CLASSIFIER_MODEL", "anthropic:claude-haiku-4-5"),
                 classifier_max_tokens=int(orchestrator_data.get("classifier_max_tokens", 200)),
                 fast_max_iterations=int(orchestrator_data.get("fast_max_iterations", 3)),
                 strategic_max_iterations=int(orchestrator_data.get("strategic_max_iterations", 8)),
                 epic_max_parallel=int(orchestrator_data.get("epic_max_parallel", 4)),
-                epic_max_iterations_per_child=int(orchestrator_data.get("epic_max_iterations_per_child", 6)),
+                epic_max_iterations_per_child=int(
+                    orchestrator_data.get("epic_max_iterations_per_child", 6)
+                ),
                 tier_cache_ttl_s=int(orchestrator_data.get("tier_cache_ttl_s", 300)),
             ),
             scheduler=SchedulerSettings(
                 enabled=bool(scheduler_data.get("enabled", True)),
-                timezone=scheduler_data.get("timezone") or os.environ.get("SCHEDULER_TZ", "America/Sao_Paulo"),
+                timezone=scheduler_data.get("timezone")
+                or os.environ.get("SCHEDULER_TZ", "America/Sao_Paulo"),
                 misfire_grace_seconds=int(scheduler_data.get("misfire_grace_seconds", 60)),
                 max_instances=int(scheduler_data.get("max_instances", 3)),
             ),
@@ -266,6 +285,14 @@ class Settings(BaseSettings):
                 default_timeout_seconds=int(subagents_data.get("default_timeout_seconds", 120)),
                 hard_timeout_seconds=int(subagents_data.get("hard_timeout_seconds", 300)),
                 max_concurrent_global=int(subagents_data.get("max_concurrent_global", 8)),
+            ),
+            missions=MissionsSettings(
+                planner_model=os.environ.get("MISSIONS_PLANNER_MODEL")
+                or missions_data.get("planner_model", "anthropic:claude-haiku-4-5"),
+                reflector_model=os.environ.get("MISSIONS_REFLECTOR_MODEL")
+                or missions_data.get("reflector_model", "anthropic:claude-sonnet-4-6"),
+                loop_interval_minutes=int(missions_data.get("loop_interval_minutes", 5)),
+                loop_enabled=bool(missions_data.get("loop_enabled", True)),
             ),
         )
 
@@ -289,6 +316,7 @@ def build_model_router(
     # Anthropic — sempre registrado se tiver API key
     if cfg.anthropic.api_key:
         from agent.models.transports.anthropic import AnthropicTransport
+
         registry.register(
             "anthropic",
             lambda: AnthropicTransport(
@@ -301,6 +329,7 @@ def build_model_router(
     # OpenAI — registrado se tiver API key
     if cfg.openai.api_key:
         from agent.models.transports.openai import OpenAITransport
+
         registry.register(
             "openai",
             lambda: OpenAITransport(
@@ -312,6 +341,7 @@ def build_model_router(
     # OpenRouter — registrado se tiver API key
     if cfg.openrouter.api_key:
         from agent.models.transports.openrouter import OpenRouterTransport
+
         registry.register(
             "openrouter",
             lambda: OpenRouterTransport(
@@ -323,12 +353,15 @@ def build_model_router(
         )
 
     # Ollama — sempre registrado (health check detecta se está rodando)
+    # api_key=None → local sem auth; api_key=str → Ollama Cloud com Bearer token
     from agent.models.transports.ollama import OllamaTransport
+
     registry.register(
         "ollama",
         lambda: OllamaTransport(
             base_url=cfg.ollama.base_url,
             timeout=cfg.ollama.timeout,
+            api_key=cfg.ollama.api_key or None,
         ),
     )
 

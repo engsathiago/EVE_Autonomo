@@ -1,4 +1,5 @@
 """Adapter fino para memória vetorial (F2 + F9)."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -12,7 +13,7 @@ log = get_logger(__name__)
 
 
 async def search_memory(
-    store: "MemoryStore",
+    store: MemoryStore,
     query: str,
     k: int = 10,
     filter_kind: str | None = None,
@@ -23,14 +24,16 @@ async def search_memory(
         for entry, score in results:
             if filter_kind and entry.kind.value != filter_kind:
                 continue
-            out.append({
-                "id": str(entry.id),
-                "content": entry.content,
-                "kind": entry.kind.value,
-                "similarity": round(float(score), 4),
-                "created_at": entry.created_at.isoformat() if entry.created_at else None,
-                "tags": entry.tags,
-            })
+            out.append(
+                {
+                    "id": str(entry.id),
+                    "content": entry.content,
+                    "kind": entry.kind.value,
+                    "similarity": round(float(score), 4),
+                    "created_at": entry.created_at.isoformat() if entry.created_at else None,
+                    "tags": entry.tags,
+                }
+            )
         return out
     except Exception as exc:
         log.error("web.adapter.memory.search_error", error=str(exc))

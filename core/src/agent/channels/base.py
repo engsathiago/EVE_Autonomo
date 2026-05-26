@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -37,23 +37,26 @@ class OutboundMessage(BaseModel):
 
 # ── F12: tipos e interface para adaptadores de canal extra ───────────────────
 
+
 @dataclass
 class IncomingMessage:
     """Mensagem recebida de qualquer canal (Discord, Slack, Email, etc.)."""
+
     channel: str
     user_id: str
     user_display: str
     text: str
-    thread_id: Optional[str] = None
-    raw: Optional[dict] = field(default=None)
+    thread_id: str | None = None
+    raw: dict | None = field(default=None)
 
 
 @dataclass
 class OutgoingMessage:
     """Mensagem a enviar de volta por um canal."""
+
     text: str
-    thread_id: Optional[str] = None
-    mission_id: Optional[str] = None
+    thread_id: str | None = None
+    mission_id: str | None = None
     is_approval: bool = False
 
 

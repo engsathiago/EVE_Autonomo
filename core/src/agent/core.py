@@ -79,9 +79,7 @@ class AIAgent:
 
         # Gravar mensagem do usuário no histórico persistente
         if self._memory_store and self._conversation_id:
-            await self._memory_store.append_message(
-                self._conversation_id, "user", goal
-            )
+            await self._memory_store.append_message(self._conversation_id, "user", goal)
 
         base_tools = self._registry.all_schemas()
         total_in = total_out = 0
@@ -146,6 +144,7 @@ class AIAgent:
 
             # ── Execute tools ───────────────────────────────────────────────
             from agent.skills.schema import ApprovalCreated
+
             try:
                 tool_results = await self._execute_tools(response.tool_calls, emit)
             except ApprovalCreated as exc:
@@ -158,15 +157,14 @@ class AIAgent:
                     estimated_cost_usd=self._estimate_cost(model, total_in, total_out),
                     duration_s=round(duration, 2),
                     conversation_id=str(self._conversation_id) if self._conversation_id else None,
-                    approval_request=exc.request.model_dump() if hasattr(exc.request, "model_dump") else {},
+                    approval_request=exc.request.model_dump()
+                    if hasattr(exc.request, "model_dump")
+                    else {},
                 )
             messages.append({"role": "user", "content": tool_results})
 
             # ── Reflection ──────────────────────────────────────────────────
-            if (
-                self._reflector is not None
-                and iteration % self._settings.reflection_every == 0
-            ):
+            if self._reflector is not None and iteration % self._settings.reflection_every == 0:
                 hint = await self._reflect(messages)
                 if hint:
                     if hint.get("progresso") == "concluido":
@@ -174,15 +172,13 @@ class AIAgent:
                         await emit(AgentEvent(type="done", data={"iteration": iteration}))
                         break
                     if hint.get("progresso") == "estagnado" and hint.get("ajuste_estrategia"):
-                        messages.append({
-                            "role": "user",
-                            "content": (
-                                f"[Reflexão do sistema]: {hint['ajuste_estrategia']}"
-                            ),
-                        })
-                        await emit(
-                            AgentEvent(type="reflection", data=hint)
+                        messages.append(
+                            {
+                                "role": "user",
+                                "content": (f"[Reflexão do sistema]: {hint['ajuste_estrategia']}"),
+                            }
                         )
+                        await emit(AgentEvent(type="reflection", data=hint))
         else:
             # Limite de iterações atingido
             log.warning("agent.max_iterations", limit=self._settings.max_iterations)
@@ -220,9 +216,7 @@ class AIAgent:
     # Memory integration points
     # -------------------------------------------------------------------------
 
-    async def _build_system_with_memories(
-        self, user_msg: str, base_system: str
-    ) -> str:
+    async def _build_system_with_memories(self, user_msg: str, base_system: str) -> str:
         """Concatena memorias relevantes ao system prompt principal.
 
         A API da Anthropic so aceita 'user' e 'assistant' no array de messages;
@@ -236,17 +230,14 @@ class AIAgent:
             if not result.entries:
                 return base_system
             block = "\n".join(
-                f"- [{e.kind}, imp={e.importance}] {e.content}"
-                for e in result.entries
+                f"- [{e.kind}, imp={e.importance}] {e.content}" for e in result.entries
             )
             return f"{base_system}\n\n<memorias_relevantes>\n{block}\n</memorias_relevantes>"
         except Exception as exc:
             log.warning("memory.inject.failed", error=str(exc))
             return base_system
 
-    async def _maybe_compress(
-        self, messages: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    async def _maybe_compress(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if not self._compressor:
             return messages
         try:
@@ -294,15 +285,10 @@ class AIAgent:
             log.warning("skill.match.failed", error=str(exc))
             return []
 
-    def _inject_skill_descriptions(
-        self, system: str, matches: "list[SkillMatch]"
-    ) -> str:
+    def _inject_skill_descriptions(self, system: str, matches: "list[SkillMatch]") -> str:
         if not matches:
             return system
-        block = "\n".join(
-            f"- [{m.manifest.name}] {m.manifest.description}"
-            for m in matches
-        )
+        block = "\n".join(f"- [{m.manifest.name}] {m.manifest.description}" for m in matches)
         return f"{system}\n\n<skills_disponíveis>\n{block}\n</skills_disponíveis>"
 
     def _collect_skill_tools(self, matches: "list[SkillMatch]") -> list[dict[str, Any]]:
@@ -325,7 +311,7 @@ class AIAgent:
 
             # Skills são prefixadas com "skill__" no schema da API Anthropic
             is_skill = name.startswith("skill__") and self._skill_manager is not None
-            skill_name = name[len("skill__"):] if is_skill else None
+            skill_name = name[len("skill__") :] if is_skill else None
 
             tool = self._registry.get(name) if not is_skill else None
 
@@ -336,9 +322,7 @@ class AIAgent:
                         "id": call["id"],
                         "name": name,
                         "args": args,
-                        "requires_confirmation": (
-                            tool.requires_confirmation if tool else False
-                        ),
+                        "requires_confirmation": (tool.requires_confirmation if tool else False),
                     },
                 )
             )
@@ -346,6 +330,7 @@ class AIAgent:
             if is_skill and self._skill_manager and skill_name:
                 from agent.skills.schema import ApprovalCreated, SkillError, SkillRequiresApproval
                 from agent.tools.base import ToolResult
+
                 try:
                     skill_result = await self._skill_manager.run(
                         skill_name, args, self._conversation_id
@@ -422,19 +407,19 @@ class AIAgent:
             return None
 
     @staticmethod
-    def _build_assistant_message(
-        text: str, tool_calls: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    def _build_assistant_message(text: str, tool_calls: list[dict[str, Any]]) -> dict[str, Any]:
         content: list[dict[str, Any]] = []
         if text:
             content.append({"type": "text", "text": text})
         for call in tool_calls:
-            content.append({
-                "type": "tool_use",
-                "id": call["id"],
-                "name": call["name"],
-                "input": call.get("input", {}),
-            })
+            content.append(
+                {
+                    "type": "tool_use",
+                    "id": call["id"],
+                    "name": call["name"],
+                    "input": call.get("input", {}),
+                }
+            )
         return {"role": "assistant", "content": content}
 
     @staticmethod

@@ -4,6 +4,7 @@ Hash do manifest detecta mudanças e dispara re-embedding seletivo.
 
 Fase 9 usa SkillRegistry (registry.py) para skills auto-geradas (.py).
 """
+
 from __future__ import annotations
 
 import json

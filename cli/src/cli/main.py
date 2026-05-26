@@ -1,25 +1,23 @@
 import asyncio
 import os
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
 
 from cli import __version__
-
+from cli.critic_cli import app as critic_app
+from cli.cron import app as cron_app
+from cli.deploy_cmd import app as deploy_app
+from cli.finetune_cli import app as finetune_app
+from cli.loop_cli import app as loop_app
+from cli.missions import app as missions_app
 from cli.models import app as models_app
+from cli.reflexive_memory_cli import app as reflexive_app
 from cli.skills import app as skills_app
 from cli.skills_cmd import app as skills_f9_app
-from cli.cron import app as cron_app
 from cli.tasks import app as tasks_app
-from cli.missions import app as missions_app
-from cli.critic_cli import app as critic_app
-from cli.reflexive_memory_cli import app as reflexive_app
-from cli.loop_cli import app as loop_app
 from cli.web_cmd import app as web_app
-from cli.finetune_cli import app as finetune_app
-from cli.deploy_cmd import app as deploy_app
 
 # Subcomando `agent memory` agrupa memória semântica e reflexiva
 _memory_app = typer.Typer(help="Gerencia memória do agente (semântica + reflexiva).")
@@ -49,7 +47,7 @@ def version_callback(value: bool) -> None:
 
 @app.callback()
 def main(
-    version: Optional[bool] = typer.Option(
+    version: bool | None = typer.Option(
         None, "--version", "-v", callback=version_callback, is_eager=True
     ),
 ) -> None:
@@ -75,8 +73,8 @@ def setup() -> None:
 
 @app.command()
 def run(
-    goal: Optional[str] = typer.Argument(None, help="Objetivo one-shot. Sem argumento, abre o REPL."),
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="ex: ollama:qwen2.5:7b"),
+    goal: str | None = typer.Argument(None, help="Objetivo one-shot. Sem argumento, abre o REPL."),
+    model: str | None = typer.Option(None, "--model", "-m", help="ex: ollama:qwen2.5:7b"),
 ) -> None:
     """Executa um goal one-shot ou inicia o REPL interativo da Eve."""
     from agent.config import build_model_router, get_settings
@@ -87,12 +85,12 @@ def run(
 
     if goal is None:
         from cli.repl import run_repl
+
         asyncio.run(run_repl())
         return
 
     # One-shot
     async def _run_once() -> None:
-        import sys
         from agent.core import AIAgent
         from agent.memory.store import MemoryStore
         from agent.tools.registry import ToolRegistry, register_builtin

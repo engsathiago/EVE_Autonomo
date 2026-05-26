@@ -11,10 +11,10 @@ Note: APScheduler serializa o callable via pickle. Bound methods que contêm
 o scheduler falham. Usamos _dispatch_cron_job (função de módulo) + _WORKER_REGISTRY
 para evitar que o scheduler seja serializado.
 """
+
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -24,18 +24,18 @@ from apscheduler.triggers.cron import CronTrigger
 from agent.observability.logger import get_logger
 from agent.scheduler.parser import next_runs
 from agent.scheduler.store import CronJob, CronStore
-from agent.tasks.task import Task, TaskSource, TaskStatus
+from agent.tasks.task import Task, TaskSource
 
 if TYPE_CHECKING:
+    from agent.orchestrator.router import Orchestrator
     from agent.scheduler.store import CronStore
     from agent.tasks.store import TaskStore
-    from agent.orchestrator.router import Orchestrator
 
 log = get_logger(__name__)
 
 # Registry global: id(worker) → CronWorker — permite que _dispatch_cron_job
 # (função de módulo, serializável) encontre o worker correto em runtime.
-_WORKER_REGISTRY: dict[int, "CronWorker"] = {}
+_WORKER_REGISTRY: dict[int, CronWorker] = {}
 
 
 async def _dispatch_cron_job(worker_id: int, job_id_str: str) -> None:
@@ -50,9 +50,9 @@ class CronWorker:
     def __init__(
         self,
         scheduler: AsyncIOScheduler,
-        cron_store: "CronStore",
-        task_store: "TaskStore",
-        orchestrator: "Orchestrator",
+        cron_store: CronStore,
+        task_store: TaskStore,
+        orchestrator: Orchestrator,
         timezone: str = "America/Sao_Paulo",
     ) -> None:
         self._scheduler = scheduler
@@ -127,7 +127,7 @@ class CronWorker:
         )
         await self._task_store.create(task)
 
-        fired_at = datetime.now(tz=timezone.utc)
+        fired_at = datetime.now(tz=UTC)
         last_status = "ok"
         last_error = None
 

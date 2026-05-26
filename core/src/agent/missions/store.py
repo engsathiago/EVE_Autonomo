@@ -112,9 +112,7 @@ class MissionStore:
         return await self.get(mission_id)
 
     async def get(self, mission_id: UUID) -> Mission:
-        row = await self._pool.fetchrow(
-            "SELECT * FROM missions WHERE id = $1", mission_id
-        )
+        row = await self._pool.fetchrow("SELECT * FROM missions WHERE id = $1", mission_id)
         if row is None:
             raise KeyError(f"Mission {mission_id} não encontrada")
         return _row_to_mission(row)
@@ -257,9 +255,7 @@ class MissionStore:
             completed_at,
         )
 
-    async def add_reflection(
-        self, mission_id: UUID, reflection: MissionReflection
-    ) -> None:
+    async def add_reflection(self, mission_id: UUID, reflection: MissionReflection) -> None:
         await self._pool.execute(
             """
             INSERT INTO mission_reflections
@@ -287,9 +283,7 @@ class MissionStore:
         return [dict(r) for r in rows]
 
     async def _get_step(self, step_id: UUID) -> MissionStep:
-        row = await self._pool.fetchrow(
-            "SELECT * FROM mission_steps WHERE id = $1", step_id
-        )
+        row = await self._pool.fetchrow("SELECT * FROM mission_steps WHERE id = $1", step_id)
         if row is None:
             raise KeyError(f"MissionStep {step_id} não encontrado")
         return _row_to_step(row)

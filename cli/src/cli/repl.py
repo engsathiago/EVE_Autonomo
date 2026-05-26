@@ -1,18 +1,16 @@
-import asyncio
 from pathlib import Path
 
+from agent.config import get_settings
+from agent.core import AgentResult, AIAgent
+from agent.events import AgentEvent
+from agent.tools.registry import ToolRegistry, register_builtin
+from agent.transports import AnthropicTransport
 from prompt_toolkit import PromptSession
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.history import FileHistory
 from rich.console import Console
 from rich.markup import escape
 from rich.text import Text
-
-from agent.config import get_settings
-from agent.core import AIAgent, AgentResult
-from agent.events import AgentEvent
-from agent.tools.registry import ToolRegistry, register_builtin
-from agent.transports import AnthropicTransport
 
 console = Console()
 
@@ -48,9 +46,7 @@ async def run_repl() -> None:
 
     while True:
         try:
-            raw = await session.prompt_async(
-                HTML("<ansigreen><b>você</b></ansigreen> > ")
-            )
+            raw = await session.prompt_async(HTML("<ansigreen><b>você</b></ansigreen> > "))
         except (EOFError, KeyboardInterrupt):
             console.print("\n[dim]Até logo.[/dim]")
             break
@@ -117,9 +113,7 @@ async def _run_agent(goal: str, registry: ToolRegistry, settings: object) -> Age
                 name = event.data["name"]
                 args = event.data.get("args", {})
                 arg_str = ", ".join(f"{k}={escape(str(v))}" for k, v in args.items())
-                console.print(
-                    f"       [yellow]🔧 {name}({arg_str})[/yellow]"
-                )
+                console.print(f"       [yellow]🔧 {name}({arg_str})[/yellow]")
 
             case "tool_result":
                 ok = event.data.get("ok", True)
@@ -128,7 +122,7 @@ async def _run_agent(goal: str, registry: ToolRegistry, settings: object) -> Age
                     summary = _summarize_output(output)
                     console.print(f"       [dim]↳ {escape(summary)}[/dim]")
                 elif not ok:
-                    console.print(f"       [red]↳ erro[/red]")
+                    console.print("       [red]↳ erro[/red]")
 
             case "reflection":
                 hint = event.data.get("ajuste_estrategia")
@@ -153,11 +147,7 @@ def _print_footer(result: AgentResult) -> None:
     tokens = result.total_input_tokens + result.total_output_tokens
     cost = result.estimated_cost_usd
     duration = result.duration_s
-    console.print(
-        f"\n       [dim]─ {tokens:,} tokens"
-        f" · ${cost:.4f}"
-        f" · {duration:.1f}s ─[/dim]"
-    )
+    console.print(f"\n       [dim]─ {tokens:,} tokens · ${cost:.4f} · {duration:.1f}s ─[/dim]")
 
 
 def _print_cost(in_tok: int, out_tok: int, cost: float) -> None:

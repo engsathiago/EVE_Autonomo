@@ -14,6 +14,7 @@ uninstall():
 
 Requer sudo (ou root) para criar usuários e escrever em /etc/.
 """
+
 from __future__ import annotations
 
 import os
@@ -109,8 +110,7 @@ def _install_systemd(prefix_path: Path, user: str, group: str) -> None:
     # Substituições de template
     venv_python = str(prefix_path / ".venv" / "bin" / "python")
     unit_content = (
-        unit_content
-        .replace("{{USER}}", user)
+        unit_content.replace("{{USER}}", user)
         .replace("{{GROUP}}", group)
         .replace("{{INSTALL_DIR}}", str(prefix_path))
         .replace("{{PYTHON}}", venv_python)
@@ -140,9 +140,7 @@ def _create_user(user: str, group: str) -> None:
         return
 
     if shutil.which("useradd"):
-        _run(
-            ["useradd", "--system", "--no-create-home", "--shell", "/usr/sbin/nologin", user]
-        )
+        _run(["useradd", "--system", "--no-create-home", "--shell", "/usr/sbin/nologin", user])
     elif shutil.which("adduser"):
         _run(["adduser", "--system", "--no-create-home", "--shell", "/sbin/nologin", user])
 
@@ -159,15 +157,12 @@ def _chown(path: str, user: str, group: str) -> None:
 def _check_root() -> None:
     if os.geteuid() != 0:
         raise PermissionError(
-            "install/uninstall requerem execução como root (sudo). "
-            "Use: sudo agent deploy install"
+            "install/uninstall requerem execução como root (sudo). Use: sudo agent deploy install"
         )
 
 
 def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
     result = subprocess.run(cmd, capture_output=True, text=True)
     if check and result.returncode != 0:
-        raise RuntimeError(
-            f"Comando falhou: {' '.join(cmd)}\n{result.stderr}"
-        )
+        raise RuntimeError(f"Comando falhou: {' '.join(cmd)}\n{result.stderr}")
     return result

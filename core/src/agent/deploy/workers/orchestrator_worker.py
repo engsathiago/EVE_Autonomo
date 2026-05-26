@@ -1,4 +1,5 @@
 """OrchestratorWorker: processo independente que monitora o orchestrator via Redis."""
+
 from __future__ import annotations
 
 import asyncio
@@ -48,10 +49,8 @@ class OrchestratorWorker(Worker):
                     except Exception as exc:
                         log.warning("orchestrator_worker.redis_error", error=str(exc))
                     try:
-                        await asyncio.wait_for(
-                            self._stop_event.wait(), timeout=_POLL_INTERVAL_S
-                        )
-                    except asyncio.TimeoutError:
+                        await asyncio.wait_for(self._stop_event.wait(), timeout=_POLL_INTERVAL_S)
+                    except TimeoutError:
                         pass
             finally:
                 await client.aclose()

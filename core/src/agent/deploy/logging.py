@@ -10,6 +10,7 @@ Uso:
     from agent.deploy.logging import configure_deploy_logging
     configure_deploy_logging(log_dir="/var/lib/agent/logs")
 """
+
 from __future__ import annotations
 
 import gzip
@@ -26,11 +27,11 @@ from typing import Any
 # ── Padrões de redaction ──────────────────────────────────────────────────────
 
 _REDACT_PATTERNS: list[tuple[re.Pattern, str]] = [
-    (re.compile(r'sk-[A-Za-z0-9\-_]{20,}'), "sk-***REDACTED***"),
-    (re.compile(r'Bearer\s+[A-Za-z0-9\-_.~+/]+=*'), "Bearer ***REDACTED***"),
-    (re.compile(r'password\s*=\s*\S+', re.IGNORECASE), "password=***REDACTED***"),
+    (re.compile(r"sk-[A-Za-z0-9\-_]{20,}"), "sk-***REDACTED***"),
+    (re.compile(r"Bearer\s+[A-Za-z0-9\-_.~+/]+=*"), "Bearer ***REDACTED***"),
+    (re.compile(r"password\s*=\s*\S+", re.IGNORECASE), "password=***REDACTED***"),
     # Telegram bot token: {9,10 dígitos}:{35 chars base64url}
-    (re.compile(r'\d{9,10}:[A-Za-z0-9_-]{35}'), "***BOT_TOKEN***"),
+    (re.compile(r"\d{9,10}:[A-Za-z0-9_-]{35}"), "***BOT_TOKEN***"),
 ]
 
 
@@ -42,14 +43,13 @@ def _redact(text: str) -> str:
 
 # ── JSON Formatter ────────────────────────────────────────────────────────────
 
+
 class _JsonFormatter(logging.Formatter):
     """Formata cada LogRecord como uma linha JSON com campos padronizados."""
 
     def format(self, record: logging.LogRecord) -> str:
         entry: dict[str, Any] = {
-            "ts": time.strftime(
-                "%Y-%m-%dT%H:%M:%S", time.localtime(record.created)
-            ),
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(record.created)),
             "level": record.levelname,
             "component": record.name,
             "msg": record.getMessage(),
@@ -58,11 +58,28 @@ class _JsonFormatter(logging.Formatter):
         # Campos extras (structlog injeta via extra dict)
         for key, value in record.__dict__.items():
             if key not in (
-                "name", "msg", "args", "created", "filename", "funcName",
-                "levelname", "levelno", "lineno", "module", "msecs",
-                "pathname", "process", "processName", "relativeCreated",
-                "stack_info", "thread", "threadName", "exc_info",
-                "exc_text", "message", "taskName",
+                "name",
+                "msg",
+                "args",
+                "created",
+                "filename",
+                "funcName",
+                "levelname",
+                "levelno",
+                "lineno",
+                "module",
+                "msecs",
+                "pathname",
+                "process",
+                "processName",
+                "relativeCreated",
+                "stack_info",
+                "thread",
+                "threadName",
+                "exc_info",
+                "exc_text",
+                "message",
+                "taskName",
             ):
                 entry[key] = value
 
@@ -74,6 +91,7 @@ class _JsonFormatter(logging.Formatter):
 
 
 # ── RotatingFileHandler com gzip ──────────────────────────────────────────────
+
 
 class _GzipRotatingHandler(logging.handlers.RotatingFileHandler):
     """RotatingFileHandler que gzipa arquivos rotacionados."""
@@ -91,6 +109,7 @@ class _GzipRotatingHandler(logging.handlers.RotatingFileHandler):
 
 
 # ── Configuração pública ──────────────────────────────────────────────────────
+
 
 def configure_deploy_logging(
     log_dir: str | None = None,

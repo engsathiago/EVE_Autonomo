@@ -2,6 +2,7 @@
 ContextCompressor: comprime histórico longo via Sonnet 4.6.
 Mantém as últimas N mensagens intactas e sumariza as anteriores.
 """
+
 from __future__ import annotations
 
 import os
@@ -71,7 +72,7 @@ class ContextCompressor:
             return messages, None
 
         t0 = time.monotonic()
-        recent = messages[-self._keep_recent:]
+        recent = messages[-self._keep_recent :]
         old = messages[: -self._keep_recent]
 
         system_msgs = [m for m in old if m.get("role") == "system"]
@@ -87,18 +88,21 @@ class ContextCompressor:
             latency_ms=round((time.monotonic() - t0) * 1000, 1),
         )
 
-        compacted = system_msgs + [
-            {
-                "role": "system",
-                "content": f"<resumo_da_conversa>\n{summary}\n</resumo_da_conversa>",
-            }
-        ] + recent
+        compacted = (
+            system_msgs
+            + [
+                {
+                    "role": "system",
+                    "content": f"<resumo_da_conversa>\n{summary}\n</resumo_da_conversa>",
+                }
+            ]
+            + recent
+        )
         return compacted, summary
 
     async def _summarize(self, messages: list[dict[str, Any]]) -> str:
         joined = "\n".join(
-            f"[{m.get('role')}]: {str(m.get('content', ''))[:2000]}"
-            for m in messages
+            f"[{m.get('role')}]: {str(m.get('content', ''))[:2000]}" for m in messages
         )
         resp = await self._client.messages.create(
             model=self._model,

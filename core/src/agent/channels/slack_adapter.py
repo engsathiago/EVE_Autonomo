@@ -8,19 +8,19 @@ Regras:
 - Respostas > 4000 chars são enviadas como arquivo .txt (Slack limit).
 - Tokens nunca logados (redact no logger global).
 """
+
 from __future__ import annotations
 
-import asyncio
 import os
 from typing import Any
 
-from agent.channels.base import ChannelAdapter, ConfigError, IncomingMessage, OutgoingMessage
 from agent.channels import metrics as ch_metrics
+from agent.channels.base import ChannelAdapter, ConfigError, IncomingMessage, OutgoingMessage
 from agent.observability.logger import get_logger
 
 log = get_logger(__name__)
 
-_MAX_TEXT_LEN = 4000   # chars — acima disso, arquivo .txt
+_MAX_TEXT_LEN = 4000  # chars — acima disso, arquivo .txt
 
 
 def _parse_allowlist(raw: str) -> set[str]:
@@ -55,16 +55,20 @@ class SlackAdapter(ChannelAdapter):
         self._channel_refs: dict[str, dict[str, str | None]] = {}
 
     @classmethod
-    def from_env(cls, router: Any | None = None) -> "SlackAdapter":
+    def from_env(cls, router: Any | None = None) -> SlackAdapter:
         app_token = os.getenv("SLACK_APP_TOKEN", "")
         bot_token = os.getenv("SLACK_BOT_TOKEN", "")
         allowlist_raw = os.getenv("SLACK_USER_ALLOWLIST", "")
 
-        missing = [k for k, v in {
-            "SLACK_APP_TOKEN": app_token,
-            "SLACK_BOT_TOKEN": bot_token,
-            "SLACK_USER_ALLOWLIST": allowlist_raw,
-        }.items() if not v]
+        missing = [
+            k
+            for k, v in {
+                "SLACK_APP_TOKEN": app_token,
+                "SLACK_BOT_TOKEN": bot_token,
+                "SLACK_USER_ALLOWLIST": allowlist_raw,
+            }.items()
+            if not v
+        ]
         if missing:
             raise ConfigError(f"Variáveis Slack ausentes: {', '.join(missing)}")
 
@@ -83,8 +87,8 @@ class SlackAdapter(ChannelAdapter):
         self._router = router
 
     async def start(self) -> None:
-        from slack_bolt.async_app import AsyncApp
         from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
+        from slack_bolt.async_app import AsyncApp
 
         self._app = AsyncApp(token=self._bot_token)
         self._slack_client = self._app.client
@@ -242,4 +246,5 @@ class SlackAdapter(ChannelAdapter):
 def _strip_bot_mention(text: str) -> str:
     """Remove padrão <@BOTID> do início do texto."""
     import re
+
     return re.sub(r"^<@[A-Z0-9]+>\s*", "", text).strip()

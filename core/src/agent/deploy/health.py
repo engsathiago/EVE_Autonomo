@@ -9,6 +9,7 @@ Três níveis conforme §5.2:
 O router é criado por make_health_router() com injeção dos componentes
 que precisam ser verificados. Registrado no server.py.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -18,7 +19,6 @@ from typing import Any
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-
 
 # ── noop skill ────────────────────────────────────────────────────────────────
 
@@ -45,9 +45,10 @@ async def _run_noop_skill() -> dict[str, Any]:
     completo de execução está funcional.
     """
     import sys
-    from agent.tools.exec_tool import exec_tool
-    from agent.sandbox.subprocess_backend import SubprocessSandbox
+
     from agent.sandbox.base import SandboxConfig
+    from agent.sandbox.subprocess_backend import SubprocessSandbox
+    from agent.tools.exec_tool import exec_tool
 
     def _make_subprocess_sandbox(config: SandboxConfig) -> SubprocessSandbox:
         return SubprocessSandbox(config)
@@ -77,6 +78,7 @@ async def _run_noop_skill() -> dict[str, Any]:
 
 
 # ── Checagens de readiness ─────────────────────────────────────────────────────
+
 
 async def _check_sqlite() -> dict[str, Any]:
     t0 = time.monotonic()
@@ -133,6 +135,7 @@ def _check_subagent_pool(subagent_pool: Any) -> dict[str, Any]:
 
 # ── Router factory ────────────────────────────────────────────────────────────
 
+
 def make_health_router(
     get_db_pool: Any = None,
     get_cron_worker: Any = None,
@@ -144,6 +147,7 @@ def make_health_router(
     mesma convenção usada nos demais routers do projeto.
     Passando None os checks correspondentes retornam skipped=True.
     """
+
     def _pool() -> Any:
         return get_db_pool() if callable(get_db_pool) else None
 
@@ -174,9 +178,8 @@ def make_health_router(
         pool_result = _check_subagent_pool(_pool_inst())
 
         all_ok = all(
-            c.get("ok", False) for c in [
-                sqlite_result, postgres_result, scheduler_result, pool_result
-            ]
+            c.get("ok", False)
+            for c in [sqlite_result, postgres_result, scheduler_result, pool_result]
         )
         status_code = 200 if all_ok else 503
         return JSONResponse(
@@ -231,9 +234,7 @@ async def _gather_ready_checks(
     )
     scheduler_result = _check_scheduler(cron_worker)
     pool_result = _check_subagent_pool(subagent_pool)
-    all_ok = all(
-        c.get("ok", False) for c in [checks[0], checks[1], scheduler_result, pool_result]
-    )
+    all_ok = all(c.get("ok", False) for c in [checks[0], checks[1], scheduler_result, pool_result])
     return {
         "all_ok": all_ok,
         "checks": {
@@ -248,7 +249,7 @@ async def _gather_ready_checks(
 async def _safe_noop() -> dict[str, Any]:
     try:
         return await _run_noop_skill()
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return {"ok": False, "error": "timeout (>2s)"}
     except Exception as exc:
         return {"ok": False, "error": str(exc)}

@@ -1,6 +1,7 @@
 """
 Transport OpenAI. Também usado como base para OpenRouter.
 """
+
 from __future__ import annotations
 
 import time
@@ -55,8 +56,12 @@ class OpenAITransport:
     @property
     def capabilities(self) -> Capabilities:
         return Capabilities(
-            tool_use=True, vision=True, json_mode=True, streaming=True,
-            max_context=128_000, parallel_tools=True,
+            tool_use=True,
+            vision=True,
+            json_mode=True,
+            streaming=True,
+            max_context=128_000,
+            parallel_tools=True,
         )
 
     # ------------------------------------------------------------------
@@ -92,11 +97,14 @@ class OpenAITransport:
         if choice.message.tool_calls:
             for tc in choice.message.tool_calls:
                 import json
-                tool_calls.append({
-                    "id": tc.id,
-                    "name": tc.function.name,
-                    "input": json.loads(tc.function.arguments or "{}"),
-                })
+
+                tool_calls.append(
+                    {
+                        "id": tc.id,
+                        "name": tc.function.name,
+                        "input": json.loads(tc.function.arguments or "{}"),
+                    }
+                )
 
         usage = Usage(
             input_tokens=resp.usage.prompt_tokens if resp.usage else 0,
@@ -202,13 +210,15 @@ class OpenAITransport:
             alias = f"{self.name}:{model_id}"
             caps = CLOUD_CAPABILITIES.get(alias, self.capabilities)
             rates = PRICING_USD_PER_1M.get(alias, (0.0, 0.0))
-            result.append(ModelInfo(
-                provider=self.name,
-                model_id=model_id,
-                capabilities=caps,
-                cost_input_per_1m=rates[0],
-                cost_output_per_1m=rates[1],
-            ))
+            result.append(
+                ModelInfo(
+                    provider=self.name,
+                    model_id=model_id,
+                    capabilities=caps,
+                    cost_input_per_1m=rates[0],
+                    cost_output_per_1m=rates[1],
+                )
+            )
         return result
 
     async def health(self) -> HealthStatus:
@@ -228,6 +238,7 @@ class OpenAITransport:
 # ------------------------------------------------------------------
 # helpers
 # ------------------------------------------------------------------
+
 
 def _to_openai_message(m: Message) -> dict[str, Any]:
     base: dict[str, Any] = {"role": m.role, "content": m.content}

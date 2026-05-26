@@ -2,6 +2,7 @@
 Lê skills de disco (.md com frontmatter ou pasta com manifest.yaml + prompt.md).
 Calcula hash do conteúdo para detectar mudanças sem re-embedar desnecessariamente.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -102,9 +103,23 @@ def _validate_tools_py(path: Path) -> None:
         ):
             # Bibliotecas padrão e comuns são permitidas
             _STDLIB_OR_ALLOWED = {
-                "typing", "pathlib", "os", "sys", "re", "json", "datetime",
-                "collections", "functools", "itertools", "asyncio", "abc",
-                "uuid", "hashlib", "pydantic", "httpx", "anyio",
+                "typing",
+                "pathlib",
+                "os",
+                "sys",
+                "re",
+                "json",
+                "datetime",
+                "collections",
+                "functools",
+                "itertools",
+                "asyncio",
+                "abc",
+                "uuid",
+                "hashlib",
+                "pydantic",
+                "httpx",
+                "anyio",
             }
             if module not in _STDLIB_OR_ALLOWED:
                 raise PermissionError(

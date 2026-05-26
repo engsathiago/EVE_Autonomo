@@ -1,11 +1,11 @@
 """
 Subcomando `agent model` — lista, health check, detalhes e custos.
 """
+
 from __future__ import annotations
 
 import asyncio
 import os
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -15,8 +15,9 @@ app = typer.Typer(help="Gerencia providers e modelos LLM.")
 console = Console()
 
 
-def _get_router() -> "Any":
+def _get_router() -> Any:
     from agent.config import build_model_router, get_settings
+
     return build_model_router(get_settings())
 
 
@@ -24,17 +25,21 @@ def _get_router() -> "Any":
 # agent model list
 # ---------------------------------------------------------------------------
 
+
 @app.command("list")
 def model_list() -> None:
     """Lista todos os modelos disponíveis (cloud hardcoded + Ollama via /api/tags)."""
     from agent.observability import configure_logging
+
     configure_logging("WARNING")
 
     async def _run() -> None:
         router = _get_router()
         models = await router.list_all_models()
         if not models:
-            console.print("[yellow]Nenhum modelo disponível. Verifique as API keys e o Ollama.[/yellow]")
+            console.print(
+                "[yellow]Nenhum modelo disponível. Verifique as API keys e o Ollama.[/yellow]"
+            )
             return
 
         table = Table(show_header=True, header_style="bold cyan")
@@ -63,10 +68,12 @@ def model_list() -> None:
 # agent model health
 # ---------------------------------------------------------------------------
 
+
 @app.command("health")
 def model_health() -> None:
     """Health check de todos os providers configurados."""
     from agent.observability import configure_logging
+
     configure_logging("WARNING")
 
     async def _run() -> None:
@@ -92,14 +99,17 @@ def model_health() -> None:
 # agent model show
 # ---------------------------------------------------------------------------
 
+
 @app.command("show")
 def model_show(model_alias: str = typer.Argument(..., help="ex: ollama:qwen2.5:7b")) -> None:
     """Exibe detalhes de capabilities de um modelo."""
     from agent.observability import configure_logging
+
     configure_logging("WARNING")
 
     async def _run() -> None:
         from agent.models.router import parse_model_string
+
         try:
             provider, model_id = parse_model_string(model_alias)
         except ValueError as exc:
@@ -108,11 +118,16 @@ def model_show(model_alias: str = typer.Argument(..., help="ex: ollama:qwen2.5:7
 
         router = _get_router()
         all_models = await router.list_all_models()
-        matches = [m for m in all_models if m.alias == model_alias or
-                   (m.provider == provider and m.model_id == model_id)]
+        matches = [
+            m
+            for m in all_models
+            if m.alias == model_alias or (m.provider == provider and m.model_id == model_id)
+        ]
 
         if not matches:
-            console.print(f"[yellow]Modelo '{model_alias}' não encontrado nos providers ativos.[/yellow]")
+            console.print(
+                f"[yellow]Modelo '{model_alias}' não encontrado nos providers ativos.[/yellow]"
+            )
             raise typer.Exit(1)
 
         m = matches[0]
@@ -139,16 +154,19 @@ def model_show(model_alias: str = typer.Argument(..., help="ex: ollama:qwen2.5:7
 # agent model test
 # ---------------------------------------------------------------------------
 
+
 @app.command("test")
 def model_test(
     model_alias: str = typer.Argument(..., help="ex: anthropic:claude-haiku-4-5"),
 ) -> None:
     """Envia 'ping' ao modelo e exibe resposta, latência e custo."""
     from agent.observability import configure_logging
+
     configure_logging("WARNING")
 
     async def _run() -> None:
         import time
+
         from agent.models.base import Message
         from agent.models.router import parse_model_string
 
@@ -174,8 +192,10 @@ def model_test(
 
         latency_ms = int((time.monotonic() - t0) * 1000)
         from agent.models.pricing import cost_usd
-        c = cost_usd(model_alias, resp.usage.input_tokens, resp.usage.output_tokens,
-                     resp.openrouter_cost_usd)
+
+        c = cost_usd(
+            model_alias, resp.usage.input_tokens, resp.usage.output_tokens, resp.openrouter_cost_usd
+        )
 
         console.print(f"  Resposta:  [green]{resp.text.strip()!r}[/green]")
         console.print(f"  Latência:  {latency_ms}ms")
@@ -189,17 +209,20 @@ def model_test(
 # agent model costs
 # ---------------------------------------------------------------------------
 
+
 @app.command("costs")
 def model_costs(
     since: str = typer.Option("today", help="'today', 'week', ou data ISO 'YYYY-MM-DD'"),
 ) -> None:
     """Exibe consumo e custo agregado por modelo."""
     from agent.observability import configure_logging
+
     configure_logging("WARNING")
 
     async def _run() -> None:
-        import asyncpg
         from datetime import date, datetime, timedelta
+
+        import asyncpg
 
         # Resolve período
         today = date.today()
@@ -211,7 +234,9 @@ def model_costs(
             try:
                 since_dt = datetime.fromisoformat(since)
             except ValueError:
-                console.print(f"[red]Data inválida: {since!r}. Use 'today', 'week' ou 'YYYY-MM-DD'.[/red]")
+                console.print(
+                    f"[red]Data inválida: {since!r}. Use 'today', 'week' ou 'YYYY-MM-DD'.[/red]"
+                )
                 raise typer.Exit(1)
 
         dsn = os.environ.get("POSTGRES_DSN") or os.environ.get("POSTGRES_URL")

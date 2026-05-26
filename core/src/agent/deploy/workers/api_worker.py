@@ -1,4 +1,5 @@
 """ApiWorker: roda o servidor uvicorn/FastAPI com todos os componentes F0-F9."""
+
 from __future__ import annotations
 
 import os

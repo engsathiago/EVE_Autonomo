@@ -1,4 +1,5 @@
 """Adapter fino para o Crítico (F7)."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -11,7 +12,9 @@ if TYPE_CHECKING:
 log = get_logger(__name__)
 
 
-async def get_critic_queue(db_pool: "asyncpg.Pool", limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
+async def get_critic_queue(
+    db_pool: asyncpg.Pool, limit: int = 50, offset: int = 0
+) -> list[dict[str, Any]]:
     """Retorna avaliações pendentes (sem veredito final ainda)."""
     try:
         rows = await db_pool.fetch(
@@ -25,7 +28,8 @@ async def get_critic_queue(db_pool: "asyncpg.Pool", limit: int = 50, offset: int
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2
             """,
-            limit, offset,
+            limit,
+            offset,
         )
         return [_row_to_dict(r) for r in rows]
     except Exception as exc:
@@ -34,7 +38,7 @@ async def get_critic_queue(db_pool: "asyncpg.Pool", limit: int = 50, offset: int
 
 
 async def get_critic_history(
-    db_pool: "asyncpg.Pool",
+    db_pool: asyncpg.Pool,
     limit: int = 50,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
@@ -50,7 +54,8 @@ async def get_critic_history(
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2
             """,
-            limit, offset,
+            limit,
+            offset,
         )
         return [_row_to_dict(r) for r in rows]
     except Exception as exc:
@@ -60,10 +65,13 @@ async def get_critic_history(
 
 def _row_to_dict(row: Any) -> dict[str, Any]:
     import json
+
     return {
         "id": str(row["id"]),
         "tool_name": row["tool_name"],
-        "tool_args": json.loads(row["tool_args"]) if isinstance(row["tool_args"], str) else row["tool_args"],
+        "tool_args": json.loads(row["tool_args"])
+        if isinstance(row["tool_args"], str)
+        else row["tool_args"],
         "context_summary": row["context_summary"],
         "tier": row["tier"],
         "estimated_cost_usd": float(row["estimated_cost_usd"] or 0),
@@ -81,6 +89,7 @@ def _parse_verdict(raw: Any) -> dict | None:
     if raw is None:
         return None
     import json
+
     if isinstance(raw, str):
         try:
             return json.loads(raw)

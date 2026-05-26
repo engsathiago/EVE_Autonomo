@@ -6,9 +6,7 @@ from pydantic import BaseModel
 
 
 class ChatChunk(BaseModel):
-    type: Literal[
-        "text", "tool_call_start", "tool_call_delta", "tool_call_end", "done"
-    ]
+    type: Literal["text", "tool_call_start", "tool_call_delta", "tool_call_end", "done"]
     text: str | None = None
     tool_call: dict[str, Any] | None = None
 

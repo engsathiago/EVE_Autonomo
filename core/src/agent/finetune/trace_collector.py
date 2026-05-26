@@ -5,10 +5,11 @@ and returns raw training-candidate records.
 Does NOT format or filter for PII — that is DatasetBuilder's responsibility.
 Applies only quality and time-window filters.
 """
+
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from agent.observability.logger import get_logger
@@ -36,9 +37,7 @@ class TraceCollector:
         Collects traces since `since` (or lookback_days ago if None).
         Returns list of raw dicts with origin metadata attached.
         """
-        cutoff = since or (
-            datetime.now(tz=timezone.utc) - timedelta(days=self._lookback_days)
-        )
+        cutoff = since or (datetime.now(tz=UTC) - timedelta(days=self._lookback_days))
         log.info(
             "trace_collector.start",
             cutoff=cutoff.isoformat(),
@@ -82,22 +81,24 @@ class TraceCollector:
         rows = await self._pool.fetch(query, cutoff)
         records: list[dict[str, Any]] = []
         for row in rows:
-            records.append({
-                "origin": {
-                    "trace_id": f"mission:{row['mission_id']}",
-                    "mission_id": str(row["mission_id"]),
-                    "skill_id": None,
-                    "type": "mission_reflection",
-                },
-                "input": row["objective"],
-                "output": row["delivered"],
-                "context": {
-                    "title": row["mission_title"],
-                    "learned": row["learned"],
-                    "quality_text": row["quality_text"],
-                },
-                "created_at": row["created_at"].isoformat() if row["created_at"] else None,
-            })
+            records.append(
+                {
+                    "origin": {
+                        "trace_id": f"mission:{row['mission_id']}",
+                        "mission_id": str(row["mission_id"]),
+                        "skill_id": None,
+                        "type": "mission_reflection",
+                    },
+                    "input": row["objective"],
+                    "output": row["delivered"],
+                    "context": {
+                        "title": row["mission_title"],
+                        "learned": row["learned"],
+                        "quality_text": row["quality_text"],
+                    },
+                    "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+                }
+            )
         return records
 
     async def _collect_skills(self, cutoff: datetime) -> list[dict[str, Any]]:
@@ -134,23 +135,27 @@ class TraceCollector:
 
             # Skip if input or output is trivially small
             input_str = json.dumps(input_data) if not isinstance(input_data, str) else input_data
-            output_str = json.dumps(output_data) if not isinstance(output_data, str) else output_data
+            output_str = (
+                json.dumps(output_data) if not isinstance(output_data, str) else output_data
+            )
             if len(input_str) < 10 or len(output_str) < 10:
                 continue
 
-            records.append({
-                "origin": {
-                    "trace_id": f"skill:{row['exec_id']}",
-                    "mission_id": row["mission_id"],
-                    "skill_id": row["skill_slug"],
-                    "type": "skill_execution",
-                },
-                "input": input_str,
-                "output": output_str,
-                "context": {
-                    "skill_slug": row["skill_slug"],
-                    "duration_s": float(row["duration_s"] or 0),
-                },
-                "created_at": row["created_at"].isoformat() if row["created_at"] else None,
-            })
+            records.append(
+                {
+                    "origin": {
+                        "trace_id": f"skill:{row['exec_id']}",
+                        "mission_id": row["mission_id"],
+                        "skill_id": row["skill_slug"],
+                        "type": "skill_execution",
+                    },
+                    "input": input_str,
+                    "output": output_str,
+                    "context": {
+                        "skill_slug": row["skill_slug"],
+                        "duration_s": float(row["duration_s"] or 0),
+                    },
+                    "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+                }
+            )
         return records

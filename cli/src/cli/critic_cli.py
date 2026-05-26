@@ -1,12 +1,12 @@
 """
 Subcomando `agent critic` — inspeciona avaliações do Crítico Autônomo.
 """
+
 from __future__ import annotations
 
 import asyncio
 import json
 import os
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -20,15 +20,17 @@ _CORE_URL = os.getenv("AGENT_CORE_URL", "http://localhost:8000")
 
 def _http():
     import httpx
+
     return httpx.AsyncClient(base_url=_CORE_URL, timeout=30)
 
 
 @app.command("show")
 def critic_show(task_id: str = typer.Argument(..., help="ID da task")) -> None:
     """Exibe os 3 vereditos da última avaliação do Critic para uma task."""
+
     async def _run() -> None:
         async with _http() as client:
-            resp = await client.get(f"/v1/critic/evaluations", params={"task_id": task_id})
+            resp = await client.get("/v1/critic/evaluations", params={"task_id": task_id})
             resp.raise_for_status()
             evals = resp.json()
 
@@ -38,7 +40,9 @@ def critic_show(task_id: str = typer.Argument(..., help="ID da task")) -> None:
 
         ev = evals[0]
         console.print(f"\n[bold]Avaliação do Critic[/bold]  [dim]{ev['id'][:8]}[/dim]")
-        console.print(f"Veredito final: [bold {'green' if ev['final_verdict'] == 'approve' else 'red'}]{ev['final_verdict']}[/]")
+        console.print(
+            f"Veredito final: [bold {'green' if ev['final_verdict'] == 'approve' else 'red'}]{ev['final_verdict']}[/]"
+        )
 
         tech = ev.get("technical_verdict", {})
         devil = ev.get("devils_advocate_verdict", {})
@@ -46,7 +50,7 @@ def critic_show(task_id: str = typer.Argument(..., help="ID da task")) -> None:
 
         console.print("\n[cyan]Técnico:[/cyan]")
         console.print(f"  approve={tech.get('approve')}  confidence={tech.get('confidence')}")
-        console.print(f"  {tech.get('reasoning','')[:200]}")
+        console.print(f"  {tech.get('reasoning', '')[:200]}")
 
         console.print("\n[yellow]Advogado do Diabo:[/yellow]")
         console.print(f"  approve={devil.get('approve')}  confidence={devil.get('confidence')}")
@@ -54,12 +58,12 @@ def critic_show(task_id: str = typer.Argument(..., help="ID da task")) -> None:
             console.print(f"  • {c}")
 
         console.print("\n[magenta]Sintetizador:[/magenta]")
-        console.print(f"  {synth.get('reasoning','')[:300]}")
+        console.print(f"  {synth.get('reasoning', '')[:300]}")
         if ev.get("mitigations"):
             for m in ev["mitigations"]:
                 console.print(f"  [dim]mitigação:[/dim] {m}")
 
-        console.print(f"\n[dim]latência: {ev.get('latency_ms','?')}ms[/dim]")
+        console.print(f"\n[dim]latência: {ev.get('latency_ms', '?')}ms[/dim]")
 
     asyncio.run(_run())
 
@@ -67,6 +71,7 @@ def critic_show(task_id: str = typer.Argument(..., help="ID da task")) -> None:
 @app.command("stats")
 def critic_stats() -> None:
     """Exibe taxa de approve/reject/escalate e latência do Critic."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.get("/v1/critic/stats")
@@ -94,6 +99,7 @@ def critic_test(
     context: str = typer.Option("Teste manual via CLI", "--context", "-c"),
 ) -> None:
     """Dry-run do Critic: avalia sem executar a tool."""
+
     async def _run() -> None:
         try:
             parsed_args = json.loads(args)
@@ -102,19 +108,26 @@ def critic_test(
             raise typer.Exit(1)
 
         async with _http() as client:
-            resp = await client.post("/v1/critic/test", json={
-                "tool_name": tool,
-                "tool_args": parsed_args,
-                "context_summary": context,
-            })
+            resp = await client.post(
+                "/v1/critic/test",
+                json={
+                    "tool_name": tool,
+                    "tool_args": parsed_args,
+                    "context_summary": context,
+                },
+            )
             resp.raise_for_status()
             result = resp.json()
 
         verdict = result.get("verdict", "?")
-        color = {"approve": "green", "reject": "red",
-                 "approve_with_mitigation": "yellow", "escalate": "magenta"}.get(verdict, "white")
+        color = {
+            "approve": "green",
+            "reject": "red",
+            "approve_with_mitigation": "yellow",
+            "escalate": "magenta",
+        }.get(verdict, "white")
         console.print(f"\nVeredito: [{color}]{verdict}[/{color}]")
-        console.print(f"Raciocínio: {result.get('reasoning','')[:300]}")
+        console.print(f"Raciocínio: {result.get('reasoning', '')[:300]}")
         if result.get("mitigations"):
             for m in result["mitigations"]:
                 console.print(f"  [dim]mitigação:[/dim] {m}")

@@ -4,6 +4,7 @@ SkillManifest (Fase 9): schema Pydantic para skills auto-geradas (.py).
 Diferente do SkillManifest da Fase 3 (schema.py) que é para skills .md/template.
 Este manifesto é declarativo, versionável, e contém política de sandbox obrigatória.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -16,7 +17,7 @@ class NetworkPolicy(BaseModel):
     allow_domains: list[str] = []
 
     @model_validator(mode="after")
-    def _no_open_network(self) -> "NetworkPolicy":
+    def _no_open_network(self) -> NetworkPolicy:
         # Abre a rede de forma irrestrita é anti-padrão proibido no spec §14
         if "*" in self.allow_domains or "0.0.0.0" in self.allow_domains:
             raise ValueError(
@@ -45,6 +46,7 @@ class SkillProvenance(BaseModel):
 
 class SkillManifestF9(BaseModel):
     """Manifesto de skill auto-gerada (Fase 9). Validação dura — campo ausente = rejeição."""
+
     slug: str
     version: int = 1
     created_at: datetime
@@ -68,9 +70,7 @@ class SkillManifestF9(BaseModel):
     @classmethod
     def _validate_profile(cls, v: str) -> str:
         if v not in _VALID_SANDBOX_PROFILES:
-            raise ValueError(
-                f"sandbox_profile={v!r} inválido. Válidos: {_VALID_SANDBOX_PROFILES}"
-            )
+            raise ValueError(f"sandbox_profile={v!r} inválido. Válidos: {_VALID_SANDBOX_PROFILES}")
         return v
 
     @field_validator("inputs_schema")
@@ -91,17 +91,18 @@ class SkillManifestF9(BaseModel):
     @classmethod
     def _validate_slug(cls, v: str) -> str:
         import re
+
         if not re.match(r"^[a-z][a-z0-9_]{1,63}$", v):
-            raise ValueError(
-                f"slug={v!r} inválido — deve ser snake_case, [a-z][a-z0-9_]{{1,63}}"
-            )
+            raise ValueError(f"slug={v!r} inválido — deve ser snake_case, [a-z][a-z0-9_]{{1,63}}")
         return v
 
 
-def load_manifest_from_yaml(path: "str | import_pathlib_Path") -> SkillManifestF9:  # type: ignore[name-defined]
+def load_manifest_from_yaml(path: str | import_pathlib_Path) -> SkillManifestF9:  # type: ignore[name-defined]
     """Carrega e valida manifest.yaml de uma skill. Lança ValueError se inválido."""
-    import yaml  # type: ignore[import-untyped]
     from pathlib import Path
+
+    import yaml  # type: ignore[import-untyped]
+
     data = yaml.safe_load(Path(str(path)).read_text())
     return SkillManifestF9(**data)
 

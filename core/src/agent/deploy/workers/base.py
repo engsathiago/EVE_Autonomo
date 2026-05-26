@@ -1,4 +1,5 @@
 """Worker ABC: interface comum para os 4 workers do supervisor."""
+
 from __future__ import annotations
 
 import asyncio

@@ -7,7 +7,7 @@ from agent.tools.base import BaseTool, ToolResult
 
 log = get_logger(__name__)
 
-_READ_LIMIT = 1 * 1024 * 1024   # 1 MB
+_READ_LIMIT = 1 * 1024 * 1024  # 1 MB
 _WRITE_LIMIT = 5 * 1024 * 1024  # 5 MB
 
 
@@ -138,11 +138,13 @@ class ListDirTool(BaseTool):
         entries = []
         for p in sorted(glob):
             stat = p.stat()
-            entries.append({
-                "path": str(p),
-                "type": "dir" if p.is_dir() else "file",
-                "size": stat.st_size if p.is_file() else None,
-            })
+            entries.append(
+                {
+                    "path": str(p),
+                    "type": "dir" if p.is_dir() else "file",
+                    "size": stat.st_size if p.is_file() else None,
+                }
+            )
 
         log.info("tool.list_dir", path=str(target), entries=len(entries))
         return ToolResult(ok=True, output=entries)

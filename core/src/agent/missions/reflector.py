@@ -4,6 +4,7 @@ MissionReflector: roda uma vez quando missão atinge status terminal.
 Parse estrito: exige exatamente 4 seções (ENTREGUE / QUALIDADE / PRÓXIMO / APRENDIDO).
 Formato livre → exception. Reflexão sem 4 campos não vai para memória reflexiva.
 """
+
 from __future__ import annotations
 
 import re
@@ -116,16 +117,19 @@ class MissionReflector:
 
     def _build_prompt(self, mission, steps, critic_evals) -> str:
         steps_lines = "\n".join(
-            f"  [{s.status.upper()}] seq={s.sequence}: {s.description}"
-            for s in steps
+            f"  [{s.status.upper()}] seq={s.sequence}: {s.description}" for s in steps
         )
         if not steps_lines:
             steps_lines = "  (nenhum step registrado)"
 
-        critic_lines = "\n".join(
-            f"  [{e.get('final_verdict','?').upper()}] {e.get('synthesizer_verdict',{})}"
-            for e in critic_evals[:5]
-        ) if critic_evals else "  (nenhuma avaliação)"
+        critic_lines = (
+            "\n".join(
+                f"  [{e.get('final_verdict', '?').upper()}] {e.get('synthesizer_verdict', {})}"
+                for e in critic_evals[:5]
+            )
+            if critic_evals
+            else "  (nenhuma avaliação)"
+        )
 
         import json
 

@@ -16,6 +16,7 @@ Compatibilidade:
   - Windows: multiprocessing.Process — usa spawn, sem herança; worker deve
     ser importável e serializável (sem closures em __init__).
 """
+
 from __future__ import annotations
 
 import collections
@@ -49,6 +50,7 @@ _IS_WINDOWS = platform.system() == "Windows"
 
 # ── sd_notify ─────────────────────────────────────────────────────────────────
 
+
 def _sd_notify(msg: str) -> None:
     """Envia notificação ao systemd via NOTIFY_SOCKET.
 
@@ -59,6 +61,7 @@ def _sd_notify(msg: str) -> None:
     if not sock_path:
         return
     import socket
+
     # Sockets abstratos começam com '@' no systemd; Python usa '\0'
     addr = "\0" + sock_path[1:] if sock_path.startswith("@") else sock_path
     try:
@@ -71,15 +74,14 @@ def _sd_notify(msg: str) -> None:
 
 # ── Estado por worker ─────────────────────────────────────────────────────────
 
+
 @dataclass
 class _WorkerState:
-    worker: "Worker"
+    worker: Worker
     pid: int = 0
     started_at: float = 0.0
     last_restart_at: float = 0.0
-    restart_timestamps: collections.deque = field(
-        default_factory=lambda: collections.deque()
-    )
+    restart_timestamps: collections.deque = field(default_factory=lambda: collections.deque())
     disabled: bool = False
 
     def backoff_seconds(self) -> float:
@@ -111,6 +113,7 @@ class _WorkerState:
 
 
 # ── SQLite helper (síncrono — chamado do loop principal) ──────────────────────
+
 
 def _get_db_path() -> str:
     return os.environ.get(
@@ -147,9 +150,7 @@ def _db_update_worker_health(
     try:
         conn = sqlite3.connect(_get_db_path())
         started_iso = (
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(started_at))
-            if started_at
-            else None
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(started_at)) if started_at else None
         )
         conn.execute(
             """
@@ -172,7 +173,8 @@ def _db_update_worker_health(
 
 # ── Fork / spawn ──────────────────────────────────────────────────────────────
 
-def _fork_worker(worker: "Worker") -> int:
+
+def _fork_worker(worker: Worker) -> int:
     """Cria processo filho para o worker. Retorna PID do filho."""
     if _IS_WINDOWS:
         import multiprocessing
@@ -198,7 +200,7 @@ def _reset_signals_child() -> None:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
-def _run_worker_sync(worker: "Worker") -> None:
+def _run_worker_sync(worker: Worker) -> None:
     """Ponto de entrada síncrono no processo filho."""
     import asyncio
 
@@ -214,18 +216,17 @@ def _run_worker_sync(worker: "Worker") -> None:
 
 # ── Supervisor ────────────────────────────────────────────────────────────────
 
+
 class Supervisor:
     """Gerencia N workers: fork, monitor, restart com backoff, flapping detection."""
 
     def __init__(
         self,
-        workers: list["Worker"],
+        workers: list[Worker],
         pid_file: str | None = None,
     ) -> None:
         self._states: list[_WorkerState] = [_WorkerState(worker=w) for w in workers]
-        self._pid_file = pid_file or os.environ.get(
-            "AGENT_PID_FILE", "/var/run/agent.pid"
-        )
+        self._pid_file = pid_file or os.environ.get("AGENT_PID_FILE", "/var/run/agent.pid")
         self._shutdown = False
         self._last_watchdog_s = 0.0
 
@@ -257,12 +258,8 @@ class Supervisor:
     def _start_worker(self, state: _WorkerState) -> None:
         state.pid = _fork_worker(state.worker)
         state.started_at = time.monotonic()
-        _db_update_worker_health(
-            state.worker.name, state.pid, state.started_at, 0, "running"
-        )
-        _db_record_event(
-            "start", state.worker.name, {"pid": state.pid}, True
-        )
+        _db_update_worker_health(state.worker.name, state.pid, state.started_at, 0, "running")
+        _db_record_event("start", state.worker.name, {"pid": state.pid}, True)
         _log(f"worker.started worker={state.worker.name} pid={state.pid}")
 
     def _monitor_loop(self) -> None:
@@ -296,9 +293,7 @@ class Supervisor:
         # Flapping: >= 10 restarts em 10 minutos
         if n_in_window >= _FLAPPING_MAX_RESTARTS:
             state.disabled = True
-            _db_update_worker_health(
-                state.worker.name, 0, None, n_in_window, "flapping"
-            )
+            _db_update_worker_health(state.worker.name, 0, None, n_in_window, "flapping")
             _db_record_event(
                 "crash",
                 state.worker.name,
@@ -313,13 +308,8 @@ class Supervisor:
 
         backoff = state.backoff_seconds()
         attempt = n_in_window
-        _log(
-            f"worker.restarting worker={state.worker.name} "
-            f"attempt={attempt} backoff={backoff}s"
-        )
-        _db_update_worker_health(
-            state.worker.name, 0, None, n_in_window, "stopped"
-        )
+        _log(f"worker.restarting worker={state.worker.name} attempt={attempt} backoff={backoff}s")
+        _db_update_worker_health(state.worker.name, 0, None, n_in_window, "stopped")
         _db_record_event(
             "restart",
             state.worker.name,
@@ -385,6 +375,7 @@ class Supervisor:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _is_pid_alive(pid: int) -> bool:
     if pid <= 0:
         return False
@@ -420,6 +411,7 @@ def _log(msg: str) -> None:
 
 
 # ── Entrypoint ────────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     """Usado por `python -m agent.deploy.supervisor` no systemd."""

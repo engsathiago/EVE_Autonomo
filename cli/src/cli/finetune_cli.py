@@ -4,13 +4,12 @@ Subcomando `agent finetune` — run, list, activate, rollback, report, bench.
 Todos os subcomandos requerem dependências do grupo [finetune] instaladas.
 Se não instaladas, exibe mensagem clara com instrução de instalação.
 """
+
 from __future__ import annotations
 
 import asyncio
 import os
-import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -42,6 +41,7 @@ def _check_finetune_deps() -> None:
 def _get_pool():
     """Creates a synchronous asyncpg pool wrapper for CLI use."""
     import asyncpg
+
     db_url = os.getenv("DATABASE_URL", "postgresql://agent:agent@localhost:5432/agent")
     return asyncpg.connect(db_url)
 
@@ -53,19 +53,28 @@ def _load_finetune_config() -> dict:
         console.print("Crie config/finetune.yaml — veja docs/finetune.md para o formato.")
         raise typer.Exit(1)
     import yaml
+
     return yaml.safe_load(config_path.read_text()) or {}
 
 
 @app.command("run")
 def finetune_run(
-    auto_activate: bool = typer.Option(False, "--auto-activate", help="Ativa automaticamente se aprovado (só após N runs manuais)"),
-    triggered_by: str = typer.Option("cli", "--triggered-by", help="Quem disparou: 'cli', 'cron:weekly', etc."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Só coleta e exibe estatísticas do dataset, sem treinar"),
+    auto_activate: bool = typer.Option(
+        False, "--auto-activate", help="Ativa automaticamente se aprovado (só após N runs manuais)"
+    ),
+    triggered_by: str = typer.Option(
+        "cli", "--triggered-by", help="Quem disparou: 'cli', 'cron:weekly', etc."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Só coleta e exibe estatísticas do dataset, sem treinar"
+    ),
 ) -> None:
     """Executa um ciclo completo: coleta → dataset → benchmark → treino → gate → relatório."""
     _check_finetune_deps()
 
     async def _run() -> None:
+        import uuid
+
         import asyncpg
         from agent.finetune.benchmark_runner import BenchmarkRunner
         from agent.finetune.checkpoint_gate import CheckpointGate
@@ -77,7 +86,6 @@ def finetune_run(
         from agent.finetune.rubric import Rubric
         from agent.finetune.safety_check import SafetyCheck
         from agent.finetune.trace_collector import TraceCollector
-        import uuid
 
         cfg_raw = _load_finetune_config()
         ft_cfg = cfg_raw.get("finetune", {})
@@ -92,7 +100,9 @@ def finetune_run(
         pool = await asyncpg.create_pool(db_url, min_size=1, max_size=3)
 
         benchmarks_dir = _PROJECT_ROOT / "benchmarks"
-        rubric_path = benchmarks_dir / bench_cfg.get("rubric_path", "rubric.yaml").replace("benchmarks/", "")
+        rubric_path = benchmarks_dir / bench_cfg.get("rubric_path", "rubric.yaml").replace(
+            "benchmarks/", ""
+        )
 
         # C1: Benchmark é pré-requisito — falha explícita se rubric.yaml não existe
         try:
@@ -110,7 +120,9 @@ def finetune_run(
             pool=pool,
             models_dir=models_dir,
             auto_activate=ft_cfg.get("activation", {}).get("auto_activate", False),
-            auto_activate_after_n_accepted=ft_cfg.get("activation", {}).get("auto_activate_after_n_accepted", 5),
+            auto_activate_after_n_accepted=ft_cfg.get("activation", {}).get(
+                "auto_activate_after_n_accepted", 5
+            ),
         )
 
         console.print(f"\n[bold cyan]F13 Fine-tuning — Run {run_id[:8]}[/bold cyan]")
@@ -142,7 +154,9 @@ def finetune_run(
             console.print(f"[red]DatasetTooSmall:[/red] {exc}")
             raise typer.Exit(1)
 
-        console.print(f"   {stats.train_size} treino + {stats.eval_size} eval | ID: {stats.dataset_id}")
+        console.print(
+            f"   {stats.train_size} treino + {stats.eval_size} eval | ID: {stats.dataset_id}"
+        )
 
         if dry_run:
             console.print("\n[yellow]--dry-run: parando aqui (sem treino).[/yellow]")
@@ -187,10 +201,15 @@ def finetune_run(
 
         # Step 4: Train
         console.print("[bold]4.[/bold] Treinando LoRA...")
-        trainer = LoraTrainer(checkpoints_dir=models_dir / "checkpoints", ollama_base_url=ollama_url)
+        trainer = LoraTrainer(
+            checkpoints_dir=models_dir / "checkpoints", ollama_base_url=ollama_url
+        )
         from agent.finetune.exceptions import FinetuneError
+
         try:
-            train_result = await trainer.train(dataset_path=dataset_path, run_id=run_id, config=train_config)
+            train_result = await trainer.train(
+                dataset_path=dataset_path, run_id=run_id, config=train_config
+            )
         except FinetuneError as exc:
             await registry.finish_run(run_id=run_id, status="failed", rejection_reason=str(exc))
             console.print(f"[red]Treino falhou:[/red] {exc}")
@@ -250,7 +269,9 @@ def finetune_run(
                     await registry.activate(checkpoint_id, auto=True)
                     console.print(f"   [green]Auto-ativado:[/green] {checkpoint_id}")
                 else:
-                    console.print("   [yellow]auto_activate=true mas histórico insuficiente. Ative manualmente.[/yellow]")
+                    console.print(
+                        "   [yellow]auto_activate=true mas histórico insuficiente. Ative manualmente.[/yellow]"
+                    )
             except Exception as exc:
                 console.print(f"   [yellow]Auto-ativação falhou:[/yellow] {exc}")
 
@@ -281,7 +302,9 @@ def finetune_run(
             telegram_token=tg_token,
         )
 
-        console.print(f"\n[bold]Resultado:[/bold] {'[green]APROVADO[/green]' if decision.accepted else '[red]REJEITADO[/red]'}")
+        console.print(
+            f"\n[bold]Resultado:[/bold] {'[green]APROVADO[/green]' if decision.accepted else '[red]REJEITADO[/red]'}"
+        )
         if not decision.accepted:
             console.print(f"  Razão: {decision.reason}")
         console.print(f"  Relatório: {report_path}")
@@ -295,8 +318,10 @@ def finetune_list(
     limit: int = typer.Option(20, "--limit", "-n"),
 ) -> None:
     """Lista runs e checkpoints recentes com status e scores."""
+
     async def _run() -> None:
         import asyncpg
+
         db_url = os.getenv("DATABASE_URL", "postgresql://agent:agent@localhost:5432/agent")
         conn = await asyncpg.connect(db_url)
 
@@ -305,7 +330,8 @@ def finetune_list(
             SELECT id, started_at, status, base_model, dataset_size,
                    benchmark_score, rejection_reason, triggered_by
             FROM finetune_runs ORDER BY started_at DESC LIMIT $1
-            """, limit,
+            """,
+            limit,
         )
         await conn.close()
 
@@ -321,14 +347,17 @@ def finetune_list(
         for r in runs:
             scores = r["benchmark_score"] or {}
             import json
+
             if isinstance(scores, str):
                 scores = json.loads(scores)
             base_w = scores.get("base_weighted", 0)
             cand_w = scores.get("candidate_weighted", 0)
-            delta_str = f"{(cand_w - base_w)*100:+.2f}%" if base_w and cand_w else "—"
+            delta_str = f"{(cand_w - base_w) * 100:+.2f}%" if base_w and cand_w else "—"
             status_color = {
-                "accepted": "green", "rejected": "red",
-                "running": "yellow", "failed": "red",
+                "accepted": "green",
+                "rejected": "red",
+                "running": "yellow",
+                "failed": "red",
             }.get(r["status"], "white")
 
             table.add_row(
@@ -350,13 +379,15 @@ def finetune_activate(
     checkpoint_id: str = typer.Argument(..., help="ID do checkpoint a ativar"),
 ) -> None:
     """Ativa um checkpoint candidato atomicamente."""
+
     async def _run() -> None:
         import asyncpg
+        from agent.finetune.checkpoint_registry import CheckpointRegistry
+
         db_url = os.getenv("DATABASE_URL", "postgresql://agent:agent@localhost:5432/agent")
         pool = await asyncpg.create_pool(db_url, min_size=1, max_size=2)
         models_dir = _PROJECT_ROOT / "models"
         registry = CheckpointRegistry(pool=pool, models_dir=models_dir)
-        from agent.finetune.checkpoint_registry import CheckpointRegistry
         try:
             await registry.activate(checkpoint_id)
             console.print(f"[green]✓[/green] Checkpoint [bold]{checkpoint_id}[/bold] ativado.")
@@ -367,17 +398,17 @@ def finetune_activate(
         finally:
             await pool.close()
 
-    # Fix import at top of function
-    from agent.finetune.checkpoint_registry import CheckpointRegistry
     asyncio.run(_run())
 
 
 @app.command("rollback")
 def finetune_rollback() -> None:
     """Volta para o checkpoint anterior (ou base se nenhum anterior)."""
+
     async def _run() -> None:
         import asyncpg
         from agent.finetune.checkpoint_registry import CheckpointRegistry
+
         db_url = os.getenv("DATABASE_URL", "postgresql://agent:agent@localhost:5432/agent")
         pool = await asyncpg.create_pool(db_url, min_size=1, max_size=2)
         models_dir = _PROJECT_ROOT / "models"
@@ -399,8 +430,10 @@ def finetune_report(
     run_id: str = typer.Argument(..., help="Run ID (prefix de 8 chars também aceito)"),
 ) -> None:
     """Exibe o benchmark_report.md de um run."""
+
     async def _run() -> None:
         import asyncpg
+
         db_url = os.getenv("DATABASE_URL", "postgresql://agent:agent@localhost:5432/agent")
         conn = await asyncpg.connect(db_url)
         row = await conn.fetchrow(
@@ -423,6 +456,7 @@ def finetune_report(
             raise typer.Exit(1)
 
         from rich.markdown import Markdown
+
         console.print(Markdown(report_path.read_text()))
 
     asyncio.run(_run())
@@ -431,7 +465,7 @@ def finetune_report(
 @app.command("bench")
 def finetune_bench(
     model: str = typer.Option(..., "--model", "-m", help="'base' ou 'checkpoint:<id>'"),
-    run_id: Optional[str] = typer.Option(None, "--run-id", help="Run ID para associar resultados"),
+    run_id: str | None = typer.Option(None, "--run-id", help="Run ID para associar resultados"),
 ) -> None:
     """Roda apenas o benchmark (sem treinar). Útil para estabelecer baseline."""
     _check_finetune_deps()
@@ -448,7 +482,9 @@ def finetune_bench(
         base_model = ft_cfg.get("base_model", "qwen2.5-7b-instruct")
 
         benchmarks_dir = _PROJECT_ROOT / "benchmarks"
-        rubric_path = benchmarks_dir / bench_cfg.get("rubric_path", "rubric.yaml").replace("benchmarks/", "")
+        rubric_path = benchmarks_dir / bench_cfg.get("rubric_path", "rubric.yaml").replace(
+            "benchmarks/", ""
+        )
 
         try:
             rubric = Rubric.load(rubric_path)

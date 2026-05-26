@@ -10,6 +10,7 @@ Registra-se como cron job no scheduler existente (F6):
   - misfire_grace_time: 120s
   - replace_existing: True (idempotente)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -174,9 +175,7 @@ class AutonomousLoop:
 
         return dispatched, "ok"
 
-    async def _dispatch_step(
-        self, mission: Any, step: MissionStep, report: LoopReport
-    ) -> bool:
+    async def _dispatch_step(self, mission: Any, step: MissionStep, report: LoopReport) -> bool:
         if step.retry_count >= STEP_FAILURE_RETRY_LIMIT:
             log.warning(
                 "autonomous_loop.step.retry_limit",
@@ -229,9 +228,7 @@ class AutonomousLoop:
 
         try:
             await self._task_store.create(task)
-            await self._mission_store.update_step(
-                step.id, status="running", task_id=task.id
-            )
+            await self._mission_store.update_step(step.id, status="running", task_id=task.id)
             result = await self._orchestrator.route(task)
             await self._mission_store.update_step(
                 step.id,
@@ -254,9 +251,7 @@ class AutonomousLoop:
             )
             return False
 
-    async def _trigger_replan(
-        self, mission: Any, step: MissionStep, report: LoopReport
-    ) -> None:
+    async def _trigger_replan(self, mission: Any, step: MissionStep, report: LoopReport) -> None:
         if self._planner is None:
             log.warning("autonomous_loop.replan.no_planner", mission_id=str(mission.id))
             return

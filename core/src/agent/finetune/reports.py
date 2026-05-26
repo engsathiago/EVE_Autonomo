@@ -4,9 +4,10 @@ Generates a human-readable Markdown benchmark report for each fine-tuning run.
 Saved to models/checkpoints/<id>/benchmark_report.md.
 Optionally sends a Telegram notification if telegram_chat_id is configured.
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -33,7 +34,7 @@ def generate_report(
     Returns the report as a string.
     """
     lines: list[str] = []
-    now_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    now_str = datetime.now(tz=UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     decision_emoji = "ACCEPTED" if gate_decision.accepted else "REJECTED"
     lines += [
@@ -49,8 +50,12 @@ def generate_report(
     ]
 
     # Scores table
-    lines += ["## Scores por eixo", "", "| Eixo | Base | Candidato | Delta | Status |",
-               "|------|------|-----------|-------|--------|"]
+    lines += [
+        "## Scores por eixo",
+        "",
+        "| Eixo | Base | Candidato | Delta | Status |",
+        "|------|------|-----------|-------|--------|",
+    ]
     for axis_name, base_s in sorted(base_scores.items()):
         cand_s = candidate_scores.get(axis_name, 0.0)
         delta = (cand_s - base_s) * 100
@@ -132,6 +137,7 @@ async def notify_telegram(
 
     try:
         import httpx
+
         async with httpx.AsyncClient(timeout=10) as client:
             await client.post(
                 f"https://api.telegram.org/bot{telegram_token}/sendMessage",

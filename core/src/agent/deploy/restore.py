@@ -10,6 +10,7 @@ Caminho inverso de backup.py:
 
 CLI: agent deploy restore --date YYYYMMDD
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -25,14 +26,18 @@ from agent.observability.logger import get_logger
 
 log = get_logger(__name__)
 
+
 def _backup_dir() -> Path:
     return Path(os.environ.get("AGENT_BACKUP_DIR", "/var/lib/agent/backups"))
+
 
 def _sqlite_path() -> Path:
     return Path(os.environ.get("AGENT_DB_SQLITE", "agent.db"))
 
+
 def _skills_dir() -> Path:
     return Path(os.environ.get("AGENT_SKILLS_DIR", "/var/lib/agent/data/skills"))
+
 
 def _pg_url() -> str:
     return os.environ.get("AGENT_DB_POSTGRES_URL", "")
@@ -75,9 +80,7 @@ async def run_restore(
         results["skills"] = await asyncio.to_thread(_restore_skills, date_tag)
 
     duration_ms = int((time.time() - t0) * 1000)
-    all_ok = all(
-        r.get("ok", r.get("skipped", False)) for r in results.values()
-    )
+    all_ok = all(r.get("ok", r.get("skipped", False)) for r in results.values())
 
     summary = {
         "date": date_tag,
@@ -115,9 +118,7 @@ async def _restore_postgres(date_tag: str) -> dict:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        _, stderr = await asyncio.wait_for(
-            proc.communicate(input=data), timeout=300
-        )
+        _, stderr = await asyncio.wait_for(proc.communicate(input=data), timeout=300)
         if proc.returncode not in (0, 1):  # pg_restore retorna 1 com warnings
             return {"ok": False, "error": stderr.decode()[:500]}
 

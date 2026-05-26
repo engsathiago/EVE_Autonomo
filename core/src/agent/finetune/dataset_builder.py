@@ -4,13 +4,14 @@ Transforms raw trace records into a deduplicated, PII-filtered JSONL dataset.
 Each output example carries the origin trace_id so every record is auditable.
 Once saved, datasets/_curated/<id>.jsonl is treated as immutable — never overwritten.
 """
+
 from __future__ import annotations
 
 import hashlib
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -24,8 +25,8 @@ log = get_logger(__name__)
 # false-negative category is discovered, abort the run rather than silently include.
 _PII_PATTERNS = [
     re.compile(r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"),  # email
-    re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b"),                            # CPF
-    re.compile(r"\b(?:\+55\s?)?\(?\d{2}\)?\s?\d{4,5}-?\d{4}\b"),             # phone BR
+    re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b"),  # CPF
+    re.compile(r"\b(?:\+55\s?)?\(?\d{2}\)?\s?\d{4,5}-?\d{4}\b"),  # phone BR
 ]
 
 
@@ -100,7 +101,8 @@ class DatasetBuilder:
 
         # 4. Size filter — min char length
         sized = [
-            ex for ex in clean
+            ex
+            for ex in clean
             if len(ex["messages"][0]["content"]) >= self._min_input
             and len(ex["messages"][1]["content"]) >= self._min_output
         ]
@@ -175,7 +177,7 @@ class DatasetBuilder:
 
     @staticmethod
     def _make_id(examples: list[dict[str, Any]]) -> str:
-        date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d")
+        date_str = datetime.now(tz=UTC).strftime("%Y%m%d")
         content = json.dumps([ex["messages"] for ex in examples], ensure_ascii=False)
         short_hash = hashlib.sha256(content.encode()).hexdigest()[:8]
         return f"{date_str}-{short_hash}"

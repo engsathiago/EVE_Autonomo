@@ -14,14 +14,13 @@ Subcomandos:
   doctor     — health/deep + checa permissões, paths, .env
   upgrade    — git pull + alembic upgrade + restart
 """
+
 from __future__ import annotations
 
 import json
 import subprocess
-import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -36,6 +35,7 @@ _SERVICE = "agent"
 def _api(path: str, method: str = "GET", json_body: dict | None = None) -> object:
     try:
         import httpx
+
         with httpx.Client(timeout=10) as client:
             if method == "POST":
                 return client.post(f"{_DEFAULT_API}{path}", json=json_body or {})
@@ -55,6 +55,7 @@ def _systemctl(*args: str, check: bool = True) -> subprocess.CompletedProcess:
 
 
 # ── install ───────────────────────────────────────────────────────────────────
+
 
 @app.command()
 def install(
@@ -91,6 +92,7 @@ def uninstall(
 
 
 # ── systemctl wrappers ────────────────────────────────────────────────────────
+
 
 @app.command()
 def start() -> None:
@@ -140,8 +142,8 @@ def status() -> None:
 @app.command()
 def logs(
     follow: bool = typer.Option(False, "-f", "--follow", help="Segue o log em tempo real"),
-    since: Optional[str] = typer.Option(None, help="Ex: 1h, 24h, 7d"),
-    worker: Optional[str] = typer.Option(None, help="Filtra por worker"),
+    since: str | None = typer.Option(None, help="Ex: 1h, 24h, 7d"),
+    worker: str | None = typer.Option(None, help="Filtra por worker"),
 ) -> None:
     """Exibe logs JSON do agente."""
     log_file = Path("/var/lib/agent/logs/agent.log")
@@ -184,6 +186,7 @@ def logs(
 
     if follow:
         import time
+
         with open(log_file) as f:
             f.seek(0, 2)
             while True:
@@ -253,7 +256,7 @@ def doctor() -> None:
 
 @app.command()
 def upgrade(
-    to: Optional[str] = typer.Option(None, help="Branch/tag de destino"),
+    to: str | None = typer.Option(None, help="Branch/tag de destino"),
 ) -> None:
     """Pull de código + migrations + restart."""
     console.print("Parando serviço...")

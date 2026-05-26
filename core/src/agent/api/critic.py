@@ -1,4 +1,5 @@
 """Rotas REST para o Critic (F7)."""
+
 from __future__ import annotations
 
 import json
@@ -49,10 +50,9 @@ def make_critic_router(critic: Any, db_pool: Any) -> APIRouter:
     @router.get("/stats")
     async def critic_stats() -> dict:
         from agent.metrics.phase_7 import metrics
+
         snap = metrics.snapshot()
-        return {
-            k: v for k, v in snap.items() if "critic" in k or "step" in k
-        }
+        return {k: v for k, v in snap.items() if "critic" in k or "step" in k}
 
     @router.post("/test")
     async def critic_test(req: CriticTestRequest) -> dict:

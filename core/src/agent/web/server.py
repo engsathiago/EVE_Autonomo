@@ -4,12 +4,13 @@ Bind em 127.0.0.1:8080 (mesmo que o serviço principal, controlado pelo uvicorn)
 CORS: só 'null' e 'http://127.0.0.1:8080'.
 Rate limit in-memory: 60 req/s por endpoint.
 """
+
 from __future__ import annotations
 
-import asyncio
 import time
 from collections import defaultdict
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,9 +18,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from agent.observability.logger import get_logger
 from agent.web import metrics as web_metrics
-from agent.web.routes.api import make_api_router, configure as configure_api
-from agent.web.routes.ws import make_ws_router
+from agent.web.routes.api import configure as configure_api
+from agent.web.routes.api import make_api_router
 from agent.web.routes.static import make_static_router
+from agent.web.routes.ws import make_ws_router
 
 log = get_logger(__name__)
 
@@ -52,13 +54,18 @@ class _RateLimitMiddleware(BaseHTTPMiddleware):
 
         key = path
         if not _check_rate_limit(key):
-            return Response(content='{"detail":"Rate limit excedido"}', status_code=429, media_type="application/json")
+            return Response(
+                content='{"detail":"Rate limit excedido"}',
+                status_code=429,
+                media_type="application/json",
+            )
         return await call_next(request)
 
 
 class _LogMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         import uuid as _uuid
+
         request_id = str(_uuid.uuid4())[:8]
         t0 = time.monotonic()
         response = await call_next(request)

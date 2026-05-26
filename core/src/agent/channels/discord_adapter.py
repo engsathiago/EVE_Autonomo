@@ -9,6 +9,7 @@ Regras:
 - Nunca registra comandos slash na plataforma — só texto + menção.
 - Tokens nunca logados (redact no logger global).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -17,14 +18,14 @@ from typing import Any
 
 import discord
 
-from agent.channels.base import ChannelAdapter, ConfigError, IncomingMessage, OutgoingMessage
 from agent.channels import metrics as ch_metrics
+from agent.channels.base import ChannelAdapter, ConfigError, IncomingMessage, OutgoingMessage
 from agent.observability.logger import get_logger
 
 log = get_logger(__name__)
 
-_EMBED_THRESHOLD = 200   # chars — acima disso usa embed
-_MAX_EMBED_LEN = 4096    # limite do Discord
+_EMBED_THRESHOLD = 200  # chars — acima disso usa embed
+_MAX_EMBED_LEN = 4096  # limite do Discord
 
 
 def _parse_allowlist(raw: str) -> set[str]:
@@ -60,16 +61,20 @@ class DiscordAdapter(ChannelAdapter):
         self._channel_refs: dict[str, Any] = {}
 
     @classmethod
-    def from_env(cls, router: Any | None = None) -> "DiscordAdapter":
+    def from_env(cls, router: Any | None = None) -> DiscordAdapter:
         token = os.getenv("DISCORD_BOT_TOKEN", "")
         guild_raw = os.getenv("DISCORD_GUILD_ID", "")
         allowlist_raw = os.getenv("DISCORD_USER_ALLOWLIST", "")
 
-        missing = [k for k, v in {
-            "DISCORD_BOT_TOKEN": token,
-            "DISCORD_GUILD_ID": guild_raw,
-            "DISCORD_USER_ALLOWLIST": allowlist_raw,
-        }.items() if not v]
+        missing = [
+            k
+            for k, v in {
+                "DISCORD_BOT_TOKEN": token,
+                "DISCORD_GUILD_ID": guild_raw,
+                "DISCORD_USER_ALLOWLIST": allowlist_raw,
+            }.items()
+            if not v
+        ]
         if missing:
             raise ConfigError(f"Variáveis Discord ausentes: {', '.join(missing)}")
 
@@ -166,8 +171,7 @@ class DiscordAdapter(ChannelAdapter):
         is_dm = isinstance(message.channel, discord.DMChannel)
         bot_mentioned = self._client.user in message.mentions if self._client.user else False
         channel_allowed = (
-            hasattr(message.channel, "name")
-            and message.channel.name in self._channels_allowed
+            hasattr(message.channel, "name") and message.channel.name in self._channels_allowed
         )
 
         if not (bot_mentioned or is_dm or channel_allowed):

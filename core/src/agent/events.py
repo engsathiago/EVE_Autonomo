@@ -63,6 +63,7 @@ def register_skill_handler(handler: Any) -> None:
 async def emit_sandbox_event(event_type: str, data: dict[str, Any]) -> None:
     """Emite evento sandbox para todos os handlers registrados."""
     import asyncio
+
     for handler in _sandbox_handlers:
         try:
             result = handler(event_type, data)
@@ -75,6 +76,7 @@ async def emit_sandbox_event(event_type: str, data: dict[str, Any]) -> None:
 async def emit_skill_event(event_type: str, data: dict[str, Any]) -> None:
     """Emite evento skill.* para todos os handlers registrados."""
     import asyncio
+
     for handler in _skill_handlers:
         try:
             result = handler(event_type, data)
@@ -96,6 +98,7 @@ def register_finetune_handler(handler: Any) -> None:
 async def emit_finetune_event(event_type: str, data: dict[str, Any]) -> None:
     """Emite evento finetune para todos os handlers registrados."""
     import asyncio
+
     for handler in _finetune_handlers:
         try:
             result = handler(event_type, data)

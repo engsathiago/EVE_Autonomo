@@ -1,4 +1,5 @@
 """Helpers para full-text search em português via asyncpg."""
+
 from __future__ import annotations
 
 

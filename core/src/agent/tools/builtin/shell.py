@@ -63,9 +63,7 @@ class ShellTool(BaseTool):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                proc.communicate(), timeout=timeout
-            )
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         except TimeoutError:
             try:
                 proc.kill()

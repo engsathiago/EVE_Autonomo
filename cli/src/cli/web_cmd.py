@@ -1,4 +1,5 @@
 """Subcomandos `agent web` — controle do Web UI (F11)."""
+
 from __future__ import annotations
 
 import os
@@ -58,6 +59,7 @@ def stop() -> None:
     pid = _read_pid()
     if pid and _is_running(pid):
         import signal
+
         os.kill(pid, signal.SIGTERM)
         console.print(f"[green]Sinal SIGTERM enviado para PID {pid}.[/green]")
     else:
@@ -69,7 +71,9 @@ def status() -> None:
     """Mostra status do Web UI."""
     pid = _read_pid()
     if pid and _is_running(pid):
-        console.print(f"[green]●[/green] Rodando (PID {pid}) em http://{_DEFAULT_HOST}:{_DEFAULT_PORT}")
+        console.print(
+            f"[green]●[/green] Rodando (PID {pid}) em http://{_DEFAULT_HOST}:{_DEFAULT_PORT}"
+        )
     else:
         console.print("[red]●[/red] Parado")
 
@@ -85,6 +89,7 @@ def token_rotate() -> None:
     """Gera novo token e invalida o antigo (invalidação em <5s via cache TTL)."""
     try:
         from agent.web.auth import generate_token, write_token
+
         new_tok = generate_token()
         write_token(new_tok)
         console.print(f"[green]Novo token gerado e salvo em {_TOKEN_FILE}[/green]")
@@ -92,6 +97,7 @@ def token_rotate() -> None:
         console.print("[dim]Sessões com token antigo expiram em até 5s.[/dim]")
     except ImportError:
         import secrets
+
         _TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
         new_tok = secrets.token_urlsafe(32)
         _TOKEN_FILE.write_text(new_tok + "\n", encoding="utf-8")
@@ -121,6 +127,7 @@ def open() -> None:
         raise typer.Exit(1)
 
     import urllib.parse
+
     url = f"http://{_DEFAULT_HOST}:{_DEFAULT_PORT}/?token={urllib.parse.quote(tok)}"
     console.print(f"Abrindo: {url}")
 

@@ -1,4 +1,5 @@
 """HeartbeatWorker: verifica saúde do agente via /health/ready a cada 30s."""
+
 from __future__ import annotations
 
 import asyncio
@@ -78,10 +79,8 @@ class HeartbeatWorker(Worker):
                     return  # exit_code=0; Supervisor detecta saída inesperada e reinicia
 
                 try:
-                    await asyncio.wait_for(
-                        self._stop_event.wait(), timeout=self._check_interval_s
-                    )
-                except asyncio.TimeoutError:
+                    await asyncio.wait_for(self._stop_event.wait(), timeout=self._check_interval_s)
+                except TimeoutError:
                     pass
 
         log.info("heartbeat_worker.stopped", pid=os.getpid())

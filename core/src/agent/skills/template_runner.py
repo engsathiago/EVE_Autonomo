@@ -3,6 +3,7 @@ TemplateSkillRunner: executa skills da Fase 3 (.md templates via Jinja2 + LLM).
 
 Fase 9 usa SkillRunner (runner.py) para skills auto-geradas (.py via sandbox).
 """
+
 from __future__ import annotations
 
 import json
@@ -60,10 +61,10 @@ def _render_approval_summary(manifest: SkillManifest, arguments: dict[str, Any])
 class TemplateSkillRunner:
     def __init__(
         self,
-        transport: "BaseTransport",
-        tool_registry: "ToolRegistry | None" = None,
-        model_router: "ModelRouter | None" = None,
-        approval_manager: "ApprovalManager | None" = None,
+        transport: BaseTransport,
+        tool_registry: ToolRegistry | None = None,
+        model_router: ModelRouter | None = None,
+        approval_manager: ApprovalManager | None = None,
     ) -> None:
         self._transport = transport
         self._tool_registry = tool_registry
@@ -77,7 +78,7 @@ class TemplateSkillRunner:
         session_id: str | None = None,
         channel: str = "cli",
         channel_ref: dict[str, Any] | None = None,
-    ) -> "SkillResult | ApprovalRequest":
+    ) -> SkillResult | ApprovalRequest:
         if manifest.requires_approval:
             if self._approval_manager is None:
                 raise SkillError(
@@ -104,15 +105,17 @@ class TemplateSkillRunner:
         if self._approval_manager is None:
             raise SkillError("ApprovalManager não está configurado.")
 
-        from agent.approvals.manager import ApprovalNotFoundError
-
         state = await self._approval_manager.get(approval_id)
         if state.status != "approved":
-            raise SkillError(f"Approval {approval_id!r} não está aprovado (status={state.status!r}).")
+            raise SkillError(
+                f"Approval {approval_id!r} não está aprovado (status={state.status!r})."
+            )
 
         return await self._run_skill(manifest, state.skill_args)
 
-    async def _run_skill(self, manifest: SkillManifest, raw_arguments: dict[str, Any]) -> SkillResult:
+    async def _run_skill(
+        self, manifest: SkillManifest, raw_arguments: dict[str, Any]
+    ) -> SkillResult:
         """Núcleo de execução (sem verificação de approval)."""
         arguments = _fill_defaults(manifest, raw_arguments)
         system_prompt = _render_prompt(manifest.prompt, arguments)
@@ -200,15 +203,17 @@ class TemplateSkillRunner:
             name = call["name"]
             args = call.get("input", {})
             tool_result = await self._tool_registry.execute(name, args)
-            results.append({
-                "type": "tool_result",
-                "tool_use_id": call["id"],
-                "content": (
-                    json.dumps(tool_result.output, ensure_ascii=False)
-                    if tool_result.ok
-                    else f"ERROR: {tool_result.error}"
-                ),
-            })
+            results.append(
+                {
+                    "type": "tool_result",
+                    "tool_use_id": call["id"],
+                    "content": (
+                        json.dumps(tool_result.output, ensure_ascii=False)
+                        if tool_result.ok
+                        else f"ERROR: {tool_result.error}"
+                    ),
+                }
+            )
             if not tool_result.ok:
                 log.warning(
                     "skill.tool_call.failed",
@@ -219,17 +224,17 @@ class TemplateSkillRunner:
         return results
 
     @staticmethod
-    def _build_assistant_message(
-        text: str, tool_calls: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    def _build_assistant_message(text: str, tool_calls: list[dict[str, Any]]) -> dict[str, Any]:
         content: list[dict[str, Any]] = []
         if text:
             content.append({"type": "text", "text": text})
         for call in tool_calls:
-            content.append({
-                "type": "tool_use",
-                "id": call["id"],
-                "name": call["name"],
-                "input": call.get("input", {}),
-            })
+            content.append(
+                {
+                    "type": "tool_use",
+                    "id": call["id"],
+                    "name": call["name"],
+                    "input": call.get("input", {}),
+                }
+            )
         return {"role": "assistant", "content": content}

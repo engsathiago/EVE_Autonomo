@@ -1,4 +1,5 @@
 """Adapter fino para subagentes (F6)."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -6,15 +7,16 @@ from typing import TYPE_CHECKING, Any
 from agent.observability.logger import get_logger
 
 if TYPE_CHECKING:
-    from agent.subagents.pool import SubagentPool
     import asyncpg
+
+    from agent.subagents.pool import SubagentPool
 
 log = get_logger(__name__)
 
 
 async def get_subagents_health(
-    pool: "SubagentPool | None",
-    db_pool: "asyncpg.Pool | None" = None,
+    pool: SubagentPool | None,
+    db_pool: asyncpg.Pool | None = None,
 ) -> dict[str, Any]:
     try:
         active = 0
@@ -22,10 +24,21 @@ async def get_subagents_health(
         if pool is not None:
             semaphore = getattr(pool, "_semaphore", None)
             if semaphore is not None:
-                capacity = semaphore._value + (semaphore._bound_value - semaphore._value) if hasattr(semaphore, "_bound_value") else semaphore._value
-                active = max(0, getattr(pool, "_semaphore", None) and
-                             (pool._semaphore._bound_value - pool._semaphore._value
-                              if hasattr(pool._semaphore, "_bound_value") else 0) or 0)
+                capacity = (
+                    semaphore._value + (semaphore._bound_value - semaphore._value)
+                    if hasattr(semaphore, "_bound_value")
+                    else semaphore._value
+                )
+                active = max(
+                    0,
+                    getattr(pool, "_semaphore", None)
+                    and (
+                        pool._semaphore._bound_value - pool._semaphore._value
+                        if hasattr(pool._semaphore, "_bound_value")
+                        else 0
+                    )
+                    or 0,
+                )
 
         recent_runs: list[dict] = []
         if db_pool is not None:
@@ -45,7 +58,9 @@ async def get_subagents_health(
                         "task_id": str(r["task_id"]),
                         "worker_id": r["worker_id"],
                         "started_at": r["started_at"].isoformat() if r["started_at"] else None,
-                        "completed_at": r["completed_at"].isoformat() if r["completed_at"] else None,
+                        "completed_at": r["completed_at"].isoformat()
+                        if r["completed_at"]
+                        else None,
                         "error": r["error"],
                         "tier": r["tier"],
                         "status": r["status"],

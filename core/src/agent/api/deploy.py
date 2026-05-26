@@ -1,4 +1,5 @@
 """API REST para deploy (F10): backup manual e restore."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter
@@ -21,12 +22,14 @@ def make_deploy_router() -> APIRouter:
     async def trigger_backup() -> dict:
         """Dispara backup manual imediato."""
         from agent.deploy.backup import run_backup
+
         return await run_backup()
 
     @router.post("/restore")
     async def trigger_restore(req: RestoreRequest) -> dict:
         """Restaura backups de uma data específica (YYYYMMDD)."""
         from agent.deploy.restore import run_restore
+
         return await run_restore(date_tag=req.date, kinds=req.kinds)
 
     return router

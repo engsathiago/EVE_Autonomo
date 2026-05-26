@@ -1,7 +1,9 @@
 """Adapter fino para o orchestrator (F6) — envia mensagem e devolve stream."""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING, Any
 
 from agent.observability.logger import get_logger
 
@@ -13,14 +15,13 @@ log = get_logger(__name__)
 
 
 async def send_message(
-    orchestrator: "Orchestrator",
-    task_store: "TaskStore",
+    orchestrator: Orchestrator,
+    task_store: TaskStore,
     text: str,
     conversation_id: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Envia mensagem ao orchestrator e produz eventos de stream."""
     from agent.tasks.task import Task, TaskSource
-    from agent.events import AgentEvent
 
     task = Task(content=text, source=TaskSource.API)
     await task_store.create(task)

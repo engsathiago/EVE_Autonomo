@@ -1,4 +1,5 @@
 """Adapter fino para traces (tasks + subagent_runs da F6/F7)."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -13,7 +14,7 @@ log = get_logger(__name__)
 
 
 async def list_traces(
-    store: "TaskStore",
+    store: TaskStore,
     mission_id: str | None = None,
     tier: str | None = None,
     status: str | None = None,
@@ -22,10 +23,11 @@ async def list_traces(
 ) -> list[dict[str, Any]]:
     try:
         from agent.tasks.task import TaskStatus
+
         status_filter = TaskStatus(status) if status else None
         tasks = await store.list_by_status(status_filter, limit=limit + offset)
         result = []
-        for t in tasks[offset:offset + limit]:
+        for t in tasks[offset : offset + limit]:
             if tier and t.tier != tier:
                 continue
             if mission_id:
@@ -39,7 +41,7 @@ async def list_traces(
         return []
 
 
-async def get_trace(store: "TaskStore", trace_id: str) -> dict[str, Any] | None:
+async def get_trace(store: TaskStore, trace_id: str) -> dict[str, Any] | None:
     try:
         uid = UUID(trace_id)
         task = await store.get(uid)

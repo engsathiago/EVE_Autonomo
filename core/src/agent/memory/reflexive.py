@@ -8,6 +8,7 @@ Diferença da memória semântica (já existente):
 Usa o mesmo EmbeddingProvider (embed()) já carregado pela memória semântica.
 Não cria provider novo.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

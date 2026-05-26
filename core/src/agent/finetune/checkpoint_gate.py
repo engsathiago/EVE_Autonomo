@@ -8,6 +8,7 @@ Each rejection case has a distinct, logged reason.
 The gate NEVER sets state='active' by itself — that is CheckpointRegistry's job
 after the auto_activate rules are verified.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

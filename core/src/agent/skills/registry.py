@@ -4,16 +4,17 @@ SkillRegistry (Fase 9): CRUD + busca semântica para skills auto-geradas.
 Persistência em PostgreSQL (tabela skills). Embedding como bytea + cosine em Python.
 Sem pgvector direto — skills são poucas dezenas, Python é suficiente.
 """
+
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from agent.observability.logger import get_logger
 from agent.skills.embeddings import cosine, pack_embedding, unpack_embedding
-from agent.skills.exceptions import SkillAlreadyExists, SkillNotFound
+from agent.skills.exceptions import SkillNotFound
 from agent.skills.manifest import SkillManifestF9, manifest_to_dict
 
 if TYPE_CHECKING:
@@ -23,7 +24,7 @@ log = get_logger(__name__)
 
 
 class SkillRegistry:
-    def __init__(self, pool: "asyncpg.Pool") -> None:
+    def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
 
     # ── CRUD ─────────────────────────────────────────────────────────────────
@@ -86,7 +87,7 @@ class SkillRegistry:
         critic_approval_id: str | None = None,
         rejection_reason: str | None = None,
     ) -> None:
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         params: list[Any] = [status, slug]
         extra_set = ""
         if status == "active":
@@ -117,7 +118,7 @@ class SkillRegistry:
         error_message: str | None = None,
     ) -> str:
         exec_id = uuid4().hex
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
 
         await self._pool.execute(
             """
@@ -153,7 +154,9 @@ class SkillRegistry:
                     END
                 WHERE slug = $1
                 """,
-                slug, now, duration_seconds,
+                slug,
+                now,
+                duration_seconds,
             )
         else:
             await self._pool.execute(
@@ -164,7 +167,8 @@ class SkillRegistry:
                     last_used_at = $2
                 WHERE slug = $1
                 """,
-                slug, now,
+                slug,
+                now,
             )
 
         return exec_id
@@ -196,7 +200,7 @@ class SkillRegistry:
             llm_response,
             json.dumps(validation_report) if validation_report else None,
             status,
-            datetime.now(tz=timezone.utc),
+            datetime.now(tz=UTC),
         )
         return candidate_id
 
@@ -208,7 +212,7 @@ class SkillRegistry:
         validation_report: dict | None = None,
         llm_response: str | None = None,
     ) -> None:
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         await self._pool.execute(
             """
             UPDATE skill_candidates SET
@@ -279,6 +283,7 @@ class SkillRegistry:
             FROM skill_executions WHERE skill_slug = $1
             ORDER BY created_at DESC LIMIT $2
             """,
-            slug, limit,
+            slug,
+            limit,
         )
         return [dict(r) for r in rows]

@@ -1,11 +1,11 @@
 """
 Subcomando `agent task` — gerencia tasks e vê árvore de subagentes.
 """
+
 from __future__ import annotations
 
 import asyncio
 import os
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -18,18 +18,21 @@ console = Console()
 _CORE_URL = os.getenv("AGENT_CORE_URL", "http://localhost:8000")
 
 
-def _http() -> "Any":
+def _http() -> Any:
     import httpx
+
     return httpx.AsyncClient(base_url=_CORE_URL, timeout=30)
 
 
 @app.command("list")
 def task_list(
-    status: Optional[str] = typer.Option(None, "--status", "-s",
-        help="Filtrar por status: pending, running, done, failed, timeout"),
+    status: str | None = typer.Option(
+        None, "--status", "-s", help="Filtrar por status: pending, running, done, failed, timeout"
+    ),
     limit: int = typer.Option(20, "--limit", "-n"),
 ) -> None:
     """Lista tasks recentes."""
+
     async def _run() -> None:
         async with _http() as client:
             params: dict = {"limit": str(limit)}
@@ -74,6 +77,7 @@ def task_list(
 @app.command("show")
 def task_show(task_id: str = typer.Argument(..., help="ID da task")) -> None:
     """Mostra detalhes de uma task."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.get(f"/v1/tasks/{task_id}")
@@ -100,6 +104,7 @@ def task_show(task_id: str = typer.Argument(..., help="ID da task")) -> None:
 @app.command("tree")
 def task_tree(task_id: str = typer.Argument(..., help="ID da task raiz")) -> None:
     """Exibe árvore pai → filhos de uma task EPIC."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.get(f"/v1/tasks/{task_id}/tree")
@@ -142,6 +147,7 @@ def task_tree(task_id: str = typer.Argument(..., help="ID da task raiz")) -> Non
 @app.command("cancel")
 def task_cancel(task_id: str = typer.Argument(..., help="ID da task")) -> None:
     """Cancela uma task pendente ou em execução."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.post(f"/v1/tasks/{task_id}/cancel")
@@ -157,6 +163,7 @@ def task_cancel(task_id: str = typer.Argument(..., help="ID da task")) -> None:
 @app.command("stats")
 def orchestrator_stats() -> None:
     """Exibe estatísticas do orchestrator por tier nas últimas 24h."""
+
     async def _run() -> None:
         async with _http() as client:
             resp = await client.get("/v1/tasks/orchestrator/stats")

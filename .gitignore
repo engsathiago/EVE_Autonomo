@@ -52,9 +52,33 @@ yarn-debug.log*
 yarn-error.log*
 core/.ven/
 core/.venv/
+core/.venv312/
+core/.venv3*/
 .venv/
+.venv*/
 .cache/
 .env
+
+# Claude Code worktrees (embedded repos)
+.claude/worktrees/
+
+# Agent runtime databases
+agent.db
+core/agent.db
+
+# Backup env files
+.env.bak.*
+
+# Reports gerados por auditoria/lint (não são código)
+AUDIT_REPORT.md
+LINT_ISSUES.md
+MERGE_ISSUES.md
+VALIDATION_REPORT.md
+mypy_report.txt
+test_full_report.txt
+
+# Tools directory (gerado)
+tools/
 
 # Backups pré-fase (gerados por scripts de deploy)
 backup_pre_fase*.sql

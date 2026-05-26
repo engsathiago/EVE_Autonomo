@@ -4,11 +4,12 @@ Subcomando `agent skills` — gerencia skills auto-geradas (Fase 9).
 Todos os comandos batem na API HTTP /api/v1/skills/*.
 Sem SQL direto.
 """
+
 from __future__ import annotations
 
 import json
 import os
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -20,14 +21,15 @@ console = Console()
 _CORE_URL = os.getenv("AGENT_CORE_URL", "http://localhost:8000")
 
 
-def _http() -> "Any":  # type: ignore[name-defined]
+def _http() -> Any:  # type: ignore[name-defined]
     import httpx
+
     return httpx.AsyncClient(base_url=_CORE_URL, timeout=60)
 
 
 @app.command("list")
 def skills_list(
-    status: Annotated[Optional[str], typer.Option("--status", "-s")] = None,
+    status: Annotated[str | None, typer.Option("--status", "-s")] = None,
 ) -> None:
     """Lista skills (--status=active|pending|rejected|deprecated|mature)."""
     import asyncio
@@ -95,8 +97,8 @@ def skills_show(slug: str = typer.Argument(...)) -> None:
 @app.command("run")
 def skills_run(
     slug: str = typer.Argument(...),
-    input_json: str = typer.Option(..., "--input", "-i", help="Input JSON (ex: '{\"url\":\"...\"}')"),
-    mission_id: Optional[str] = typer.Option(None, "--mission-id"),
+    input_json: str = typer.Option(..., "--input", "-i", help='Input JSON (ex: \'{"url":"..."}\')'),
+    mission_id: str | None = typer.Option(None, "--mission-id"),
 ) -> None:
     """Executa uma skill com o input fornecido."""
     import asyncio
@@ -120,7 +122,9 @@ def skills_run(
 
         console.print("[green]OK[/green]")
         console.print_json(json.dumps(result["output"]))
-        console.print(f"execution_id={result['execution_id']} duration={result['duration_seconds']:.2f}s")
+        console.print(
+            f"execution_id={result['execution_id']} duration={result['duration_seconds']:.2f}s"
+        )
 
     asyncio.run(_run())
 
@@ -139,7 +143,9 @@ def skills_promote(
             resp.raise_for_status()
             result = resp.json()
         status = "aprovada" if result.get("approved") else "rejeitada"
-        console.print(f"[{'green' if result.get('approved') else 'red'}]Skill '{slug}' {status}.[/{'green' if result.get('approved') else 'red'}]")
+        console.print(
+            f"[{'green' if result.get('approved') else 'red'}]Skill '{slug}' {status}.[/{'green' if result.get('approved') else 'red'}]"
+        )
 
     asyncio.run(_run())
 

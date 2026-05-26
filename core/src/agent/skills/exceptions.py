@@ -1,4 +1,5 @@
 """Exceções da Fase 9: skills auto-geradas."""
+
 from __future__ import annotations
 
 

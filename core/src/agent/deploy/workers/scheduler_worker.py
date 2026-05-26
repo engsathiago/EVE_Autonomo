@@ -1,4 +1,5 @@
 """SchedulerWorker: processo independente que mantém o APScheduler ativo."""
+
 from __future__ import annotations
 
 import asyncio
@@ -47,10 +48,8 @@ class SchedulerWorker(Worker):
                     except Exception as exc:
                         log.warning("scheduler_worker.redis_error", error=str(exc))
                     try:
-                        await asyncio.wait_for(
-                            self._stop_event.wait(), timeout=_POLL_INTERVAL_S
-                        )
-                    except asyncio.TimeoutError:
+                        await asyncio.wait_for(self._stop_event.wait(), timeout=_POLL_INTERVAL_S)
+                    except TimeoutError:
                         pass
             finally:
                 await client.aclose()

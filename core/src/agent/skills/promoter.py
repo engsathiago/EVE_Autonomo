@@ -10,6 +10,7 @@ Fluxo:
 
 Anti-padrão: não duplica lógica do Crítico. Usa a API existente.
 """
+
 from __future__ import annotations
 
 import shutil
@@ -29,11 +30,11 @@ log = get_logger(__name__)
 class SkillPromoter:
     def __init__(
         self,
-        registry: "SkillRegistry",
+        registry: SkillRegistry,
         pending_dir: Path,
         active_dir: Path,
         rejected_dir: Path,
-        critic: "Critic | None" = None,
+        critic: Critic | None = None,
     ) -> None:
         self._registry = registry
         self._pending_dir = pending_dir
@@ -43,7 +44,7 @@ class SkillPromoter:
 
     async def promote(
         self,
-        manifest: "SkillManifestF9",
+        manifest: SkillManifestF9,
         *,
         candidate_id: str | None = None,
         force: bool = False,
@@ -69,9 +70,7 @@ class SkillPromoter:
             await self._reject(manifest, reason=reason)
             return False
 
-    async def _approve(
-        self, manifest: "SkillManifestF9", critic_approval_id: str | None
-    ) -> bool:
+    async def _approve(self, manifest: SkillManifestF9, critic_approval_id: str | None) -> bool:
         slug = manifest.slug
         src = self._pending_dir / slug
         dst = self._active_dir / slug
@@ -83,13 +82,11 @@ class SkillPromoter:
             shutil.copytree(src, dst)
             shutil.rmtree(src)
 
-        await self._registry.update_status(
-            slug, "active", critic_approval_id=critic_approval_id
-        )
+        await self._registry.update_status(slug, "active", critic_approval_id=critic_approval_id)
         log.info("promoter.approved", slug=slug, approval_id=critic_approval_id)
         return True
 
-    async def _reject(self, manifest: "SkillManifestF9", reason: str) -> None:
+    async def _reject(self, manifest: SkillManifestF9, reason: str) -> None:
         slug = manifest.slug
         src = self._pending_dir / slug
         dst = self._rejected_dir / slug
@@ -106,7 +103,7 @@ class SkillPromoter:
         await self._registry.update_status(slug, "rejected", rejection_reason=reason)
         log.info("promoter.rejected", slug=slug, reason=reason[:100])
 
-    def _build_decision(self, manifest: "SkillManifestF9") -> Any:
+    def _build_decision(self, manifest: SkillManifestF9) -> Any:
         from agent.critic.critic import Decision
         from agent.orchestrator.tiers import ExecutionTier
 

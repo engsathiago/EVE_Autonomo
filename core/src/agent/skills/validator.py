@@ -11,6 +11,7 @@ Fluxo:
 Falhou em qualquer etapa → ValidationReport.passed=False com motivo.
 Execução delega para exec_tool (C7 compliant).
 """
+
 from __future__ import annotations
 
 import ast
@@ -128,9 +129,7 @@ class SkillValidator:
         except Exception as exc:
             return False, f"lint_sandbox_error: {exc}"
 
-    async def _smoke_run(
-        self, skill_py: Path, manifest: SkillManifestF9
-    ) -> tuple[bool, str]:
+    async def _smoke_run(self, skill_py: Path, manifest: SkillManifestF9) -> tuple[bool, str]:
         synthetic_input = _make_synthetic_input(manifest.inputs_schema)
         script = textwrap.dedent(f"""
             import asyncio, json, sys
@@ -205,9 +204,7 @@ def _make_synthetic_input(inputs_schema: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def _validate_against_schema(
-    output: Any, schema: dict[str, Any]
-) -> tuple[bool, str]:
+def _validate_against_schema(output: Any, schema: dict[str, Any]) -> tuple[bool, str]:
     required = schema.get("required", [])
     if not isinstance(output, dict):
         return False, f"output deve ser dict, got {type(output).__name__}"

@@ -5,6 +5,7 @@ Aprovações: quando o filho retorna AgentResult.approval_request preenchido,
 o pool cria o approval via ApprovalManager (com channel_ref do pai) e aguarda
 decisão via asyncio.Event registrado no manager.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -28,9 +29,9 @@ log = get_logger(__name__)
 class SubagentPool:
     def __init__(
         self,
-        model_router: "ModelRouter",
-        task_store: "TaskStore",
-        approval_manager: "ApprovalManager | None" = None,
+        model_router: ModelRouter,
+        task_store: TaskStore,
+        approval_manager: ApprovalManager | None = None,
         max_concurrent: int = 8,
         hard_timeout_s: int = 300,
     ) -> None:
@@ -91,7 +92,7 @@ class SubagentPool:
                 ),
                 timeout=self._hard_timeout_s,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             duration_ms = int(time.monotonic() * 1000) - start_ms
             await self._task_store.update_status(
                 child_task.id,
@@ -124,9 +125,7 @@ class SubagentPool:
 
         # Approval propagation: filho encontrou tool sensível
         if result.approval_request and self._approval_manager:
-            result = await self._handle_approval(
-                result, child_task, parent_task, context
-            )
+            result = await self._handle_approval(result, child_task, parent_task, context)
 
         status = TaskStatus.DONE if not result.approval_request else TaskStatus.FAILED
         await self._task_store.update_status(
@@ -190,7 +189,7 @@ class SubagentPool:
 
             try:
                 await asyncio.wait_for(event.wait(), timeout=self._hard_timeout_s)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 return AgentResult(
                     final_text="",
                     iterations=result.iterations,

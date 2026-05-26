@@ -3,6 +3,7 @@
 Registry isolado para não conflitar com F7/F11.
 Integrado ao /metrics do server.py principal.
 """
+
 from __future__ import annotations
 
 import prometheus_client as prom

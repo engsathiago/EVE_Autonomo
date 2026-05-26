@@ -1,4 +1,5 @@
 """Rotas REST para Skills auto-geradas (F9)."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -25,10 +26,10 @@ class PromoteRequest(BaseModel):
 
 
 def make_skills_router(
-    registry: Any,        # SkillRegistry
-    runner: Any,          # SkillRunner
-    promoter: Any,        # SkillPromoter
-    synthesizer: Any,     # SkillSynthesizer
+    registry: Any,  # SkillRegistry
+    runner: Any,  # SkillRunner
+    promoter: Any,  # SkillPromoter
+    synthesizer: Any,  # SkillSynthesizer
 ) -> APIRouter:
     router = APIRouter(prefix="/api/v1/skills", tags=["skills"])
 
@@ -68,8 +69,10 @@ def make_skills_router(
         if promoter is None:
             raise HTTPException(status_code=503, detail="SkillPromoter não disponível")
         try:
-            from agent.skills.manifest import SkillManifestF9
             import json
+
+            from agent.skills.manifest import SkillManifestF9
+
             row = await registry.get(slug)
             manifest = SkillManifestF9(**json.loads(row["manifest_json"]))
             approved = await promoter.promote(manifest, force=req.force)

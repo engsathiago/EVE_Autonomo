@@ -11,16 +11,15 @@ Retenção: apaga arquivos com mais de AGENT_BACKUP_RETAIN_DAYS dias.
 
 O job é registrado no APScheduler da F6 pelo server.py.
 """
+
 from __future__ import annotations
 
 import asyncio
 import gzip
 import hashlib
-import json
 import os
 import shutil
 import sqlite3
-import subprocess
 import tarfile
 import time
 from datetime import date
@@ -30,17 +29,22 @@ from agent.observability.logger import get_logger
 
 log = get_logger(__name__)
 
+
 def _backup_dir() -> Path:
     return Path(os.environ.get("AGENT_BACKUP_DIR", "/var/lib/agent/backups"))
+
 
 def _sqlite_path() -> Path:
     return Path(os.environ.get("AGENT_DB_SQLITE", "agent.db"))
 
+
 def _skills_dir() -> Path:
     return Path(os.environ.get("AGENT_SKILLS_DIR", "/var/lib/agent/data/skills"))
 
+
 def _pg_url() -> str:
     return os.environ.get("AGENT_DB_POSTGRES_URL", "")
+
 
 def _retain_days() -> int:
     return int(os.environ.get("AGENT_BACKUP_RETAIN_DAYS", "14"))
@@ -74,9 +78,7 @@ async def run_backup(event_bus: object | None = None) -> dict:
     results["skills"] = await asyncio.to_thread(_backup_skills, tag)
 
     duration_ms = int((time.time() - t0) * 1000)
-    all_ok = all(
-        r.get("ok", r.get("skipped", False)) for r in results.values()
-    )
+    all_ok = all(r.get("ok", r.get("skipped", False)) for r in results.values())
 
     # Retenção
     await asyncio.to_thread(_purge_old_backups)

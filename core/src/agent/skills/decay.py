@@ -7,10 +7,11 @@ Regras:
   - >40% erro nas últimas 10 execuções → flagged_for_review
   - version=1, aprovada ≥7 dias, ≥20 execuções bem-sucedidas → mature
 """
+
 from __future__ import annotations
 
 import shutil
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -31,7 +32,7 @@ _MATURE_MIN_SUCCESSES = 20
 class SkillDecayManager:
     def __init__(
         self,
-        registry: "SkillRegistry",
+        registry: SkillRegistry,
         active_dir: Path,
         archive_dir: Path,
     ) -> None:
@@ -44,7 +45,7 @@ class SkillDecayManager:
         Varre skills ativas e aplica regras de decay.
         Retorna dict com contagens: deprecated, flagged, matured.
         """
-        now = now or datetime.now(tz=timezone.utc)
+        now = now or datetime.now(tz=UTC)
         skills = await self._registry.list(status="active")
         counts = {"deprecated": 0, "flagged": 0, "matured": 0}
 
@@ -126,15 +127,17 @@ class SkillDecayManager:
 def _days_since(dt: Any, now: datetime) -> float:
     if isinstance(dt, str):
         from datetime import datetime as _dt
+
         dt = _dt.fromisoformat(dt)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     return (now - dt).total_seconds() / 86400
 
 
 async def _emit(event_type: str, data: dict[str, Any]) -> None:
     try:
         from agent.events import emit_skill_event
+
         await emit_skill_event(event_type, data)
     except Exception:
         pass

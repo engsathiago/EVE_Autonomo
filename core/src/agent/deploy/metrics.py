@@ -8,14 +8,15 @@ Uso:
     from agent.deploy.metrics import METRICS, make_metrics_router
     app.include_router(make_metrics_router())
 """
+
 from __future__ import annotations
 
 import os
 import time
 from dataclasses import dataclass
 
-import psutil
 import prometheus_client as prom
+import psutil
 from fastapi import APIRouter
 from fastapi.responses import Response
 
@@ -131,6 +132,7 @@ for _result in ("ok", "killed", "timeout"):
 
 # ── Collector de métricas dinâmicas ──────────────────────────────────────────
 
+
 def _update_dynamic_metrics() -> None:
     """Atualiza gauges que precisam de leitura pontual (não são incrementais)."""
     try:
@@ -148,9 +150,7 @@ def _update_dynamic_metrics() -> None:
 
         db_path = os.environ.get("AGENT_DB_SQLITE", "agent.db")
         conn = sqlite3.connect(db_path, timeout=1)
-        rows = conn.execute(
-            "SELECT worker, restarts FROM worker_health"
-        ).fetchall()
+        rows = conn.execute("SELECT worker, restarts FROM worker_health").fetchall()
         conn.close()
         for worker_name, restarts in rows:
             # Gauge não é o ideal aqui, mas Counter não aceita set().
@@ -173,6 +173,7 @@ def _sync_worker_restarts_counter(worker_name: str, total: int) -> None:
 
 
 # ── Router FastAPI ────────────────────────────────────────────────────────────
+
 
 def make_metrics_router() -> APIRouter:
     router = APIRouter()

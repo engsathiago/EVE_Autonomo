@@ -8,6 +8,7 @@ Regras de segurança implementadas:
 - Saída inclui Auto-Submitted: auto-generated para evitar loops.
 - Email mascarado nos logs (u***r@example.com).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -22,8 +23,8 @@ from typing import Any
 
 import aiosmtplib
 
-from agent.channels.base import ChannelAdapter, ConfigError, IncomingMessage, OutgoingMessage
 from agent.channels import metrics as ch_metrics
+from agent.channels.base import ChannelAdapter, ConfigError, IncomingMessage, OutgoingMessage
 from agent.observability.logger import get_logger
 
 log = get_logger(__name__)
@@ -86,7 +87,7 @@ class EmailAdapter(ChannelAdapter):
         self._task: asyncio.Task | None = None
 
     @classmethod
-    def from_env(cls, router: Any | None = None) -> "EmailAdapter":
+    def from_env(cls, router: Any | None = None) -> EmailAdapter:
         """Constrói a partir das variáveis de ambiente."""
         required = {
             "EMAIL_IMAP_HOST": os.getenv("EMAIL_IMAP_HOST", ""),
@@ -150,7 +151,9 @@ class EmailAdapter(ChannelAdapter):
         body_bytes = body.encode()
         if len(body_bytes) > _MAX_BODY_BYTES:
             out.set_content(f"{_SUBJECT_PREFIX} Resposta em anexo (> 50 KB).")
-            out.add_attachment(body_bytes, maintype="text", subtype="plain", filename="response.txt")
+            out.add_attachment(
+                body_bytes, maintype="text", subtype="plain", filename="response.txt"
+            )
 
         try:
             async with aiosmtplib.SMTP(
@@ -172,6 +175,7 @@ class EmailAdapter(ChannelAdapter):
     async def _idle_loop(self) -> None:
         """IMAP IDLE: recebe notificações push do servidor em vez de polling."""
         import aioimaplib
+
         while self._running:
             try:
                 imap = aioimaplib.IMAP4_SSL(host=self._imap_host, port=self._imap_port)
@@ -244,9 +248,12 @@ class EmailAdapter(ChannelAdapter):
 
         # Anexos: descarta com aviso
         if _has_attachments(msg):
-            await self.send(sender, OutgoingMessage(
-                text="Anexos não são processados nesta versão. Envie apenas texto.",
-            ))
+            await self.send(
+                sender,
+                OutgoingMessage(
+                    text="Anexos não são processados nesta versão. Envie apenas texto.",
+                ),
+            )
             return
 
         subject = str(msg.get("Subject", ""))
@@ -258,7 +265,7 @@ class EmailAdapter(ChannelAdapter):
             log.info("email.discarded.no_prefix", from_=_mask_email(sender))
             return
 
-        text = subject[len(_SUBJECT_PREFIX):].strip() or body
+        text = subject[len(_SUBJECT_PREFIX) :].strip() or body
 
         incoming = IncomingMessage(
             channel="email",
@@ -274,6 +281,7 @@ class EmailAdapter(ChannelAdapter):
 
 
 # ── Helpers de segurança ──────────────────────────────────────────────────────
+
 
 def _is_auto_reply(msg: email.message.Message) -> bool:
     """Detecta resposta automática via headers padrão."""

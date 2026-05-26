@@ -11,15 +11,15 @@ Injeção de dependência:
 
 Para testes: passe make_sandbox=lambda cfg: FakeSandbox(cfg).
 """
+
 from __future__ import annotations
 
-import time
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from agent.observability.logger import get_logger
 from agent.sandbox.base import Sandbox, SandboxConfig, SandboxResult
 from agent.sandbox.docker_backend import make_sandbox as _default_make_sandbox
-from agent.sandbox.exceptions import SandboxCriticRejected
 from agent.sandbox.policy import SandboxPolicy, get_policy
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ async def exec_tool(
     # Injeção de dependência (facilita testes)
     make_sandbox: Callable[[SandboxConfig], Sandbox] = _default_make_sandbox,
     critic: Any | None = None,
-    registry: "SandboxRegistry | None" = None,
+    registry: SandboxRegistry | None = None,
     mission_id: str | None = None,
     subagent_id: str | None = None,
 ) -> SandboxResult:
@@ -68,6 +68,7 @@ async def exec_tool(
 
     # Gate explícito: NetworkPolicy.OPEN requer allow_open_network=True na política
     from agent.sandbox.base import NetworkPolicy
+
     if policy.config.network == NetworkPolicy.OPEN and not policy.allow_open_network:
         raise ValueError(
             f"Política '{policy.name}' usa NetworkPolicy.OPEN mas allow_open_network=False. "
@@ -102,16 +103,20 @@ async def exec_tool(
             registry.mark_done(sandbox_id)
             backend_name = make_sandbox.__module__.split(".")[-1].replace("_backend", "")
             # Usa result real ou cria registro de cancelamento se run() não completou
-            _record = result if result is not None else SandboxResult(
-                exit_code=-2,
-                stdout="",
-                stderr="cancelled",
-                duration_ms=0,
-                cpu_seconds=0.0,
-                memory_peak_mb=0.0,
-                timed_out=False,
-                oom_killed=False,
-                network_denied_attempts=[],
+            _record = (
+                result
+                if result is not None
+                else SandboxResult(
+                    exit_code=-2,
+                    stdout="",
+                    stderr="cancelled",
+                    duration_ms=0,
+                    cpu_seconds=0.0,
+                    memory_peak_mb=0.0,
+                    timed_out=False,
+                    oom_killed=False,
+                    network_denied_attempts=[],
+                )
             )
             await registry.record(
                 sandbox_id=sandbox_id,
@@ -170,33 +175,44 @@ async def _request_critic_approval(
     return None
 
 
-async def _emit_started(sandbox_id: str, policy: str, backend: str, command: list[str] | str) -> None:
+async def _emit_started(
+    sandbox_id: str, policy: str, backend: str, command: list[str] | str
+) -> None:
     import hashlib
+
     raw = command if isinstance(command, str) else " ".join(command)
     command_hash = hashlib.sha256(raw.encode()).hexdigest()[:16]
     try:
         from agent.events import emit_sandbox_event
-        await emit_sandbox_event("sandbox.execution.started", {
-            "sandbox_id": sandbox_id,
-            "policy": policy,
-            "backend": backend,
-            "command_hash": command_hash,
-        })
+
+        await emit_sandbox_event(
+            "sandbox.execution.started",
+            {
+                "sandbox_id": sandbox_id,
+                "policy": policy,
+                "backend": backend,
+                "command_hash": command_hash,
+            },
+        )
     except Exception:
         pass
 
 
-async def _emit_finished(sandbox_id: str, result: "SandboxResult") -> None:
+async def _emit_finished(sandbox_id: str, result: SandboxResult) -> None:
     try:
         from agent.events import emit_sandbox_event
-        await emit_sandbox_event("sandbox.execution.finished", {
-            "sandbox_id": sandbox_id,
-            "exit_code": result.exit_code,
-            "duration_ms": result.duration_ms,
-            "memory_peak_mb": result.memory_peak_mb,
-            "timed_out": result.timed_out,
-            "oom_killed": result.oom_killed,
-        })
+
+        await emit_sandbox_event(
+            "sandbox.execution.finished",
+            {
+                "sandbox_id": sandbox_id,
+                "exit_code": result.exit_code,
+                "duration_ms": result.duration_ms,
+                "memory_peak_mb": result.memory_peak_mb,
+                "timed_out": result.timed_out,
+                "oom_killed": result.oom_killed,
+            },
+        )
     except Exception:
         pass
 
@@ -204,29 +220,40 @@ async def _emit_finished(sandbox_id: str, result: "SandboxResult") -> None:
 async def _emit_network_denied(sandbox_id: str, domains: list[str]) -> None:
     try:
         from agent.events import emit_sandbox_event
+
         for domain in domains:
-            await emit_sandbox_event("sandbox.network.denied", {
-                "sandbox_id": sandbox_id,
-                "domain": domain,
-            })
+            await emit_sandbox_event(
+                "sandbox.network.denied",
+                {
+                    "sandbox_id": sandbox_id,
+                    "domain": domain,
+                },
+            )
     except Exception:
         pass
 
 
-async def _emit_limit_exceeded(sandbox_id: str, result: "SandboxResult") -> None:
+async def _emit_limit_exceeded(sandbox_id: str, result: SandboxResult) -> None:
     try:
         from agent.events import emit_sandbox_event
+
         if result.timed_out:
-            await emit_sandbox_event("sandbox.limit.exceeded", {
-                "sandbox_id": sandbox_id,
-                "limit_type": "wall_time",
-                "value": result.duration_ms,
-            })
+            await emit_sandbox_event(
+                "sandbox.limit.exceeded",
+                {
+                    "sandbox_id": sandbox_id,
+                    "limit_type": "wall_time",
+                    "value": result.duration_ms,
+                },
+            )
         if result.oom_killed:
-            await emit_sandbox_event("sandbox.limit.exceeded", {
-                "sandbox_id": sandbox_id,
-                "limit_type": "memory",
-                "value": result.memory_peak_mb,
-            })
+            await emit_sandbox_event(
+                "sandbox.limit.exceeded",
+                {
+                    "sandbox_id": sandbox_id,
+                    "limit_type": "memory",
+                    "value": result.memory_peak_mb,
+                },
+            )
     except Exception:
         pass

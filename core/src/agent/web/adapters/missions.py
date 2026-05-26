@@ -1,4 +1,5 @@
 """Adapter fino para missões (F7)."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -7,15 +8,14 @@ from uuid import UUID
 from agent.observability.logger import get_logger
 
 if TYPE_CHECKING:
-    from agent.missions.store import MissionStore
     from agent.missions.planner import MissionPlanner
-    from agent.missions.reflector import MissionReflector
+    from agent.missions.store import MissionStore
 
 log = get_logger(__name__)
 
 
 async def list_missions(
-    store: "MissionStore",
+    store: MissionStore,
     status: str | None = None,
     tier: str | None = None,
     since: str | None = None,
@@ -24,10 +24,11 @@ async def list_missions(
 ) -> list[dict[str, Any]]:
     try:
         from agent.missions.store import MissionStatus
+
         status_filter: MissionStatus | None = status  # type: ignore[assignment]
         rows = await store.list_by_status(status_filter)
         missions = []
-        for m in rows[offset:offset + limit]:
+        for m in rows[offset : offset + limit]:
             d = m.model_dump()
             d["id"] = str(d["id"])
             if d.get("parent_mission_id"):
@@ -39,7 +40,7 @@ async def list_missions(
         return []
 
 
-async def get_mission(store: "MissionStore", mission_id: str) -> dict[str, Any] | None:
+async def get_mission(store: MissionStore, mission_id: str) -> dict[str, Any] | None:
     try:
         uid = UUID(mission_id)
         m = await store.get(uid)
@@ -56,16 +57,17 @@ async def get_mission(store: "MissionStore", mission_id: str) -> dict[str, Any] 
 
 
 async def create_mission(
-    store: "MissionStore",
-    planner: "MissionPlanner",
+    store: MissionStore,
+    planner: MissionPlanner,
     title: str,
     prompt: str,
     tier: str | None = None,
 ) -> dict[str, Any] | None:
     try:
-        from agent.missions.store import Mission
         import uuid as _uuid
         from datetime import UTC, datetime
+
+        from agent.missions.store import Mission
 
         mission = Mission(
             id=_uuid.uuid4(),
@@ -91,7 +93,7 @@ async def create_mission(
         return None
 
 
-async def pause_mission(store: "MissionStore", mission_id: str) -> bool:
+async def pause_mission(store: MissionStore, mission_id: str) -> bool:
     try:
         await store.update_status(UUID(mission_id), "paused")
         return True
@@ -100,7 +102,7 @@ async def pause_mission(store: "MissionStore", mission_id: str) -> bool:
         return False
 
 
-async def resume_mission(store: "MissionStore", mission_id: str) -> bool:
+async def resume_mission(store: MissionStore, mission_id: str) -> bool:
     try:
         await store.update_status(UUID(mission_id), "active")
         return True

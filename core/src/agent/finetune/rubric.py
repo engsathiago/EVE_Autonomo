@@ -4,9 +4,9 @@ Loads and validates benchmarks/rubric.yaml.
 Exposes a Rubric dataclass with per-axis configuration and scoring helpers.
 Raises BenchmarkError on missing or malformed rubric — never creates a silent default.
 """
+
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -15,8 +15,13 @@ import yaml  # type: ignore[import-untyped]
 
 from agent.finetune.exceptions import BenchmarkError
 
-_VALID_JUDGES = {"exact_match", "exact_match_or_keyword", "llm_judge_claude",
-                 "rouge_l_plus_llm", "refusal_check"}
+_VALID_JUDGES = {
+    "exact_match",
+    "exact_match_or_keyword",
+    "llm_judge_claude",
+    "rouge_l_plus_llm",
+    "refusal_check",
+}
 
 
 @dataclass
@@ -43,7 +48,7 @@ class Rubric:
     thresholds: RubricThresholds
 
     @classmethod
-    def load(cls, rubric_path: Path) -> "Rubric":
+    def load(cls, rubric_path: Path) -> Rubric:
         """
         Loads rubric.yaml. Raises BenchmarkError if file is missing or invalid.
         This method is the single entry point — callers must not catch silently.
@@ -61,12 +66,14 @@ class Rubric:
             raise BenchmarkError(f"rubric.yaml malformado: {exc}") from exc
 
         if not isinstance(raw, dict):
-            raise BenchmarkError("rubric.yaml deve ser um mapeamento YAML, não uma lista ou escalar.")
+            raise BenchmarkError(
+                "rubric.yaml deve ser um mapeamento YAML, não uma lista ou escalar."
+            )
 
         return cls._parse(raw, rubric_path)
 
     @classmethod
-    def _parse(cls, raw: dict[str, Any], path: Path) -> "Rubric":
+    def _parse(cls, raw: dict[str, Any], path: Path) -> Rubric:
         errors: list[str] = []
 
         version = raw.get("version")
@@ -99,21 +106,21 @@ class Rubric:
                     f"axes[{i}] ({name}): 'judge' inválido '{judge}'. "
                     f"Válidos: {sorted(_VALID_JUDGES)}"
                 )
-            axes.append(RubricAxis(
-                name=name,
-                weight=float(weight),
-                tasks_dir=tasks_dir,
-                judge=judge,
-                task_filter=ax.get("task_filter", {}),
-                judge_model=ax.get("judge_model", "claude-sonnet-4-6"),
-                regression_intolerant=bool(ax.get("regression_intolerant", False)),
-            ))
+            axes.append(
+                RubricAxis(
+                    name=name,
+                    weight=float(weight),
+                    tasks_dir=tasks_dir,
+                    judge=judge,
+                    task_filter=ax.get("task_filter", {}),
+                    judge_model=ax.get("judge_model", "claude-sonnet-4-6"),
+                    regression_intolerant=bool(ax.get("regression_intolerant", False)),
+                )
+            )
             total_weight += float(weight)
 
         if axes and abs(total_weight - 1.0) > 0.01:
-            errors.append(
-                f"Pesos dos eixos somam {total_weight:.3f}, mas devem somar 1.0 (±0.01)"
-            )
+            errors.append(f"Pesos dos eixos somam {total_weight:.3f}, mas devem somar 1.0 (±0.01)")
 
         raw_thresh = raw.get("thresholds", {})
         thresholds = RubricThresholds(
@@ -123,9 +130,7 @@ class Rubric:
 
         if errors:
             joined = "\n  - ".join(errors)
-            raise BenchmarkError(
-                f"rubric.yaml em {path} tem {len(errors)} erro(s):\n  - {joined}"
-            )
+            raise BenchmarkError(f"rubric.yaml em {path} tem {len(errors)} erro(s):\n  - {joined}")
 
         return cls(version=version, axes=axes, thresholds=thresholds)
 
@@ -156,6 +161,7 @@ def load_task_jsonl(tasks_file: Path) -> list[dict[str, Any]]:
         if not line or line.startswith("#"):
             continue
         import json
+
         try:
             row = json.loads(line)
         except json.JSONDecodeError as exc:
@@ -173,9 +179,7 @@ def _validate_task_row(row: dict[str, Any], lineno: int, path: Path) -> None:
     required = {"id", "prompt", "expected"}
     missing = required - set(row.keys())
     if missing:
-        raise BenchmarkError(
-            f"{path}:{lineno} campos obrigatórios ausentes: {sorted(missing)}"
-        )
+        raise BenchmarkError(f"{path}:{lineno} campos obrigatórios ausentes: {sorted(missing)}")
     if not isinstance(row["id"], str) or not row["id"]:
         raise BenchmarkError(f"{path}:{lineno} 'id' deve ser string não-vazia")
     if not isinstance(row["prompt"], str) or not row["prompt"]:

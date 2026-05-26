@@ -12,6 +12,7 @@ Fluxo:
   5. Valida output contra outputs_schema
   6. Atualiza stats + emite evento
 """
+
 from __future__ import annotations
 
 import json
@@ -29,7 +30,6 @@ from agent.skills.exceptions import (
 
 if TYPE_CHECKING:
     from agent.sandbox.base import SandboxResult
-    from agent.skills.manifest import SkillManifestF9
     from agent.skills.registry import SkillRegistry
 
 log = get_logger(__name__)
@@ -51,7 +51,7 @@ print(json.dumps(result))
 class SkillRunResult:
     slug: str
     output: dict[str, Any]
-    sandbox_result: "SandboxResult"
+    sandbox_result: SandboxResult
     execution_id: str
     duration_seconds: float
 
@@ -59,7 +59,7 @@ class SkillRunResult:
 class SkillRunner:
     def __init__(
         self,
-        registry: "SkillRegistry",
+        registry: SkillRegistry,
         skills_active_dir: Any,  # Path
         exec_tool_fn: Any = None,
         sandbox_registry: Any = None,
@@ -83,6 +83,7 @@ class SkillRunner:
 
         manifest_data = json.loads(row["manifest_json"])
         from agent.skills.manifest import SkillManifestF9
+
         manifest = SkillManifestF9(**manifest_data)
 
         _validate_input(input_data, manifest.inputs_schema, slug)
@@ -133,12 +134,15 @@ class SkillRunner:
             error_message=error_msg,
         )
 
-        await _emit_skill_event("skill.executed", {
-            "slug": slug,
-            "success": success,
-            "duration": duration,
-            "mission_id": mission_id,
-        })
+        await _emit_skill_event(
+            "skill.executed",
+            {
+                "slug": slug,
+                "success": success,
+                "duration": duration,
+                "mission_id": mission_id,
+            },
+        )
 
         if not success:
             raise RuntimeError(f"Skill '{slug}' falhou: {error_msg}")
@@ -180,6 +184,7 @@ def _validate_output(data: Any, schema: dict[str, Any], slug: str) -> None:
 async def _emit_skill_event(event_type: str, data: dict[str, Any]) -> None:
     try:
         from agent.events import emit_skill_event
+
         await emit_skill_event(event_type, data)
     except Exception:
         pass

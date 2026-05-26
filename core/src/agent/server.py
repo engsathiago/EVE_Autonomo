@@ -12,13 +12,12 @@ from pydantic import BaseModel
 
 from agent import __version__
 from agent.api.approvals import make_approvals_router_full
-from agent.api.cron import make_cron_router
 from agent.api.critic import make_critic_router
+from agent.api.cron import make_cron_router
 from agent.api.loop import make_loop_router
 from agent.api.messages import make_messages_router
 from agent.api.missions import make_missions_router
 from agent.api.reflexive_memory import make_reflexive_memory_router
-from agent.api.skills import make_skills_router
 from agent.api.tasks import make_tasks_router
 from agent.approvals.manager import ApprovalManager
 from agent.approvals.scheduler import ApprovalScheduler
@@ -125,11 +124,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # ── Fase 6: cron + subagentes + orchestrator ──────────────────────────────
     if _ORCHESTRATOR_ENABLED:
-        from agent.tasks.store import TaskStore
+        from agent.orchestrator.router import Orchestrator
+        from agent.orchestrator.tiers import TierClassifier
         from agent.scheduler.store import CronStore
         from agent.subagents.pool import SubagentPool
-        from agent.orchestrator.tiers import TierClassifier
-        from agent.orchestrator.router import Orchestrator
+        from agent.tasks.store import TaskStore
 
         _task_store = TaskStore(_memory_store._pool)
         _cron_store = CronStore(_memory_store._pool)
@@ -166,8 +165,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
 
         if _SCHEDULER_ENABLED and settings.scheduler.enabled:
-            from apscheduler.schedulers.asyncio import AsyncIOScheduler
             from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+            from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
             from agent.scheduler.worker import CronWorker
 
@@ -196,22 +195,26 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # ── Fase 7: missões + critic + loop autônomo ──────────────────────────────
     if _ORCHESTRATOR_ENABLED:
-        from agent.missions.store import MissionStore
-        from agent.memory.reflexive import ReflexiveMemory
+        from agent.autonomous.loop import AutonomousLoop
         from agent.critic.critic import Critic
+        from agent.memory.reflexive import ReflexiveMemory
         from agent.missions.planner import MissionPlanner
         from agent.missions.reflector import MissionReflector
-        from agent.autonomous.loop import AutonomousLoop
+        from agent.missions.store import MissionStore
 
         _mission_store = MissionStore(_memory_store._pool)
         _reflexive_memory = ReflexiveMemory(_memory_store._pool)
 
-        _critic = Critic(
-            model_router=_model_router,
-            medium_model=settings.critic.medium_model,
-            primary_model=settings.critic.primary_model,
-            cost_threshold_usd=settings.critic.cost_threshold_usd,
-        ) if settings.critic.enabled else None
+        _critic = (
+            Critic(
+                model_router=_model_router,
+                medium_model=settings.critic.medium_model,
+                primary_model=settings.critic.primary_model,
+                cost_threshold_usd=settings.critic.cost_threshold_usd,
+            )
+            if settings.critic.enabled
+            else None
+        )
 
         _planner = MissionPlanner(
             model_router=_model_router,
@@ -265,12 +268,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         _d.mkdir(parents=True, exist_ok=True)
 
     try:
+        from agent.api.skills import make_skills_router
+        from agent.skills.decay import SkillDecayManager
+        from agent.skills.promoter import SkillPromoter
         from agent.skills.registry import SkillRegistry as SkillRegistryF9
         from agent.skills.runner import SkillRunner as SkillRunnerF9
-        from agent.skills.promoter import SkillPromoter
         from agent.skills.synthesizer import SkillSynthesizer
-        from agent.skills.decay import SkillDecayManager
-        from agent.api.skills import make_skills_router
         from agent.tools.exec_tool import exec_tool
 
         _skill_registry = SkillRegistryF9(_memory_store._pool)
@@ -308,14 +311,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 replace_existing=True,
             )
 
-        app.include_router(make_skills_router(
-            registry=_skill_registry,
-            runner=_skill_runner,
-            promoter=_skill_promoter,
-            synthesizer=_skill_synthesizer,
-        ))
+        app.include_router(
+            make_skills_router(
+                registry=_skill_registry,
+                runner=_skill_runner,
+                promoter=_skill_promoter,
+                synthesizer=_skill_synthesizer,
+            )
+        )
     except Exception as _exc:
         import logging
+
         logging.getLogger(__name__).warning("skill_registry_init_failed: %s", _exc)
 
     # ── Fase 10: backup job às 4h ─────────────────────────────────────────────
@@ -336,6 +342,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # ── Fase 11: Web UI ───────────────────────────────────────────────────────
     from agent.web.server import attach_web_routes
+
     attach_web_routes(
         app,
         missions_store=_mission_store,
@@ -352,6 +359,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # ── Fase 12: canais extras ────────────────────────────────────────────────
     from agent.channels import bootstrap_channels
+
     _channel_adapters = await bootstrap_channels(
         orchestrator=_orchestrator,
         approval_manager=_approval_manager,
@@ -362,6 +370,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # ── Shutdown (ordem inversa) ──────────────────────────────────────────────
     from agent.channels import stop_channels
+
     await stop_channels()
 
     if _cron_worker:
@@ -385,28 +394,33 @@ app = FastAPI(title="agent-core", version=__version__, lifespan=lifespan)
 from agent.deploy.health import make_health_router  # noqa: E402
 from agent.deploy.metrics import make_metrics_router  # noqa: E402
 
-app.include_router(make_health_router(
-    get_db_pool=lambda: _memory_store._pool if _memory_store else None,
-    get_cron_worker=lambda: _cron_worker,
-    get_subagent_pool=lambda: _subagent_pool,
-))
+app.include_router(
+    make_health_router(
+        get_db_pool=lambda: _memory_store._pool if _memory_store else None,
+        get_cron_worker=lambda: _cron_worker,
+        get_subagent_pool=lambda: _subagent_pool,
+    )
+)
 app.include_router(make_metrics_router())
 
 from agent.api.deploy import make_deploy_router  # noqa: E402
+
 app.include_router(make_deploy_router())
 
 # Rotas registradas em escopo de módulo — lambdas lêem globals no momento da request
 app.include_router(
-    make_messages_router(lambda: {
-        "memory_store": _memory_store,
-        "skill_manager": _skill_manager,
-        "model_router": _model_router,
-        "curator": _curator,
-        "compressor": _compressor,
-        "settings": get_settings(),
-        "orchestrator": _orchestrator,
-        "task_store": _task_store,
-    })
+    make_messages_router(
+        lambda: {
+            "memory_store": _memory_store,
+            "skill_manager": _skill_manager,
+            "model_router": _model_router,
+            "curator": _curator,
+            "compressor": _compressor,
+            "settings": get_settings(),
+            "orchestrator": _orchestrator,
+            "task_store": _task_store,
+        }
+    )
 )
 app.include_router(
     make_approvals_router_full(
@@ -432,7 +446,9 @@ app.include_router(
 def _run_backup_job() -> None:
     """Callable síncrono para o APScheduler disparar o backup diário."""
     import asyncio as _asyncio
+
     from agent.deploy.backup import run_backup as _run_backup
+
     try:
         loop = _asyncio.get_event_loop()
         loop.create_task(_run_backup())
@@ -460,6 +476,7 @@ def _get_skill_manager() -> SkillManager:
 
 # ── Request/Response schemas ────────────────────────────────────────────────
 
+
 class ChatRequest(BaseModel):
     message: str
     conversation_id: str | None = None
@@ -484,10 +501,12 @@ class ToolInfo(BaseModel):
 
 # ── Endpoints ───────────────────────────────────────────────────────────────
 
+
 @app.get("/health")
 async def health() -> dict[str, object]:
     settings = get_settings()
     from agent.channels import get_channel_statuses
+
     return {
         "ok": True,
         "version": __version__,
@@ -502,9 +521,10 @@ async def health() -> dict[str, object]:
 
 @app.get("/metrics", response_class=__import__("fastapi").responses.PlainTextResponse)
 async def prometheus_metrics() -> str:
-    from agent.metrics.phase_7 import metrics
     from agent.channels.metrics import prometheus_text as channel_metrics_text
+    from agent.metrics.phase_7 import metrics
     from agent.web.metrics import prometheus_text as web_metrics_text
+
     if _mission_store:
         active = await _mission_store.list_active()
         metrics.missions_active = len(active)
@@ -518,11 +538,13 @@ async def list_tools() -> dict[str, object]:
     for name in registry.names():
         tool = registry.get(name)
         if tool:
-            tools.append(ToolInfo(
-                name=tool.name,
-                description=tool.description,
-                requires_confirmation=tool.requires_confirmation,
-            ))
+            tools.append(
+                ToolInfo(
+                    name=tool.name,
+                    description=tool.description,
+                    requires_confirmation=tool.requires_confirmation,
+                )
+            )
     return {"tools": [t.model_dump() for t in tools]}
 
 
@@ -543,6 +565,7 @@ async def chat(req: ChatRequest) -> ChatResponse:
     # Roteamento via Orchestrator quando disponível
     if _orchestrator is not None and _task_store is not None:
         from agent.tasks.task import Task, TaskSource
+
         task = Task(
             content=req.message,
             source=TaskSource.API,
@@ -627,6 +650,7 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
 
     async def _event_stream() -> AsyncGenerator[str, None]:
         import asyncio
+
         queue: asyncio.Queue[AgentEvent | None] = asyncio.Queue()
 
         async def enqueue(event: AgentEvent) -> None:
@@ -662,6 +686,7 @@ async def chat_stream(req: ChatRequest) -> StreamingResponse:
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def _rows_to_messages(rows: list[dict]) -> list[dict]:
     messages = []
     for row in rows:
@@ -670,7 +695,11 @@ def _rows_to_messages(rows: list[dict]) -> list[dict]:
         if role in ("user", "assistant", "system"):
             tool_calls_raw = row.get("tool_calls")
             if role == "assistant" and tool_calls_raw:
-                tool_calls = json.loads(tool_calls_raw) if isinstance(tool_calls_raw, str) else tool_calls_raw
+                tool_calls = (
+                    json.loads(tool_calls_raw)
+                    if isinstance(tool_calls_raw, str)
+                    else tool_calls_raw
+                )
                 messages.append({"role": role, "content": content, "tool_calls": tool_calls})
             else:
                 messages.append({"role": role, "content": content})

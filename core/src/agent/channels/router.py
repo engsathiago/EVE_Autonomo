@@ -12,6 +12,7 @@ Responsabilidades:
 Roteamento é 100% responsabilidade do router + adapter. O orchestrator
 recebe apenas Task com channel_ref para correlação — sem ramificação por canal.
 """
+
 from __future__ import annotations
 
 import collections
@@ -19,8 +20,8 @@ import os
 import time
 from typing import TYPE_CHECKING, Any
 
-from agent.channels.base import ChannelAdapter, IncomingMessage, OutgoingMessage
 from agent.channels import metrics as ch_metrics
+from agent.channels.base import ChannelAdapter, IncomingMessage, OutgoingMessage
 from agent.observability.logger import get_logger
 
 if TYPE_CHECKING:
@@ -31,6 +32,7 @@ log = get_logger(__name__)
 _APPROVAL_CHANNELS_DEFAULT = ["telegram", "web"]
 
 # ── Rate limiter simples (sliding window in-memory) ──────────────────────────
+
 
 class _SlidingWindow:
     """Contador de hits numa janela deslizante de 60 segundos."""
@@ -53,12 +55,13 @@ class _SlidingWindow:
 
 # ── ChannelRouter ────────────────────────────────────────────────────────────
 
+
 class ChannelRouter:
     def __init__(
         self,
         adapters: list[ChannelAdapter],
         orchestrator: Any | None,
-        approval_manager: "ApprovalManager | None",
+        approval_manager: ApprovalManager | None,
         db_pool: Any,
         rate_limit_user_per_min: int = 20,
         rate_limit_channel_per_min: int = 120,
@@ -71,8 +74,7 @@ class ChannelRouter:
         self._user_rl = _SlidingWindow(rate_limit_user_per_min)
         self._channel_rl = _SlidingWindow(rate_limit_channel_per_min)
         self._approval_channels = set(
-            approval_channels if approval_channels is not None
-            else _parse_approval_channels()
+            approval_channels if approval_channels is not None else _parse_approval_channels()
         )
 
     async def handle(self, msg: IncomingMessage) -> None:
@@ -97,29 +99,45 @@ class ChannelRouter:
         if not self._user_rl.allow(user_key):
             log.info("router.rate_limited", channel=msg.channel, user_id=msg.user_id, reason="user")
             ch_metrics.rate_limited_total.labels(channel=msg.channel, reason="user").inc()
-            await adapter.send(msg.user_id, OutgoingMessage(
-                text="⚠️ Muitas mensagens. Aguarde um momento.",
-                thread_id=msg.thread_id,
-            ))
+            await adapter.send(
+                msg.user_id,
+                OutgoingMessage(
+                    text="⚠️ Muitas mensagens. Aguarde um momento.",
+                    thread_id=msg.thread_id,
+                ),
+            )
             return
 
         # 3. Rate limit por canal
         if not self._channel_rl.allow(msg.channel):
-            log.info("router.rate_limited", channel=msg.channel, user_id=msg.user_id, reason="channel")
+            log.info(
+                "router.rate_limited", channel=msg.channel, user_id=msg.user_id, reason="channel"
+            )
             ch_metrics.rate_limited_total.labels(channel=msg.channel, reason="channel").inc()
             return
 
         session_id = f"{msg.channel}:{msg.user_id}"
 
         # 4. Persistir direction=in
-        await self._persist(msg.channel, "in", msg.user_id, msg.user_display, msg.text, msg.thread_id, None, session_id)
+        await self._persist(
+            msg.channel,
+            "in",
+            msg.user_id,
+            msg.user_display,
+            msg.text,
+            msg.thread_id,
+            None,
+            session_id,
+        )
         ch_metrics.messages_total.labels(channel=msg.channel, direction="in").inc()
 
         # 5. Despachar
         t0 = time.monotonic()
         response_text = await self._dispatch(msg, session_id, adapter)
         latency = time.monotonic() - t0
-        ch_metrics.message_latency_seconds.labels(channel=msg.channel, direction="out").observe(latency)
+        ch_metrics.message_latency_seconds.labels(channel=msg.channel, direction="out").observe(
+            latency
+        )
 
         if response_text is None:
             return
@@ -129,7 +147,9 @@ class ChannelRouter:
         await adapter.send(msg.user_id, out_msg)
 
         # 7. Persistir direction=out
-        await self._persist(msg.channel, "out", msg.user_id, None, response_text, msg.thread_id, None, session_id)
+        await self._persist(
+            msg.channel, "out", msg.user_id, None, response_text, msg.thread_id, None, session_id
+        )
         ch_metrics.messages_total.labels(channel=msg.channel, direction="out").inc()
 
     async def _dispatch(
@@ -156,6 +176,7 @@ class ChannelRouter:
     ) -> str | None:
         """Processa comandos /xxx. Retorna texto de resposta."""
         from agent.channels.commands import dispatch_command
+
         return await dispatch_command(
             text=text,
             msg=msg,
@@ -177,6 +198,7 @@ class ChannelRouter:
             return "Agente temporariamente indisponível."
 
         from agent.tasks.task import Task
+
         task = Task(
             content=msg.text,
             source=f"channel:{msg.channel}",

@@ -4,6 +4,7 @@
 Heartbeat: ping a cada 20s, fecha se 3 pings sem pong.
 Backpressure: >100 mensagens enfileiradas → desconecta.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -11,12 +12,12 @@ import json
 import time
 from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 
 from agent.observability.logger import get_logger
-from agent.web.auth import verify_token
 from agent.web import metrics as web_metrics
+from agent.web.auth import verify_token
 
 log = get_logger(__name__)
 
@@ -54,7 +55,7 @@ class _WsSession:
 
 
 # Registry global de sessões ativas
-_sessions: dict[str, "_WsSession"] = {}
+_sessions: dict[str, _WsSession] = {}
 
 
 async def broadcast(topic: str, msg_type: str, data: Any) -> None:
@@ -85,6 +86,7 @@ def make_ws_router(
 
         await ws.accept()
         import uuid as _uuid
+
         session_id = str(_uuid.uuid4())
         session = _WsSession(ws, session_id)
         _sessions[session_id] = session
@@ -112,7 +114,7 @@ def make_ws_router(
 
 
 async def _recv_loop(
-    session: "_WsSession",
+    session: _WsSession,
     get_orchestrator=None,
     get_task_store=None,
 ) -> None:
@@ -120,7 +122,7 @@ async def _recv_loop(
     while not session._closed:
         try:
             raw = await asyncio.wait_for(ws.receive_text(), timeout=_HEARTBEAT_INTERVAL_S * 2)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             continue
         except WebSocketDisconnect:
             break
@@ -150,15 +152,13 @@ async def _recv_loop(
             if not text:
                 continue
             web_metrics.chat_messages_total.inc()
-            asyncio.create_task(
-                _handle_chat(session, text, get_orchestrator, get_task_store)
-            )
+            asyncio.create_task(_handle_chat(session, text, get_orchestrator, get_task_store))
 
         else:
             log.debug("web.ws.unknown_op", op=op, session_id=session.session_id)
 
 
-async def _send_loop(session: "_WsSession") -> None:
+async def _send_loop(session: _WsSession) -> None:
     ws = session.ws
     while True:
         msg = await session._queue.get()
@@ -173,7 +173,7 @@ async def _send_loop(session: "_WsSession") -> None:
             break
 
 
-async def _heartbeat_loop(session: "_WsSession") -> None:
+async def _heartbeat_loop(session: _WsSession) -> None:
     ws = session.ws
     while not session._closed:
         await asyncio.sleep(_HEARTBEAT_INTERVAL_S)
@@ -191,12 +191,13 @@ async def _heartbeat_loop(session: "_WsSession") -> None:
 
 
 async def _handle_chat(
-    session: "_WsSession",
+    session: _WsSession,
     text: str,
     get_orchestrator=None,
     get_task_store=None,
 ) -> None:
     from agent.web import metrics as web_metrics
+
     t0 = time.monotonic()
 
     orchestrator = get_orchestrator() if get_orchestrator else None
@@ -207,6 +208,7 @@ async def _handle_chat(
         return
 
     from agent.web.adapters.orchestrator import send_message
+
     try:
         async for event in send_message(orchestrator, task_store, text):
             await session.send({"topic": "chat", **event})

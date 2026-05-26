@@ -1,4 +1,5 @@
 """Serve arquivos estáticos do frontend (public/) com Cache-Control adequado."""
+
 from __future__ import annotations
 
 import mimetypes

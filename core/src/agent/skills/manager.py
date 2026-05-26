@@ -2,6 +2,7 @@
 SkillManager: carrega, valida, busca e executa skills.
 Reutiliza o embedder singleton da Fase 2 (agent.memory.embeddings).
 """
+
 from __future__ import annotations
 
 import math
@@ -12,8 +13,8 @@ from uuid import UUID
 
 from agent.memory.embeddings import embed, embed_batch
 from agent.observability.logger import get_logger
-from agent.skills.loader import load_all_from_dir
 from agent.skills.cache import SkillEmbeddingCache as SkillRegistry
+from agent.skills.loader import load_all_from_dir
 from agent.skills.schema import (
     ApprovalCreated,
     SkillError,
@@ -47,11 +48,11 @@ class SkillManager:
     def __init__(
         self,
         skills_dir: Path,
-        transport: "BaseTransport",
-        memory_store: "MemoryStore | None" = None,
+        transport: BaseTransport,
+        memory_store: MemoryStore | None = None,
         cache_dir: Path | None = None,
-        model_router: "ModelRouter | None" = None,
-        approval_manager: "ApprovalManager | None" = None,
+        model_router: ModelRouter | None = None,
+        approval_manager: ApprovalManager | None = None,
     ) -> None:
         self._skills_dir = skills_dir
         self._transport = transport
@@ -110,7 +111,9 @@ class SkillManager:
     def has(self, name: str) -> bool:
         return self._registry.has(name)
 
-    async def match(self, query: str, k: int = 3, must_have_tag: str | None = None) -> list[SkillMatch]:
+    async def match(
+        self, query: str, k: int = 3, must_have_tag: str | None = None
+    ) -> list[SkillMatch]:
         """
         Busca semântica nas descrições + boost 0.2 por correspondência exata de nome.
         Retorna top-k ordenado por score descendente.
@@ -158,6 +161,7 @@ class SkillManager:
             raise SkillRequiresApproval(name)
 
         from agent.skills.template_runner import TemplateSkillRunner as SkillRunner
+
         runner = SkillRunner(
             transport=self._transport,
             model_router=self._model_router,
@@ -192,6 +196,7 @@ class SkillManager:
 
         # runner.execute() returns ApprovalRequest when requires_approval=True
         from agent.approvals.manager import ApprovalRequest
+
         if isinstance(result, ApprovalRequest):
             raise ApprovalCreated(result)
 

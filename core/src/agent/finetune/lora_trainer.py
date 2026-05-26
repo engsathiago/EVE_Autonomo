@@ -13,16 +13,14 @@ Flow:
 Fallback: if use_unsloth=False in config (or unsloth import fails), the training
 script falls back to transformers + peft. Slower (~2×), same interface.
 """
+
 from __future__ import annotations
 
 import json
-import os
-import shutil
 import subprocess
-import tempfile
 import textwrap
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -116,8 +114,7 @@ class LoraTrainer:
         if result["exit_code"] != 0:
             stderr = result.get("stderr", "")[:2000]
             raise FinetuneError(
-                f"Treino falhou com exit_code={result['exit_code']}. "
-                f"Stderr: {stderr}"
+                f"Treino falhou com exit_code={result['exit_code']}. Stderr: {stderr}"
             )
 
         final_loss = self._extract_final_loss(training_log_path)
@@ -152,7 +149,9 @@ class LoraTrainer:
         try:
             out = subprocess.run(
                 ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             if out.returncode != 0:
                 raise TrainerNotAvailable(
@@ -211,6 +210,7 @@ class LoraTrainer:
         script_bytes = merge_script.encode()
 
         from agent.tools.exec_tool import exec_tool
+
         result = await exec_tool(
             command=["python", "merge.py"],
             policy_name="finetune",
@@ -231,18 +231,16 @@ class LoraTrainer:
 
         proc = subprocess.run(
             ["ollama", "create", model_name, "-f", str(modelfile_path)],
-            capture_output=True, text=True, timeout=300,
+            capture_output=True,
+            text=True,
+            timeout=300,
         )
         if proc.returncode != 0:
-            raise FinetuneError(
-                f"ollama create falhou para '{model_name}': {proc.stderr[:500]}"
-            )
+            raise FinetuneError(f"ollama create falhou para '{model_name}': {proc.stderr[:500]}")
         log.info("lora_trainer.ollama_create_done", model=model_name)
 
     @staticmethod
-    def _build_train_script(
-        config: TrainConfig, dataset_path: Path, ckpt_path: Path
-    ) -> str:
+    def _build_train_script(config: TrainConfig, dataset_path: Path, ckpt_path: Path) -> str:
         """Returns the Python training script as a string."""
         return textwrap.dedent(f"""\
             import os, json, sys
@@ -347,9 +345,7 @@ class LoraTrainer:
         """)
 
     @staticmethod
-    def _build_merge_script(
-        config: TrainConfig, ckpt_path: Path, output_gguf: Path
-    ) -> str:
+    def _build_merge_script(config: TrainConfig, ckpt_path: Path, output_gguf: Path) -> str:
         return textwrap.dedent(f"""\
             from pathlib import Path
             import torch
@@ -404,7 +400,7 @@ class LoraTrainer:
 
     @staticmethod
     def _make_checkpoint_id(base_model: str, run_id: str) -> str:
-        date_str = datetime.now(tz=timezone.utc).strftime("%Y%m%d")
+        date_str = datetime.now(tz=UTC).strftime("%Y%m%d")
         short = base_model.split("/")[-1].replace(":", "-")[:20]
         run_hash = run_id[:8]
         return f"{short}-lora-{date_str}-{run_hash}"
@@ -418,7 +414,12 @@ class LoraTrainer:
         dataset_path: Path,
     ) -> None:
         import hashlib
-        dataset_hash = hashlib.sha256(dataset_path.read_bytes()).hexdigest()[:16] if dataset_path.exists() else ""
+
+        dataset_hash = (
+            hashlib.sha256(dataset_path.read_bytes()).hexdigest()[:16]
+            if dataset_path.exists()
+            else ""
+        )
         manifest = {
             "checkpoint_id": checkpoint_id,
             "run_id": run_id,
@@ -426,7 +427,7 @@ class LoraTrainer:
             "dataset_path": str(dataset_path),
             "dataset_hash": dataset_hash,
             "hyperparameters": config.to_dict(),
-            "created_at": datetime.now(tz=timezone.utc).isoformat(),
+            "created_at": datetime.now(tz=UTC).isoformat(),
         }
         (ckpt_path / "manifest.yaml").write_text(
             "\n".join(f"{k}: {json.dumps(v)}" for k, v in manifest.items())

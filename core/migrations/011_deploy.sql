@@ -2,7 +2,7 @@
 -- Idempotente: usa IF NOT EXISTS em todas as operações.
 
 CREATE TABLE IF NOT EXISTS deploy_events (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    id          INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     ts          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     kind        TEXT NOT NULL,        -- start|stop|crash|restart|backup|restore|upgrade
     worker      TEXT,                  -- orchestrator|scheduler|api|heartbeat|null

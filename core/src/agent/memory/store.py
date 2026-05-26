@@ -1,10 +1,12 @@
 """
 MemoryStore: persistência e recuperação híbrida (vetorial + FTS) via asyncpg.
 """
+
 from __future__ import annotations
 
 import json
 import os
+from datetime import UTC
 from uuid import UUID
 
 import asyncpg
@@ -27,8 +29,9 @@ class MemoryStore:
         self._pool = pool
 
     @classmethod
-    async def create(cls, dsn: str = DEFAULT_DSN,
-                     min_size: int = 2, max_size: int = 10) -> "MemoryStore":
+    async def create(
+        cls, dsn: str = DEFAULT_DSN, min_size: int = 2, max_size: int = 10
+    ) -> MemoryStore:
         pool = await asyncpg.create_pool(
             dsn,
             min_size=min_size,
@@ -106,9 +109,7 @@ class MemoryStore:
         )
         return row["id"]
 
-    async def get_messages(
-        self, conversation_id: UUID, limit: int = 100
-    ) -> list[dict]:
+    async def get_messages(self, conversation_id: UUID, limit: int = 100) -> list[dict]:
         rows = await self._pool.fetch(
             """
             SELECT id, role, content, tool_calls, tool_call_id, tokens, created_at
@@ -136,6 +137,7 @@ class MemoryStore:
         metadata: dict | None = None,
     ) -> UUID:
         import time
+
         t0 = time.monotonic()
         vec = await async_embed(content)
         row = await self._pool.fetchrow(
@@ -176,6 +178,7 @@ class MemoryStore:
         min_importance: int = 1,
     ) -> list[MemoryEntry]:
         import time
+
         t0 = time.monotonic()
         qvec = await async_embed(query)
 
@@ -189,7 +192,10 @@ class MemoryStore:
                 ORDER BY embedding <=> $1
                 LIMIT $4
                 """,
-                qvec, min_importance, kind, k,
+                qvec,
+                min_importance,
+                kind,
+                k,
             )
         else:
             rows = await self._pool.fetch(
@@ -201,7 +207,9 @@ class MemoryStore:
                 ORDER BY embedding <=> $1
                 LIMIT $3
                 """,
-                qvec, min_importance, k,
+                qvec,
+                min_importance,
+                k,
             )
 
         entries = [_row_to_entry(r) for r in rows]
@@ -235,7 +243,9 @@ class MemoryStore:
                 ORDER BY score DESC
                 LIMIT $3
                 """,
-                query, kind, k,
+                query,
+                kind,
+                k,
             )
         else:
             rows = await self._pool.fetch(
@@ -248,7 +258,8 @@ class MemoryStore:
                 ORDER BY score DESC
                 LIMIT $2
                 """,
-                query, k,
+                query,
+                k,
             )
 
         entries = [_row_to_entry(r) for r in rows]
@@ -264,6 +275,7 @@ class MemoryStore:
     ) -> SearchResult:
         """Reciprocal Rank Fusion: combina ranking vetorial e FTS."""
         import time
+
         t0 = time.monotonic()
 
         vec_results = await self.search_vector(query, k=k * 2, kind=kind)
@@ -302,11 +314,10 @@ class MemoryStore:
     # Skill Invocations
     # -------------------------------------------------------------------------
 
-    async def save_skill_invocation(self, record: "SkillInvocationRecord") -> int:  # type: ignore[name-defined]  # noqa: F821
-        from datetime import timezone
+    async def save_skill_invocation(self, record: SkillInvocationRecord) -> int:  # type: ignore[name-defined]  # noqa: F821
         from datetime import datetime as dt
 
-        now = dt.now(tz=timezone.utc)
+        now = dt.now(tz=UTC)
         row = await self._pool.fetchrow(
             """
             INSERT INTO skill_invocations
@@ -344,6 +355,7 @@ class MemoryStore:
 # ---------------------------------------------------------------------------
 # Connection init & helpers
 # ---------------------------------------------------------------------------
+
 
 async def _init_connection(conn: asyncpg.Connection) -> None:
     await register_vector(conn)

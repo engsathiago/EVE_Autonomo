@@ -5,12 +5,13 @@ Activation is atomic: writes active_checkpoint.txt via tempfile + os.replace.
 Never opens the destination file directly for writing.
 Auto-activation requires explicit human acceptance history before enabling.
 """
+
 from __future__ import annotations
 
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -26,7 +27,7 @@ log = get_logger(__name__)
 class CheckpointRegistry:
     def __init__(
         self,
-        pool: Any,                        # asyncpg pool
+        pool: Any,  # asyncpg pool
         models_dir: Path,
         auto_activate: bool = False,
         auto_activate_after_n_accepted: int = 5,
@@ -48,15 +49,20 @@ class CheckpointRegistry:
         config: dict[str, Any],
         triggered_by: str,
     ) -> None:
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         await self._pool.execute(
             """
             INSERT INTO finetune_runs
                 (id, started_at, status, base_model, dataset_path, dataset_size, config, triggered_by)
             VALUES ($1, $2, 'running', $3, $4, $5, $6, $7)
             """,
-            run_id, now, base_model, str(dataset_path),
-            dataset_size, json.dumps(config), triggered_by,
+            run_id,
+            now,
+            base_model,
+            str(dataset_path),
+            dataset_size,
+            json.dumps(config),
+            triggered_by,
         )
 
     async def finish_run(
@@ -67,7 +73,7 @@ class CheckpointRegistry:
         benchmark_score: dict[str, Any] | None = None,
         rejection_reason: str | None = None,
     ) -> None:
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         await self._pool.execute(
             """
             UPDATE finetune_runs
@@ -75,9 +81,12 @@ class CheckpointRegistry:
                 benchmark_score=$4, rejection_reason=$5
             WHERE id=$6
             """,
-            now, status, checkpoint_id,
+            now,
+            status,
+            checkpoint_id,
             json.dumps(benchmark_score) if benchmark_score else None,
-            rejection_reason, run_id,
+            rejection_reason,
+            run_id,
         )
 
     # ── Checkpoint CRUD ───────────────────────────────────────────────────────
@@ -90,15 +99,19 @@ class CheckpointRegistry:
         path: Path,
         benchmark_score: dict[str, Any],
     ) -> None:
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
         await self._pool.execute(
             """
             INSERT INTO finetune_checkpoints
                 (id, run_id, base_model, path, created_at, benchmark_score, state)
             VALUES ($1, $2, $3, $4, $5, $6, 'candidate')
             """,
-            checkpoint_id, run_id, base_model, str(path),
-            now, json.dumps(benchmark_score),
+            checkpoint_id,
+            run_id,
+            base_model,
+            str(path),
+            now,
+            json.dumps(benchmark_score),
         )
 
     async def reject_checkpoint(self, checkpoint_id: str) -> None:
@@ -107,9 +120,7 @@ class CheckpointRegistry:
             checkpoint_id,
         )
 
-    async def activate(
-        self, checkpoint_id: str, *, auto: bool = False
-    ) -> None:
+    async def activate(self, checkpoint_id: str, *, auto: bool = False) -> None:
         """
         Marks checkpoint as active and writes active_checkpoint.txt atomically.
 
@@ -129,7 +140,7 @@ class CheckpointRegistry:
                 f"Checkpoint '{checkpoint_id}' não encontrado no banco."
             )
 
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
 
         # Deactivate previous active checkpoint
         prev = await self._pool.fetchrow(
@@ -138,13 +149,15 @@ class CheckpointRegistry:
         if prev:
             await self._pool.execute(
                 "UPDATE finetune_checkpoints SET state='archived', deactivated_at=$1 WHERE id=$2",
-                now, prev["id"],
+                now,
+                prev["id"],
             )
 
         # Activate new
         await self._pool.execute(
             "UPDATE finetune_checkpoints SET state='active', activated_at=$1 WHERE id=$2",
-            now, checkpoint_id,
+            now,
+            checkpoint_id,
         )
 
         # Atomic write of active_checkpoint.txt
@@ -168,7 +181,8 @@ class CheckpointRegistry:
         if current:
             await self._pool.execute(
                 "UPDATE finetune_checkpoints SET state='archived', deactivated_at=$1 WHERE id=$2",
-                datetime.now(tz=timezone.utc), current["id"],
+                datetime.now(tz=UTC),
+                current["id"],
             )
 
         # Find last archived (previously active)
@@ -184,7 +198,8 @@ class CheckpointRegistry:
             target_id = prev["id"]
             await self._pool.execute(
                 "UPDATE finetune_checkpoints SET state='active', activated_at=$1 WHERE id=$2",
-                datetime.now(tz=timezone.utc), target_id,
+                datetime.now(tz=UTC),
+                target_id,
             )
             self._atomic_write_active(target_id)
         else:

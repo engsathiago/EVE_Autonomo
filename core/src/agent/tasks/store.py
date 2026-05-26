@@ -48,7 +48,9 @@ class TaskStore:
     ) -> None:
         now = datetime.utcnow()
         started_at = now if status == TaskStatus.RUNNING else None
-        finished_at = now if status in (TaskStatus.DONE, TaskStatus.FAILED, TaskStatus.TIMEOUT) else None
+        finished_at = (
+            now if status in (TaskStatus.DONE, TaskStatus.FAILED, TaskStatus.TIMEOUT) else None
+        )
 
         await self._pool.execute(
             """
@@ -77,18 +79,15 @@ class TaskStore:
         )
 
     async def get(self, task_id: UUID) -> Task | None:
-        row = await self._pool.fetchrow(
-            "SELECT * FROM tasks WHERE id = $1", task_id
-        )
+        row = await self._pool.fetchrow("SELECT * FROM tasks WHERE id = $1", task_id)
         return _row_to_task(row) if row else None
 
-    async def list_by_status(
-        self, status: TaskStatus | None = None, limit: int = 50
-    ) -> list[Task]:
+    async def list_by_status(self, status: TaskStatus | None = None, limit: int = 50) -> list[Task]:
         if status:
             rows = await self._pool.fetch(
                 "SELECT * FROM tasks WHERE status = $1 ORDER BY created_at DESC LIMIT $2",
-                status.value, limit,
+                status.value,
+                limit,
             )
         else:
             rows = await self._pool.fetch(
@@ -158,7 +157,9 @@ def _row_to_task(row: asyncpg.Record) -> Task:
         id=row["id"],
         parent_id=row["parent_id"],
         cron_job_id=row["cron_job_id"],
-        source=TaskSource(row["source"]) if row["source"] in TaskSource._value2member_map_ else row["source"],
+        source=TaskSource(row["source"])
+        if row["source"] in TaskSource._value2member_map_
+        else row["source"],
         content=row["content"],
         tier=row["tier"],
         status=TaskStatus(row["status"]),

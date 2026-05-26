@@ -5,6 +5,7 @@ Reutiliza o embedder singleton da memória (F2/F5/F7).
 Serialização: numpy float32 → bytes (struct pack) armazenado em bytea no Postgres.
 Cosine similarity calculado em Python — skills são poucas dezenas, não precisa de pgvector.
 """
+
 from __future__ import annotations
 
 import math
@@ -35,6 +36,7 @@ def unpack_embedding(data: bytes) -> list[float]:
 async def embed_text(text: str) -> list[float]:
     """Embeda texto usando o modelo singleton da memória."""
     from agent.memory.embeddings import embed
+
     return await embed(text)
 
 

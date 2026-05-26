@@ -8,6 +8,7 @@ Fluxo:
 Anti-padrão proibido: Sintetizador NÃO sabe quais são os pareceres antes
 de gerar o seu. Recebe os 3 prontos como input (já computados).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -33,9 +34,10 @@ _VERDICT_CACHE_TTL_S = 60  # mesma decisão idêntica em 60s = mesmo veredito
 @dataclass
 class Decision:
     """Representa uma decisão pendente de avaliação pelo Critic."""
+
     tool_name: str
     tool_args: dict[str, Any]
-    context_summary: str                      # prosa descrevendo por que o agente quer fazer isso
+    context_summary: str  # prosa descrevendo por que o agente quer fazer isso
     tier: ExecutionTier = ExecutionTier.FAST
     estimated_cost_usd: float = 0.0
     affects_external_world: bool = False
@@ -45,9 +47,7 @@ class Decision:
     decision_id: UUID = field(default_factory=uuid4)
 
     def cache_key(self) -> str:
-        payload = json.dumps(
-            {"tool": self.tool_name, "args": self.tool_args}, sort_keys=True
-        )
+        payload = json.dumps({"tool": self.tool_name, "args": self.tool_args}, sort_keys=True)
         return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 
@@ -236,13 +236,21 @@ class Critic:
             tool_name=decision.tool_name,
             tool_args=json.dumps(decision.tool_args, ensure_ascii=False),
             technical=json.dumps(
-                {"approve": technical.approve, "confidence": technical.confidence,
-                 "reasoning": technical.reasoning, "concerns": technical.concerns},
+                {
+                    "approve": technical.approve,
+                    "confidence": technical.confidence,
+                    "reasoning": technical.reasoning,
+                    "concerns": technical.concerns,
+                },
                 ensure_ascii=False,
             ),
             devils=json.dumps(
-                {"approve": devils.approve, "confidence": devils.confidence,
-                 "reasoning": devils.reasoning, "concerns": devils.concerns},
+                {
+                    "approve": devils.approve,
+                    "confidence": devils.confidence,
+                    "reasoning": devils.reasoning,
+                    "concerns": devils.concerns,
+                },
                 ensure_ascii=False,
             ),
         )
@@ -347,14 +355,22 @@ class Critic:
                 decision.decision_id,
                 decision.task_id,
                 decision.mission_id,
-                json.dumps({"approve": verdict.technical.approve,
-                            "confidence": verdict.technical.confidence,
-                            "reasoning": verdict.technical.reasoning,
-                            "concerns": verdict.technical.concerns}),
-                json.dumps({"approve": verdict.devils_advocate.approve,
-                            "confidence": verdict.devils_advocate.confidence,
-                            "reasoning": verdict.devils_advocate.reasoning,
-                            "concerns": verdict.devils_advocate.concerns}),
+                json.dumps(
+                    {
+                        "approve": verdict.technical.approve,
+                        "confidence": verdict.technical.confidence,
+                        "reasoning": verdict.technical.reasoning,
+                        "concerns": verdict.technical.concerns,
+                    }
+                ),
+                json.dumps(
+                    {
+                        "approve": verdict.devils_advocate.approve,
+                        "confidence": verdict.devils_advocate.confidence,
+                        "reasoning": verdict.devils_advocate.reasoning,
+                        "concerns": verdict.devils_advocate.concerns,
+                    }
+                ),
                 json.dumps(verdict.synthesizer_raw),
                 verdict.verdict,
                 json.dumps(verdict.mitigations),

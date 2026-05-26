@@ -3,9 +3,9 @@
 Todos os canais (Discord, Slack, Email) usam os mesmos comandos.
 O router chama dispatch_command() sem saber qual é o canal de origem.
 """
+
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING, Any
 
 from agent.channels.base import IncomingMessage
@@ -31,7 +31,7 @@ async def dispatch_command(
     msg: IncomingMessage,
     session_id: str,
     orchestrator: Any | None,
-    approval_manager: "ApprovalManager | None",
+    approval_manager: ApprovalManager | None,
     approval_channels: set[str],
     db_pool: Any,
 ) -> str:
@@ -82,6 +82,7 @@ async def _cmd_mission(
         return "Orquestrador indisponível."
 
     from agent.tasks.task import Task
+
     task = Task(
         content=text,
         source=f"channel:{msg.channel}",
@@ -118,7 +119,7 @@ async def _cmd_approval(
     cmd: str,
     approval_id: str,
     msg: IncomingMessage,
-    approval_manager: "ApprovalManager | None",
+    approval_manager: ApprovalManager | None,
     approval_channels: set[str],
 ) -> str:
     """Processa /approve ou /deny. Gating por APPROVAL_CHANNELS."""
@@ -141,7 +142,6 @@ async def _cmd_approval(
 
     decision = "approve" if cmd == "/approve" else "reject"
     try:
-        from agent.approvals.manager import ApprovalNotFoundError, AlreadyDecidedError, ApprovalExpiredError
         await approval_manager.decide(
             approval_id=approval_id,
             decision=decision,

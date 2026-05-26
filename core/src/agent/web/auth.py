@@ -3,6 +3,7 @@
 Token armazenado em ~/.agent/web_token (chmod 600).
 Comparação via hmac.compare_digest para evitar timing attacks.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -13,7 +14,6 @@ import time
 from pathlib import Path
 
 from fastapi import HTTPException, Request
-from fastapi.security import HTTPBearer
 
 from agent.observability.logger import get_logger
 

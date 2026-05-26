@@ -4,6 +4,7 @@ Agrega resultados de múltiplos subagentes (tier EPIC).
 Se algum filho falhou, marca partial=True no resultado final.
 O pai recebe um sumário e decide sobre retry.
 """
+
 from __future__ import annotations
 
 from agent.core import AgentResult
@@ -19,7 +20,9 @@ def merge(results: list[AgentResult], parent_content: str = "") -> AgentResult:
     - Se todos ok: final_text = concatenação dos textos com separadores
     - Se parcial: final_text inclui aviso de resultados faltando
     """
-    successful = [r for r in results if not (r.approval_request and r.approval_request.get("error"))]
+    successful = [
+        r for r in results if not (r.approval_request and r.approval_request.get("error"))
+    ]
     failed = [r for r in results if r.approval_request and r.approval_request.get("error")]
     partial = len(failed) > 0
 
