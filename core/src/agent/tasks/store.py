@@ -131,12 +131,13 @@ class TaskStore:
         success: bool,
         summary: str,
         raw_trace: dict | None = None,
+        verdict: str | None = None,
     ) -> None:
         await self._pool.execute(
             """
             INSERT INTO subagent_runs
-                (task_id, parent_task, tools_used, duration_ms, success, summary, raw_trace)
-            VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+                (task_id, parent_task, tools_used, duration_ms, success, summary, raw_trace, verdict)
+            VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
             """,
             task_id,
             parent_task,
@@ -145,6 +146,7 @@ class TaskStore:
             success,
             summary,
             json.dumps(raw_trace, ensure_ascii=False) if raw_trace else None,
+            verdict,
         )
 
 

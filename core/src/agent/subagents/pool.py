@@ -13,6 +13,7 @@ import time
 from typing import TYPE_CHECKING
 
 from agent.core import AgentResult
+from agent.execution.validation import ExecutionVerdict, analyze_turn
 from agent.observability.logger import get_logger
 from agent.subagents.context import SubAgentContext
 from agent.subagents.subagent import build_subagent
@@ -103,10 +104,11 @@ class SubagentPool:
             await self._task_store.record_subagent_run(
                 task_id=child_task.id,
                 parent_task=parent_task.id,
-                tools_used=context.tools_allowed,
+                tools_used=[],  # timeout — nenhuma tool confirmada como executada
                 duration_ms=duration_ms,
                 success=False,
                 summary="timeout",
+                verdict="exception",
             )
             log.info("subagent.timeout", child_id=str(child_task.id))
             # Retorna resultado de timeout mas não lança exceção — pai decide retry
@@ -127,10 +129,16 @@ class SubagentPool:
         if result.approval_request and self._approval_manager:
             result = await self._handle_approval(result, child_task, parent_task, context)
 
-        status = TaskStatus.DONE if not result.approval_request else TaskStatus.FAILED
+        # Analisa execução real (tool calls) vs prosa
+        analysis = analyze_turn(result, allow_planning=False)
+        tools_called = [tc.tool_name for tc in result.tool_calls_made]
+        executed = analysis.verdict in (ExecutionVerdict.EXECUTED, ExecutionVerdict.INTENT_PLANNING)
+
+        # success = DONE no task store (sem approval pendente) E houve execução real
+        task_status = TaskStatus.DONE if not result.approval_request else TaskStatus.FAILED
         await self._task_store.update_status(
             child_task.id,
-            status,
+            task_status,
             iterations=result.iterations,
             tokens_in=result.total_input_tokens,
             tokens_out=result.total_output_tokens,
@@ -138,17 +146,24 @@ class SubagentPool:
         await self._task_store.record_subagent_run(
             task_id=child_task.id,
             parent_task=parent_task.id,
-            tools_used=context.tools_allowed,
+            tools_used=tools_called,          # tools EFETIVAMENTE chamadas
             duration_ms=duration_ms,
-            success=(status == TaskStatus.DONE),
+            success=(task_status == TaskStatus.DONE and executed),
             summary=result.final_text[:500] if result.final_text else "",
-            raw_trace={"iterations": result.iterations, "cost_usd": result.estimated_cost_usd},
+            raw_trace={
+                "iterations": result.iterations,
+                "cost_usd": result.estimated_cost_usd,
+                "tool_call_count": analysis.tool_call_count,
+            },
+            verdict=analysis.verdict.value,   # "executed", "prose_only", etc.
         )
 
         log.info(
             "subagent.finished",
             child_id=str(child_task.id),
-            success=(status == TaskStatus.DONE),
+            success=(task_status == TaskStatus.DONE and executed),
+            verdict=analysis.verdict.value,
+            tool_calls=analysis.tool_call_count,
             iterations=result.iterations,
             tokens=result.total_input_tokens + result.total_output_tokens,
         )
