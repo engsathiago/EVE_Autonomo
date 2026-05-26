@@ -129,8 +129,10 @@ class SubagentPool:
         if result.approval_request and self._approval_manager:
             result = await self._handle_approval(result, child_task, parent_task, context)
 
-        # Analisa execução real (tool calls) vs prosa
-        analysis = analyze_turn(result, allow_planning=False)
+        # Analisa execução real (tool calls) vs prosa.
+        # allow_planning=True: subagentes podem retornar intent="planning" como
+        # saída válida — o orquestrador pai decide o próximo passo.
+        analysis = analyze_turn(result, allow_planning=True)
         tools_called = [tc.tool_name for tc in result.tool_calls_made]
         executed = analysis.verdict in (ExecutionVerdict.EXECUTED, ExecutionVerdict.INTENT_PLANNING)
 
