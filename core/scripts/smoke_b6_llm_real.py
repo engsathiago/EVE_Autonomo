@@ -20,7 +20,11 @@ from unittest.mock import patch
 os.environ["POSTGRES_DSN"] = "postgresql://agent:qualquercoisa123@localhost:5432/agent"
 os.environ["POSTGRES_SSL_DISABLE"] = "1"
 os.environ["REDIS_URL"] = "redis://localhost:6379/0"
-os.environ.setdefault("DEFAULT_MODEL", "anthropic:claude-haiku-4-5")
+# qwen3:30b disponível localmente — tool_use=True confirmado via /api/show
+os.environ["DEFAULT_MODEL"] = "ollama:qwen3:30b"
+os.environ["MODEL_FALLBACK_CHAIN"] = ""  # bloqueia fallback pra Anthropic (API limitada)
+# .env tem OLLAMA_BASE_URL=https://ollama.com (cloud); sobrepõe para local
+os.environ["OLLAMA_BASE_URL"] = "http://localhost:11434"
 
 sys.path.insert(0, "/Users/fate/Desktop/agent/core/src")
 
