@@ -5,7 +5,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from agent.config import AgentSettings, get_settings
 from agent.events import AgentEvent
@@ -30,6 +30,21 @@ OnEvent = Callable[[AgentEvent], Awaitable[None]]
 _COST_PER_1M = {"claude-haiku-4-5": 0.80, "claude-sonnet-4-6": 3.00}
 
 
+class ToolCallSummary(BaseModel):
+    """
+    Sumário leve de uma tool call executada — para auditoria de execução.
+    Sem args ou output completo para não inflar o AgentResult.
+    """
+
+    model_config = {"frozen": True}
+
+    tool_name: str
+    succeeded: bool
+    has_structured_output: bool = False
+    # True se o output da tool tem campos além de "text" (ex: {"files": [...], "count": N})
+    duration_ms: int | None = None
+
+
 class AgentResult(BaseModel):
     final_text: str
     iterations: int
@@ -39,6 +54,12 @@ class AgentResult(BaseModel):
     duration_s: float
     conversation_id: str | None = None
     approval_request: dict | None = None  # populated when a skill requires approval
+    tool_calls_made: list[ToolCallSummary] = Field(default_factory=list)
+    # Tools efetivamente chamadas (não apenas disponíveis no contexto)
+    intent: str | None = None
+    # "planning" para turns de planejamento explícito (sem tool call esperada)
+    exception: str | None = None
+    # Mensagem de exception se a execução terminou com erro não tratado
 
 
 class AIAgent:
@@ -85,6 +106,7 @@ class AIAgent:
         total_in = total_out = 0
         model = self._settings.default_model
         last_text = ""
+        all_tool_calls: list[ToolCallSummary] = []  # acumula tool calls de todos os turnos
 
         async def emit(event: AgentEvent) -> None:
             if on_event:
@@ -146,7 +168,10 @@ class AIAgent:
             from agent.skills.schema import ApprovalCreated
 
             try:
-                tool_results = await self._execute_tools(response.tool_calls, emit)
+                tool_results, turn_summaries = await self._execute_tools(
+                    response.tool_calls, emit
+                )
+                all_tool_calls.extend(turn_summaries)
             except ApprovalCreated as exc:
                 duration = time.monotonic() - start
                 return AgentResult(
@@ -160,6 +185,7 @@ class AIAgent:
                     approval_request=exc.request.model_dump()
                     if hasattr(exc.request, "model_dump")
                     else {},
+                    tool_calls_made=all_tool_calls,
                 )
             messages.append({"role": "user", "content": tool_results})
 
@@ -200,6 +226,7 @@ class AIAgent:
             output_tokens=total_out,
             cost_usd=cost,
             duration_s=round(duration, 2),
+            tool_calls_made=len(all_tool_calls),
         )
 
         return AgentResult(
@@ -210,6 +237,7 @@ class AIAgent:
             estimated_cost_usd=cost,
             duration_s=round(duration, 2),
             conversation_id=str(self._conversation_id) if self._conversation_id else None,
+            tool_calls_made=all_tool_calls,
         )
 
     # -------------------------------------------------------------------------
@@ -304,8 +332,20 @@ class AIAgent:
         self,
         tool_calls: list[dict[str, Any]],
         emit: Callable[[AgentEvent], Awaitable[None]],
-    ) -> list[dict[str, Any]]:
-        async def _run_one(call: dict[str, Any]) -> dict[str, Any]:
+    ) -> tuple[list[dict[str, Any]], list[ToolCallSummary]]:
+        """
+        Executa tool calls em paralelo.
+
+        Retorna (tool_result_messages, summaries):
+        - tool_result_messages: mensagens no formato Anthropic para o histórico de conversa
+        - summaries: ToolCallSummary por call — registra tool_name, succeeded e
+          has_structured_output para auditoria de execução real
+        """
+
+        async def _run_one(
+            call: dict[str, Any],
+        ) -> tuple[dict[str, Any], ToolCallSummary]:
+            t0_ms = int(time.monotonic() * 1000)
             name = call["name"]
             args = call.get("input", {})
 
@@ -352,7 +392,21 @@ class AIAgent:
                 )
             )
 
-            return {
+            duration_ms = int(time.monotonic() * 1000) - t0_ms
+
+            # Output estruturado = dict com pelo menos um campo que não seja "text"
+            # Ex: {"files": [...]} é estruturado; {"text": "prosa"} não é
+            output = result.output if result.ok else {}
+            has_structured = isinstance(output, dict) and any(k != "text" for k in output)
+
+            summary = ToolCallSummary(
+                tool_name=name,
+                succeeded=result.ok,
+                has_structured_output=has_structured,
+                duration_ms=duration_ms,
+            )
+
+            message = {
                 "type": "tool_result",
                 "tool_use_id": call["id"],
                 "content": (
@@ -361,9 +415,12 @@ class AIAgent:
                     else f"ERROR: {result.error}"
                 ),
             }
+            return message, summary
 
-        results = await asyncio.gather(*[_run_one(c) for c in tool_calls])
-        return list(results)
+        pairs = await asyncio.gather(*[_run_one(c) for c in tool_calls])
+        messages = [p[0] for p in pairs]
+        summaries = [p[1] for p in pairs]
+        return messages, summaries
 
     async def _chat(
         self,
