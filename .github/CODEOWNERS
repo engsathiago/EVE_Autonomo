@@ -1,0 +1,19 @@
+# EVE Code Owners
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/managing-repository-settings/about-code-owners
+
+# Default — qualquer arquivo precisa de review do owner
+* @engsathiago
+
+# Segurança crítica — requer atenção extra
+/SECURITY.md @engsathiago
+/.github/workflows/ @engsathiago
+/core/src/agent/approvals/ @engsathiago
+/core/src/agent/sandbox/ @engsathiago
+/core/src/agent/finetune/safety_check.py @engsathiago
+
+# Migrações de banco — review obrigatório
+/core/migrations/ @engsathiago
+
+# Configuração do agente
+/config/SOUL.md @engsathiago
+/config/AGENTS.md @engsathiago

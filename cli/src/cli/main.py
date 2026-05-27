@@ -19,11 +19,27 @@ from cli.skills_cmd import app as skills_f9_app
 from cli.tasks import app as tasks_app
 from cli.web_cmd import app as web_app
 
+# Setup/config/diagnóstico (estilo OpenClaw / Hermes)
+from cli.init_cmd import app as init_app
+from cli.config_cmd import app as config_app
+from cli.status_cmd import app as status_app
+from cli.doctor_cmd import app as doctor_app
+from cli.chat_cmd import app as chat_app
+
 # Subcomando `agent memory` agrupa memória semântica e reflexiva
 _memory_app = typer.Typer(help="Gerencia memória do agente (semântica + reflexiva).")
 _memory_app.add_typer(reflexive_app, name="reflexive")
 
 app = typer.Typer(name="agent", help="Agente autônomo híbrido — CLI de controle.")
+
+# Setup & manutenção (estilo OpenClaw / Hermes)
+app.add_typer(init_app, name="init", help="Wizard interativo de configuração inicial")
+app.add_typer(config_app, name="config", help="Gerencia configuração (show, use, set, get, models, providers)")
+app.add_typer(status_app, name="status", help="Dashboard de status (provider, infra, métricas)")
+app.add_typer(doctor_app, name="doctor", help="Valida a instalação e reporta problemas")
+app.add_typer(chat_app, name="chat", help="Abre o chat TUI interativo (estilo OpenClaw)")
+
+# Subsistemas
 app.add_typer(skills_app, name="skill")
 app.add_typer(skills_f9_app, name="skills")
 app.add_typer(models_app, name="model")
@@ -56,19 +72,13 @@ def main(
 
 @app.command()
 def setup() -> None:
-    """Valida configuração e variáveis de ambiente necessárias."""
-    missing = []
-    for var in ["ANTHROPIC_API_KEY"]:
-        if not os.environ.get(var):
-            missing.append(var)
-
-    if missing:
-        console.print(f"[red]Variáveis ausentes: {', '.join(missing)}[/red]")
-        console.print("Configure seu .env — veja .env.example")
-        raise typer.Exit(1)
-
-    console.print("[green]✓[/green] Configuração OK")
-    console.print(f"[dim]Arquivo .env: {Path('.env').resolve()}[/dim]")
+    """[DEPRECATED] Use `agent init` (interativo) ou `agent doctor` (validação)."""
+    console.print(
+        "[yellow]'agent setup' foi substituído por:[/yellow]\n"
+        "  • [cyan]agent init[/cyan]   — wizard interativo de configuração\n"
+        "  • [cyan]agent doctor[/cyan] — validação completa da instalação\n"
+        "  • [cyan]agent status[/cyan] — dashboard de status"
+    )
 
 
 @app.command()

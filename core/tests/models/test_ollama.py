@@ -156,3 +156,82 @@ async def test_health_down() -> None:
     status = await transport.health()
     assert not status.ok
     assert "não responde" in status.message
+
+
+# ---------------------------------------------------------------------------
+# Ollama Cloud — autenticação via API key
+# ---------------------------------------------------------------------------
+
+_CLOUD_BASE = "https://ollama.com"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_cloud_sends_authorization_header() -> None:
+    """Quando api_key é fornecida, o transport deve enviar Bearer token."""
+    route = respx.post(f"{_CLOUD_BASE}/api/chat").mock(
+        return_value=httpx.Response(200, json=_ollama_chat_response("pong cloud"))
+    )
+
+    transport = OllamaTransport(base_url=_CLOUD_BASE, api_key="test-key-123")
+    resp = await transport.chat(
+        messages=[Message(role="user", content="ping")],
+        model="gpt-oss:120b",
+    )
+
+    assert resp.text == "pong cloud"
+    assert route.called
+    sent_auth = route.calls.last.request.headers.get("authorization")
+    assert sent_auth == "Bearer test-key-123"
+
+
+@pytest.mark.asyncio
+async def test_local_does_not_send_authorization_header() -> None:
+    """Quando api_key NÃO é fornecida (modo local), header não deve existir."""
+    transport = OllamaTransport(base_url=_BASE)
+    # Header só é setado se api_key foi passada
+    assert "authorization" not in {k.lower() for k in transport._http.headers}
+
+
+@pytest.mark.asyncio
+async def test_is_cloud_property() -> None:
+    """is_cloud retorna True só quando api_key foi fornecida."""
+    local = OllamaTransport(base_url=_BASE)
+    cloud = OllamaTransport(base_url=_CLOUD_BASE, api_key="sk-foo")
+
+    assert local.is_cloud is False
+    assert cloud.is_cloud is True
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_cloud_401_raises_permission_error() -> None:
+    """HTTP 401/403 da cloud vira PermissionError claro."""
+    respx.post(f"{_CLOUD_BASE}/api/chat").mock(
+        return_value=httpx.Response(401, json={"error": "invalid api key"})
+    )
+
+    transport = OllamaTransport(base_url=_CLOUD_BASE, api_key="invalid-key")
+
+    with pytest.raises(PermissionError, match="OLLAMA_API_KEY"):
+        await transport.chat(
+            messages=[Message(role="user", content="ping")],
+            model="gpt-oss:120b",
+        )
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_cloud_403_raises_permission_error() -> None:
+    """HTTP 403 (forbidden) também vira PermissionError."""
+    respx.post(f"{_CLOUD_BASE}/api/chat").mock(
+        return_value=httpx.Response(403, json={"error": "forbidden"})
+    )
+
+    transport = OllamaTransport(base_url=_CLOUD_BASE, api_key="expired-key")
+
+    with pytest.raises(PermissionError):
+        await transport.chat(
+            messages=[Message(role="user", content="ping")],
+            model="gpt-oss:120b",
+        )

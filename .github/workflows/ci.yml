@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python-lint:
+    name: Python Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install ruff
+        run: pip install "ruff>=0.8"
+
+      - name: Run ruff check
+        run: ruff check core/ cli/
+
+      - name: Run ruff format check
+        run: ruff format --check core/ cli/
+
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: agent
+          POSTGRES_PASSWORD: testpw
+          POSTGRES_DB: agent_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install core dependencies
+        working-directory: core
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Apply migrations
+        env:
+          PGPASSWORD: testpw
+        run: |
+          for migration in core/migrations/*.sql; do
+            psql -h localhost -U agent -d agent_test -f "$migration" || true
+          done
+
+      - name: Run pytest (unit tests only)
+        working-directory: core
+        env:
+          POSTGRES_URL: postgresql://agent:testpw@localhost:5432/agent_test
+          REDIS_URL: redis://localhost:6379/0
+          ANTHROPIC_API_KEY: dummy-for-tests
+        run: pytest -m "not integration and not docker and not slow" --maxfail=10 -q
+
+  node-tests:
+    name: Node Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: gateway/package-lock.json
+
+      - name: Install dependencies
+        working-directory: gateway
+        run: npm ci
+
+      - name: Build
+        working-directory: gateway
+        run: npm run build
+
+      - name: Run tests
+        working-directory: gateway
+        run: npm test
+
+  secret-scan:
+    name: Secret Scanning (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

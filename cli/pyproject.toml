@@ -10,6 +10,7 @@ dependencies = [
 
 [project.scripts]
 agent = "cli.main:app"
+eve = "cli.chat_cmd:app"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.3", "ruff>=0.8"]

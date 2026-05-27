@@ -1,7 +1,6 @@
 """
 Transport Ollama — usa a lib oficial 'ollama' (httpx internamente).
 """
-
 from __future__ import annotations
 
 import time
@@ -12,6 +11,7 @@ import httpx
 
 from agent.models.base import (
     Capabilities,
+    CapabilityMismatchError,
     ChatResponse,
     HealthStatus,
     Message,
@@ -28,40 +28,47 @@ log = get_logger(__name__)
 
 
 class OllamaTransport:
+    """Transport Ollama — suporta tanto Ollama local quanto Ollama Cloud (ollama.com).
+
+    Para Ollama Cloud, defina `api_key` (ou `OLLAMA_API_KEY` no .env) com a chave
+    obtida em https://ollama.com/settings/keys. A `base_url` deve apontar para
+    `https://ollama.com` ou o endpoint compatível do provider.
+    """
+
     name = "ollama"
 
     def __init__(
         self,
         base_url: str = "http://localhost:11434",
+        api_key: str = "",
         timeout: int = 120,
-        api_key: str | None = None,
         http_client: httpx.AsyncClient | None = None,
     ) -> None:
         self._base_url = base_url.rstrip("/")
+        self._api_key = api_key
         self._timeout = timeout
-        self._api_key = api_key or None
-        _headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+
+        # Header Authorization é adicionado apenas se api_key foi fornecida
+        # (Ollama local não exige; Ollama Cloud exige Bearer token).
+        headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         self._http = http_client or httpx.AsyncClient(
-            base_url=self._base_url, timeout=timeout, headers=_headers
+            base_url=self._base_url,
+            timeout=timeout,
+            headers=headers,
         )
         # cache: model_id → Capabilities
         self._caps_cache: dict[str, Capabilities] = {}
 
-    def _build_headers(self) -> dict[str, str]:
-        """Retorna headers de autenticação. Usado para testes e inspecção externa."""
-        if self._api_key:
-            return {"Authorization": f"Bearer {self._api_key}"}
-        return {}
+    @property
+    def is_cloud(self) -> bool:
+        """Retorna True se o transport está configurado para Ollama Cloud."""
+        return bool(self._api_key)
 
     @property
     def capabilities(self) -> Capabilities:
         return Capabilities(
-            tool_use=False,
-            vision=False,
-            json_mode=False,
-            streaming=True,
-            max_context=32_768,
-            parallel_tools=False,
+            tool_use=False, vision=False, json_mode=False, streaming=True,
+            max_context=32_768, parallel_tools=False,
         )
 
     # ------------------------------------------------------------------
@@ -100,6 +107,11 @@ class OllamaTransport:
 
         if resp.status_code == 404:
             raise ModelNotPulledError(model)
+        if resp.status_code in (401, 403):
+            raise PermissionError(
+                f"Ollama Cloud rejeitou a requisição (HTTP {resp.status_code}). "
+                "Verifique OLLAMA_API_KEY."
+            )
         resp.raise_for_status()
 
         data = resp.json()
@@ -115,13 +127,11 @@ class OllamaTransport:
                     args = json.loads(args)
                 except json.JSONDecodeError:
                     args = {}
-            tool_calls.append(
-                {
-                    "id": f"ollama-{i}",
-                    "name": fn.get("name", ""),
-                    "input": args,
-                }
-            )
+            tool_calls.append({
+                "id": f"ollama-{i}",
+                "name": fn.get("name", ""),
+                "input": args,
+            })
 
         usage = Usage(
             input_tokens=data.get("prompt_eval_count", 0),
@@ -247,15 +257,13 @@ class OllamaTransport:
         for m in data.get("models", []):
             model_id = m.get("name", "")
             caps = await self.get_model_capabilities(model_id)
-            result.append(
-                ModelInfo(
-                    provider="ollama",
-                    model_id=model_id,
-                    capabilities=caps,
-                    cost_input_per_1m=0.0,
-                    cost_output_per_1m=0.0,
-                )
-            )
+            result.append(ModelInfo(
+                provider="ollama",
+                model_id=model_id,
+                capabilities=caps,
+                cost_input_per_1m=0.0,
+                cost_output_per_1m=0.0,
+            ))
         return result
 
     async def health(self) -> HealthStatus:
@@ -276,7 +284,6 @@ class OllamaTransport:
 # ------------------------------------------------------------------
 # helpers
 # ------------------------------------------------------------------
-
 
 def _to_ollama_message(m: Message) -> dict[str, Any]:
     if isinstance(m.content, str):

@@ -9,6 +9,17 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/engsathiago/EVE_Autonomo/actions/workflows/ci.yml"><img src="https://github.com/engsathiago/EVE_Autonomo/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+" />
+  <img src="https://img.shields.io/badge/node-20%2B-green.svg" alt="Node 20+" />
+  <img src="https://img.shields.io/badge/postgres-16-blue.svg" alt="PostgreSQL 16" />
+  <img src="https://img.shields.io/badge/status-active-success.svg" alt="Status: Active" />
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" /></a>
+  <a href="https://github.com/engsathiago/EVE_Autonomo/issues"><img src="https://img.shields.io/github/issues/engsathiago/EVE_Autonomo.svg" alt="Issues" /></a>
+</p>
+
+<p align="center">
   <a href="#quickstart">Quickstart</a> •
   <a href="#arquitetura">Arquitetura</a> •
   <a href="#funcionalidades">Funcionalidades</a> •
@@ -68,23 +79,37 @@ O resultado é uma agente que **pensa, age, aprende e se adapta** — com contro
 - [Docker](https://docs.docker.com/get-docker/) e [Docker Compose](https://docs.docker.com/compose/install/)
 - Uma chave de API da [Anthropic](https://console.anthropic.com/) (ou outro provider LLM)
 
-### Subindo o projeto
+### Subindo o projeto (forma rápida — estilo OpenClaw)
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/seu-usuario/EVE_Autonomo.git
+git clone https://github.com/engsathiago/EVE_Autonomo.git
 cd EVE_Autonomo
 
-# 2. Configure as variáveis de ambiente
-cp .env.example .env
-# Edite .env com sua ANTHROPIC_API_KEY e demais credenciais
+# 2. Wizard interativo (escolhe provider, modelo, gera .env)
+agent init
 
 # 3. Suba todos os serviços
 docker compose up --build -d
 
-# 4. Verifique se está rodando
-curl http://localhost:8000/health   # Core Python → {"ok": true}
-curl http://localhost:3000/health   # Gateway Node → {"ok": true}
+# 4. Valide a instalação
+agent doctor
+
+# 5. Dashboard de status
+agent status
+
+# 6. Converse com a EVE (TUI estilo OpenClaw)
+eve                          # ou: agent chat
+```
+
+> 💬 **`eve` abre o TUI interativo** com auto-complete, slash commands (`/model`, `/cost`, `/skills`, `/missions`...), troca de modelo ao vivo e renderização Markdown — exatamente como o OpenClaw faz.
+
+### Subindo manualmente (forma tradicional)
+
+```bash
+cp .env.example .env       # Edite .env manualmente
+docker compose up --build -d
+curl http://localhost:8000/health
 ```
 
 ### Com Ollama (modelos locais)
@@ -109,6 +134,19 @@ npm run dev
 ```
 
 Veja [docs/INSTALACAO.md](docs/INSTALACAO.md) para o guia completo de instalação.
+
+### Primeiros Passos
+
+Após subir o projeto, explore os exemplos práticos:
+
+- 🟢 [Primeira conversa](examples/01_primeira_conversa/) — Hello world via CLI/API/Web
+- 🟢 [Criando uma skill custom](examples/02_criando_skill_custom/) — Skills personalizadas em Markdown
+- 🟡 [Configurando Telegram](examples/03_configurando_telegram/) — Bot em 5 minutos
+- 🟡 [Missão multi-step](examples/04_missao_complexa/) — Tarefas autônomas longas
+- 🔴 [Plugin custom tool](examples/05_plugin_custom_tool/) — Estendendo a EVE
+- 🔴 [Fine-tuning workflow](examples/06_finetuning_workflow/) — LoRA local
+
+Veja também [docs/PLUGINS.md](docs/PLUGINS.md) para desenvolver extensões.
 
 ## Arquitetura
 
@@ -345,7 +383,10 @@ anthropic:claude-sonnet-4-6        # Claude (padrão)
 openai:gpt-4o-mini                  # OpenAI
 openrouter:deepseek/deepseek-chat   # OpenRouter
 ollama:qwen2.5:7b                   # Ollama (local, gratuito)
+ollama:gpt-oss:120b                 # Ollama Cloud (com OLLAMA_API_KEY)
 ```
+
+O mesmo `OllamaTransport` suporta **local** (`OLLAMA_BASE_URL=http://localhost:11434`) ou **cloud** (`OLLAMA_BASE_URL=https://ollama.com` + `OLLAMA_API_KEY=...`). Veja [docs/OLLAMA_CLOUD.md](docs/OLLAMA_CLOUD.md).
 
 Fallback chain: se o provider principal falhar (timeout, 5xx), a EVE tenta automaticamente o próximo da chain.
 
