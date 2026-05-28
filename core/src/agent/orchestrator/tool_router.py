@@ -21,7 +21,6 @@ import hashlib
 import json
 import re
 import time
-import warnings
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -87,9 +86,12 @@ class StepSpec:
 class ToolResolution:
     """Resultado da resolução de tools para um step."""
 
-    tools: list[str]           # set final que o subagente receberá
-    source: str                # declared | inferred_keyword | inferred_llm | fallback_default
-    audit: dict                # campos para gravar em step_tool_routing
+    tools: list[str]              # set final que o subagente receberá (inclui ALWAYS_TOOLS)
+    source: str                   # declared | inferred_keyword | inferred_llm | fallback_default
+    audit: dict                   # campos para gravar em step_tool_routing
+    # Campos de rastreabilidade (espelham audit, para acesso direto nos testes)
+    tools_declared: list[str] = field(default_factory=list)   # tools vindas de tools_required
+    tools_inferred: list[str] = field(default_factory=list)   # tools vindas de keyword/LLM
 
 
 # ─── Cache de inferência LLM ─────────────────────────────────────────────────
@@ -136,6 +138,8 @@ def _resolve_declared(step_spec: StepSpec) -> ToolResolution | None:
     return ToolResolution(
         tools=resolved,
         source="declared",
+        tools_declared=declared,
+        tools_inferred=[],
         audit={
             "tools_declared": declared,
             "tools_inferred": [],
@@ -163,6 +167,8 @@ def _resolve_keyword(step_spec: StepSpec) -> ToolResolution | None:
     return ToolResolution(
         tools=resolved,
         source="inferred_keyword",
+        tools_declared=[],
+        tools_inferred=inferred,
         audit={
             "tools_declared": [],
             "tools_inferred": inferred,
@@ -221,6 +227,8 @@ async def _resolve_llm(
     return ToolResolution(
         tools=resolved,
         source="inferred_llm",
+        tools_declared=[],
+        tools_inferred=inferred,
         audit={
             "tools_declared": [],
             "tools_inferred": inferred,
@@ -243,6 +251,8 @@ def _resolve_fallback(tier: ExecutionTier) -> ToolResolution:
     return ToolResolution(
         tools=resolved,
         source="fallback_default",
+        tools_declared=[],
+        tools_inferred=[],
         audit={
             "tools_declared": [],
             "tools_inferred": [],
@@ -371,22 +381,3 @@ def _merge_with_always(tools: list[str]) -> list[str]:
             result.append(t)
     return result
 
-
-# ─── TIER_TOOLS deprecated (mantido 1 versão para não quebrar imports externos)
-# Removido em D.2+
-def __getattr__(name: str) -> object:
-    if name == "TIER_TOOLS":
-        warnings.warn(
-            "TIER_TOOLS está deprecated desde D.1. "
-            "Use resolve_tools_for_step() em vez disso.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        from agent.orchestrator.tiers import ExecutionTier as _ET
-        return {
-            _ET.INSTANT: ["web_search", "read_file", "salvar_memoria", "ler_memoria"],
-            _ET.FAST: ["web_search", "read_file", "salvar_memoria", "ler_memoria"],
-            _ET.STRATEGIC: ["web_search", "read_file", "salvar_memoria", "ler_memoria"],
-            _ET.EPIC: ["web_search", "read_file", "salvar_memoria"],
-        }
-    raise AttributeError(f"module 'agent.orchestrator.tool_router' has no attribute {name!r}")

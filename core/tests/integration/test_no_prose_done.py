@@ -39,6 +39,8 @@ def _make_step(seq=0, retry_count=0):
     s.description = f"Step {seq}"
     s.status = "pending"
     s.retry_count = retry_count
+    # D.1: campo adicionado em migration 016; [] = inferência automática de tools
+    s.tools_required = []
     return s
 
 
