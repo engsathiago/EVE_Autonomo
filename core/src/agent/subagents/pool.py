@@ -4,6 +4,10 @@ SubagentPool: cria, executa e destrói subagentes.
 Aprovações: quando o filho retorna AgentResult.approval_request preenchido,
 o pool cria o approval via ApprovalManager (com channel_ref do pai) e aguarda
 decisão via asyncio.Event registrado no manager.
+
+D.1: Adiciona validação de tools DECLARADAS antes do dispatch.
+Se tools_required não-vazio e alguma tool declarada estiver ausente do registry,
+lança MissingRequiredTool e marca o step como 'failed_missing_tool'.
 """
 
 from __future__ import annotations
@@ -15,6 +19,7 @@ from typing import TYPE_CHECKING
 from agent.core import AgentResult
 from agent.execution.validation import ExecutionVerdict, analyze_turn
 from agent.observability.logger import get_logger
+from agent.orchestrator.tool_router import KNOWN_BUILTIN_TOOLS, validate_declared_tools
 from agent.subagents.context import SubAgentContext
 from agent.subagents.subagent import build_subagent
 from agent.tasks.task import Task, TaskSource, TaskStatus
@@ -25,6 +30,38 @@ if TYPE_CHECKING:
     from agent.tasks.store import TaskStore
 
 log = get_logger(__name__)
+
+
+class MissingRequiredTool(Exception):
+    """
+    Levantado quando uma tool declarada em tools_required não existe no registry.
+
+    Atributos:
+        missing: Lista de nomes de tools ausentes.
+        step_id: ID do step (string) para diagnóstico.
+    """
+
+    def __init__(self, missing: list[str], step_id: str | None = None) -> None:
+        self.missing = missing
+        self.step_id = step_id
+        tools_str = ", ".join(missing)
+        super().__init__(
+            f"Tools declaradas ausentes no registry: [{tools_str}]"
+            + (f" (step_id={step_id})" if step_id else "")
+        )
+
+
+def _validate_context_tools(context: SubAgentContext) -> list[str]:
+    """
+    Valida tools declaradas (ctx.tools_required) contra o registry builtin.
+    Retorna lista de tools ausentes (vazia = tudo ok).
+
+    Só executa se tools_required não-vazio (source=declared).
+    Para tools inferidas, tools_required=[] e esta função retorna [].
+    """
+    if not context.tools_required:
+        return []
+    return validate_declared_tools(context.tools_required)
 
 
 class SubagentPool:
@@ -65,6 +102,22 @@ class SubagentPool:
         context: SubAgentContext,
         parent_task: Task,
     ) -> AgentResult:
+        # ── D.1: valida tools declaradas ANTES de criar o child_task ──────────
+        # Se tools_required não-vazio (source=declared) e alguma tool está ausente
+        # do registry builtin, falha imediatamente com MissingRequiredTool.
+        # Isso não trava a missão — o loop.py trata e marca o step como
+        # 'failed_missing_tool' para continuar os outros steps.
+        missing = _validate_context_tools(context)
+        if missing:
+            step_id = (context.channel_ref or {}).get("step_id") or context.parent_task_id
+            log.warning(
+                "subagent.missing_required_tool",
+                missing=missing,
+                step_id=step_id,
+                declared=context.tools_required,
+            )
+            raise MissingRequiredTool(missing=missing, step_id=step_id)
+
         child_task = Task(
             content=context.task,
             source=TaskSource.SUBAGENT,

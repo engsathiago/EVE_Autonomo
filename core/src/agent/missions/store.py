@@ -13,11 +13,20 @@ from agent.observability.logger import get_logger
 log = get_logger(__name__)
 
 MissionStatus = Literal["active", "paused", "done", "abandoned", "failed"]
-StepStatus = Literal["pending", "running", "done", "failed", "skipped", "failed_no_execution"]
-# failed_no_execution: LLM respondeu prosa sem invocar nenhuma tool call.
-# Distinto de "failed" (erro de infra/exception) para permitir análise separada.
+StepStatus = Literal[
+    "pending",
+    "running",
+    "done",
+    "failed",
+    "skipped",
+    "failed_no_execution",   # LLM respondeu prosa sem invocar nenhuma tool (Fase B)
+    "failed_missing_tool",   # tool declarada em tools_required não existe no registry (D.1)
+]
+# failed_no_execution: LLM respondeu prosa — problema de execução/prompt.
+# failed_missing_tool: ferramenta declarada ausente — problema de configuração.
+# Distintos para permitir análise separada por causa raiz.
 
-_TERMINAL_STATUSES = {"done", "abandoned", "failed", "failed_no_execution"}
+_TERMINAL_STATUSES = {"done", "abandoned", "failed", "failed_no_execution", "failed_missing_tool"}
 
 
 class Mission(BaseModel):
@@ -55,6 +64,9 @@ class MissionStep(BaseModel):
     completed_at: datetime | None
     result: dict[str, Any] | None
     error: str | None
+    # D.1: lista de tools declaradas pelo autor da missão.
+    # Lista vazia significa "infere automaticamente" (inferidor de keywords ou LLM).
+    tools_required: list[str] = []
 
 
 class MissionReflection(BaseModel):
@@ -181,6 +193,7 @@ class MissionStore:
         *,
         description: str,
         sequence: int | None = None,
+        tools_required: list[str] | None = None,
     ) -> MissionStep:
         if sequence is None:
             row = await self._pool.fetchrow(
@@ -191,15 +204,17 @@ class MissionStore:
             sequence = row["next"]
 
         step_id = uuid4()
+        tools_json = json.dumps(tools_required or [], ensure_ascii=False)
         await self._pool.execute(
             """
-            INSERT INTO mission_steps (id, mission_id, sequence, description, status)
-            VALUES ($1, $2, $3, $4, 'pending')
+            INSERT INTO mission_steps (id, mission_id, sequence, description, status, tools_required)
+            VALUES ($1, $2, $3, $4, 'pending', $5::jsonb)
             """,
             step_id,
             mission_id,
             sequence,
             description,
+            tools_json,
         )
         return await self._get_step(step_id)
 
@@ -233,7 +248,11 @@ class MissionStore:
     ) -> None:
         now = datetime.now(tz=UTC)
         started_at = now if status == "running" else None
-        completed_at = now if status in ("done", "failed", "skipped", "failed_no_execution") else None
+        completed_at = (
+            now
+            if status in ("done", "failed", "skipped", "failed_no_execution", "failed_missing_tool")
+            else None
+        )
 
         await self._pool.execute(
             """
@@ -319,6 +338,20 @@ def _row_to_step(row: asyncpg.Record) -> MissionStep:
     result = row["result"]
     if isinstance(result, str):
         result = json.loads(result)
+
+    # tools_required: coluna adicionada em D.1 (migration 016).
+    # Rows existentes retornam [] por default; rows de DBs sem a coluna
+    # (testes unitários com mock) podem não ter o campo — trata graciosamente.
+    tools_required_raw = row.get("tools_required", "[]") if hasattr(row, "get") else "[]"
+    if tools_required_raw is None:
+        tools_required: list[str] = []
+    elif isinstance(tools_required_raw, list):
+        tools_required = tools_required_raw
+    elif isinstance(tools_required_raw, str):
+        tools_required = json.loads(tools_required_raw)
+    else:
+        tools_required = []
+
     return MissionStep(
         id=row["id"],
         mission_id=row["mission_id"],
@@ -331,4 +364,5 @@ def _row_to_step(row: asyncpg.Record) -> MissionStep:
         completed_at=row["completed_at"],
         result=result,
         error=row["error"],
+        tools_required=tools_required,
     )

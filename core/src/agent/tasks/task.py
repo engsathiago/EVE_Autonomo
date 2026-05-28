@@ -44,6 +44,9 @@ class Task:
     channel_target: str | None = None
     # Referência estruturada do canal (ex: {"chat_id": 123, "message_id": 456})
     channel_ref: dict = field(default_factory=dict)
+    # D.1: tools declaradas pelo step de missão (propagadas para o orchestrator).
+    # Vazio = inferência automática pelo tool_router.
+    tools_required: list[str] = field(default_factory=list)
 
     def result_json(self) -> str | None:
         return json.dumps(self.result, ensure_ascii=False) if self.result is not None else None

@@ -20,6 +20,12 @@ class SubAgentContext:
     # Política de sandbox para execuções deste subagente (Fase 8)
     # "untrusted" → require_critic_approval=True (skills auto-geradas na F9)
     sandbox_policy: str = "default"
+    # D.1: tools DECLARADAS pelo step de missão (source=declared).
+    # Usado pelo pool para validação: se não-vazio, todas as tools listadas
+    # devem existir no registry builtin, senão o subagente é rejeitado com
+    # MissingRequiredTool antes de executar.
+    # Para tools inferidas (keyword/LLM/fallback), este campo fica vazio.
+    tools_required: list[str] = field(default_factory=list)
 
     def build_system_prompt(self) -> str:
         parts = [
