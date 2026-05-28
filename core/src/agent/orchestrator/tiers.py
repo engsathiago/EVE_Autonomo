@@ -3,12 +3,18 @@ Classificação de tiers de execução.
 
 Cache em memória (TTL 5min) reduz custo do classifier — 1 chamada LLM por
 mensagem única, mas mensagens idênticas dentro do TTL são reutilizadas.
+
+D.1: TIER_TOOLS foi removido deste módulo.
+Use agent.orchestrator.tool_router.resolve_tools_for_step() em vez disso.
+O símbolo TIER_TOOLS ainda pode ser importado (retorna shim deprecated) para
+compatibilidade — será removido em D.2+.
 """
 
 from __future__ import annotations
 
 import hashlib
 import time
+import warnings
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -94,3 +100,24 @@ class TierClassifier:
 
 def _hash(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:16]
+
+
+# ─── TIER_TOOLS deprecated ───────────────────────────────────────────────────
+# D.1: tool routing é agora dinâmico (por step), não estático (por tier).
+# Este símbolo será removido em D.2+. Use tool_router.resolve_tools_for_step().
+
+def __getattr__(name: str) -> object:
+    if name == "TIER_TOOLS":
+        warnings.warn(
+            "TIER_TOOLS está deprecated desde D.1 e será removido em D.2+. "
+            "Use agent.orchestrator.tool_router.resolve_tools_for_step() em vez disso.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return {
+            ExecutionTier.INSTANT: ["web_search", "read_file", "salvar_memoria", "ler_memoria"],
+            ExecutionTier.FAST: ["web_search", "read_file", "salvar_memoria", "ler_memoria"],
+            ExecutionTier.STRATEGIC: ["web_search", "read_file", "salvar_memoria", "ler_memoria"],
+            ExecutionTier.EPIC: ["web_search", "read_file", "salvar_memoria"],
+        }
+    raise AttributeError(f"module 'agent.orchestrator.tiers' has no attribute {name!r}")
