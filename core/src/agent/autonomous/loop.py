@@ -23,6 +23,7 @@ from agent.execution.validation import ExecutionVerdict, analyze_turn
 from agent.missions.store import MissionStep
 from agent.observability.logger import get_logger
 from agent.orchestrator.tiers import ExecutionTier
+from agent.subagents.pool import MissingRequiredTool as _MissingRequiredTool
 from agent.tasks.task import Task, TaskSource
 
 if TYPE_CHECKING:
@@ -163,7 +164,10 @@ class AutonomousLoop:
         pending = await self._mission_store.get_pending_steps(mission.id)
         if not pending:
             all_steps = await self._mission_store.get_all_steps(mission.id)
-            if all_steps and all(s.status in ("done", "skipped") for s in all_steps):
+            # D.1: failed_missing_tool é terminal para o step (missão pode completar
+            # sem ele se os outros steps terminaram normalmente).
+            terminal = {"done", "skipped", "failed_missing_tool"}
+            if all_steps and all(s.status in terminal for s in all_steps):
                 await self._complete_mission(mission.id)
                 return 0, "completed"
             return 0, "no_steps"
@@ -225,12 +229,30 @@ class AutonomousLoop:
             content=step.description,
             source=TaskSource.CRON,
             channel_ref={"mission_id": str(mission.id), "step_id": str(step.id)},
+            # D.1: propaga tools declaradas do step para o orchestrator
+            tools_required=list(step.tools_required),
         )
 
         try:
             await self._task_store.create(task)
             await self._mission_store.update_step(step.id, status="running", task_id=task.id)
             result = await self._orchestrator.route(task)
+        except _MissingRequiredTool as exc:
+            # D.1: tool declarada ausente — falha de configuração, não de execução.
+            # Não conta como prose_only. Não faz retry (retry não vai resolver).
+            log.warning(
+                "autonomous_loop.step.missing_tool",
+                step_id=str(step.id),
+                missing=exc.missing,
+            )
+            report.steps_failed += 1
+            await self._mission_store.update_step(
+                step.id,
+                status="failed_missing_tool",
+                error=f"missing_tools: {exc.missing}",
+                # increment_retry=False: retry não resolve ausência de tool no registry
+            )
+            return False
         except Exception as exc:
             log.warning(
                 "autonomous_loop.step.failed",

@@ -62,6 +62,8 @@ class Orchestrator:
         strategic_max_iterations: int = 8,
         epic_max_parallel: int = 4,
         epic_max_iterations_per_child: int = 6,
+        # D.1: pool para gravar auditoria em step_tool_routing (opcional)
+        db_pool: Any | None = None,
     ) -> None:
         self._model_router = model_router
         self._task_store = task_store
@@ -76,6 +78,7 @@ class Orchestrator:
         self._strategic_max_iter = strategic_max_iterations
         self._epic_max_parallel = epic_max_parallel
         self._epic_max_iter_child = epic_max_iterations_per_child
+        self._db_pool = db_pool  # D.1: para log_routing_audit
         # Contadores para stats (em memória, 24h rolling)
         self._stats: dict[str, list[float]] = defaultdict(list)
 
@@ -160,16 +163,49 @@ class Orchestrator:
         return await agent.run(goal=task.content, conversation_history=[])
 
     async def _run_strategic(self, task: Task) -> AgentResult:
-        """STRATEGIC: 1 subagente sequencial."""
+        """STRATEGIC: 1 subagente sequencial com tools resolvidas dinamicamente."""
+        from agent.orchestrator.tool_router import StepSpec, log_routing_audit, resolve_tools_for_step
         from agent.subagents.context import SubAgentContext
+
+        step_spec = StepSpec(
+            description=task.content,
+            tools_required=task.tools_required,
+        )
+        resolution = await resolve_tools_for_step(
+            step_spec,
+            ExecutionTier.STRATEGIC,
+            model_router=self._model_router,
+        )
+
+        # Audit: registra no banco se temos pool e step_id
+        step_id_str = (task.channel_ref or {}).get("step_id")
+        if step_id_str and self._db_pool is not None:
+            from uuid import UUID as _UUID
+            try:
+                await log_routing_audit(
+                    step_id=_UUID(step_id_str),
+                    tier=ExecutionTier.STRATEGIC.value,
+                    resolution=resolution,
+                    db_pool=self._db_pool,
+                )
+            except Exception as exc:
+                log.warning("orchestrator.routing_audit.failed", error=str(exc))
 
         ctx = SubAgentContext(
             task=task.content,
-            tools_allowed=["web_search", "read_file", "salvar_memoria", "ler_memoria"],
+            tools_allowed=resolution.tools,
+            # tools_required só é preenchido quando source=declared para pool validar
+            tools_required=(step_spec.tools_required if resolution.source == "declared" else []),
             max_iterations=self._strategic_max_iter,
             timeout_s=120,
             channel_ref=task.channel_ref,
             parent_task_id=str(task.id),
+        )
+        log.info(
+            "orchestrator.strategic.tools_resolved",
+            source=resolution.source,
+            tools=resolution.tools,
+            task_id=str(task.id),
         )
         return await self._subagent_pool.spawn(ctx, task)
 
@@ -185,19 +221,30 @@ class Orchestrator:
             log.warning("orchestrator.epic.plan_failed", fallback="strategic")
             return await self._run_strategic(task)
 
+        from agent.orchestrator.tool_router import StepSpec, resolve_tools_for_step
         from agent.subagents.context import SubAgentContext
 
-        contexts = [
-            SubAgentContext(
-                task=st,
-                tools_allowed=["web_search", "read_file", "salvar_memoria"],
-                max_iterations=self._epic_max_iter_child,
-                timeout_s=120,
-                channel_ref=task.channel_ref,
-                parent_task_id=str(task.id),
+        contexts = []
+        for st in subtasks[: self._epic_max_parallel]:
+            # Cada sub-task do EPIC resolve suas próprias tools dinamicamente.
+            # tools_required=[] pois EPIC vem de decomposição automática (sem declaração).
+            sub_spec = StepSpec(description=st, tools_required=[])
+            sub_resolution = await resolve_tools_for_step(
+                sub_spec,
+                ExecutionTier.EPIC,
+                model_router=self._model_router,
             )
-            for st in subtasks[: self._epic_max_parallel]
-        ]
+            contexts.append(
+                SubAgentContext(
+                    task=st,
+                    tools_allowed=sub_resolution.tools,
+                    tools_required=[],  # EPIC = inferido, sem validação de declared
+                    max_iterations=self._epic_max_iter_child,
+                    timeout_s=120,
+                    channel_ref=task.channel_ref,
+                    parent_task_id=str(task.id),
+                )
+            )
 
         results = await self._subagent_pool.spawn_parallel(contexts, task)
         return merge(results, parent_content=task.content)
