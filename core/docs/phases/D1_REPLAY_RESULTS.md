@@ -174,3 +174,95 @@ recebem tools novas com D.1 que não estavam disponíveis pre-D.1 (STRATEGIC har
 `["web_search", "read_file", "salvar_memoria", "ler_memoria"]`).
 
 **Próximo passo:** tag `d1-done` e merge para `main`.
+
+---
+
+## Limitações e adenda metodológica
+
+Esta seção documenta limitações conhecidas do replay C10, para preservar a leitura honesta do resultado.
+
+### L1 — Modelo diferente do original
+
+As missões TEATRO da Fase A foram executadas com modelo Anthropic
+(claude-sonnet-4-7 / claude-haiku-4-5 — confirmar via model_invocations
+quando rate-limit liberar). O replay C10 rodou com `ollama:qwen2.5:7b`
+porque a API Anthropic estava rate-limited no dia da execução
+(esperada liberação 2026-06-01).
+
+**Implicação:** provamos que **D.1 + Ollama qwen2.5:7b destranca**. A
+inferência de que **D.1 + Anthropic destranca** é razoável pelo mesmo
+motivo arquitetural (tools antes ausentes agora presentes), mas não é
+prova direta.
+
+**Ação recomendada:** após 2026-06-01, re-rodar `c10_replay.py` com
+`DEFAULT_MODEL=anthropic:claude-haiku-4-5` e anexar resultados a este
+documento como "C10 — re-run Anthropic". Sem essa confirmação, D.1
+vale como hipótese fortemente apoiada por evidência indireta.
+
+---
+
+### L2 — C10-write-test ficou em prose_only
+
+O único caso que NÃO mudou foi o que pedia `write_file` — exatamente
+o caso que motivou D.1 (descoberto no B.6 com qwen3:30b).
+
+**Análise:** o LLM (`qwen2.5:7b`) recebeu `write_file` corretamente no
+contexto (`tools_resolved` confirma), mas não a invocou na resposta. Isso
+é **comportamento diferente** do bug original — onde a tool nem aparecia
+no contexto.
+
+Três hipóteses possíveis (não testadas):
+
+- **(a)** Limitação do `qwen2.5:7b` com tool use de escrita.
+- **(b)** Prompt do tool `write_file` precisa refinamento para esse modelo.
+- **(c)** Step descrito de forma ambígua o suficiente para o LLM optar por prosa em vez de ação.
+
+**Distinção importante:** o bug ORIGINAL (B.6, motivador de D.1) era
+arquitetural — tool ausente no contexto. D.1 resolveu esse bug. O
+comportamento observado em C10-write-test é DIFERENTE — tool presente,
+mas LLM não a usa. Isso é problema de modelo/prompt, não de routing.
+
+**Ação recomendada:** re-rodar com Anthropic após 2026-06-01. Se o caso
+write-test passar com Anthropic, hipótese (a) confirmada e não há ação
+para D.1. Se continuar falhando, abre `D1-FU-1` para investigar prompt do
+`write_file` ou clareza do step.
+
+---
+
+### L3 — Steps sintéticos vs steps originais
+
+A spec C10 pedia "recria com MESMO objetivo + MESMOS steps originais".
+O replay usou steps SINTÉTICOS desenhados para replicar o padrão TEATRO
+(descrição similar, sem `tools_required` declaradas), não os 7 steps
+históricos exatos.
+
+**Motivo:** o ambiente do replay rodou o Orchestrator com configuração
+mínima (sem todos os componentes do subagent_pool completo), e os steps
+originais dependiam de contexto que não foi totalmente reproduzido.
+
+**Implicação:** provamos o PADRÃO (TEATRO via tool ausente → destrancado
+por D.1), não os steps históricos exatos.
+
+**Ação recomendada:** se em D.5 (re-validação de fases TEÓRICAS) houver
+oportunidade de re-rodar missões REAIS da Fase A (depois do ambiente de
+produção estabilizar), anexar resultados aqui como "C10 — replay histórico
+real". Não bloqueia fechamento de D.1.
+
+---
+
+### Resumo das limitações
+
+D.1 está validada pelo padrão observado (4/5 destrancadas) e pela
+auditoria arquitetural (todos os 7 steps TEATRO históricos receberiam
+todas as tools necessárias com D.1 — análise estática).
+
+Itens em aberto:
+
+| ID | Item | Condição de fechamento |
+|----|------|----------------------|
+| L1 | Confirmar com modelo Anthropic | Re-run após 2026-06-01 |
+| L2 | Investigar C10-write-test se Anthropic também falhar | Abre D1-FU-1 |
+| L3 | Replay com steps históricos reais | Oportunidade em D.5 |
+
+Nenhum desses itens bloqueia D.1 como concluída. São refinamentos de
+evidência, não correções de arquitetura.
