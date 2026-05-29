@@ -258,16 +258,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             app.include_router(make_loop_router(_autonomous_loop, _mission_store))
 
     # ── Fase 9: skills auto-geradas ───────────────────────────────────────────
-    _project_root = Path(__file__).parents[4]
-    _skills_root = _project_root / "skills"
+    _skills_root = Path(settings.skills.skills_dir)
     _active_dir = _skills_root / "_active"
     _pending_dir = _skills_root / "_pending"
     _rejected_dir = _skills_root / "_rejected"
     _archive_dir = _skills_root / "_archive"
-    for _d in [_active_dir, _pending_dir, _rejected_dir, _archive_dir]:
-        _d.mkdir(parents=True, exist_ok=True)
 
     try:
+        for _d in [_active_dir, _pending_dir, _rejected_dir, _archive_dir]:
+            _d.mkdir(parents=True, exist_ok=True)
+
         from agent.api.skills import make_skills_router
         from agent.skills.decay import SkillDecayManager
         from agent.skills.promoter import SkillPromoter
