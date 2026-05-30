@@ -14,10 +14,19 @@
   <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+" />
   <img src="https://img.shields.io/badge/node-20%2B-green.svg" alt="Node 20+" />
   <img src="https://img.shields.io/badge/postgres-16-blue.svg" alt="PostgreSQL 16" />
-  <img src="https://img.shields.io/badge/status-active-success.svg" alt="Status: Active" />
+  <img src="https://img.shields.io/badge/status-em%20desenvolvimento-yellow.svg" alt="Status: Em Desenvolvimento" />
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome" /></a>
   <a href="https://github.com/engsathiago/EVE_Autonomo/issues"><img src="https://img.shields.io/github/issues/engsathiago/EVE_Autonomo.svg" alt="Issues" /></a>
 </p>
+
+> **Status honesto:** este projeto está em desenvolvimento ativo. Algumas fases têm
+> **execução real validada** em runtime (F0, F1, F4 — core, loop, multi-model);
+> outras são **parciais** (F2, F3); e a maioria está **implementada mas teórica**
+> — o código existe e os testes unitários passam, mas nunca foram exercitadas em
+> produção real (F5–F13). A melhoria D.1 (tool routing por step) foi validada com
+> replay real. Veja [`docs/audit/PHASE_STATUS.md`](docs/audit/PHASE_STATUS.md) para
+> a verdade detalhada e [`docs/known-issues.md`](docs/known-issues.md) para bugs
+> conhecidos não corrigidos.
 
 <p align="center">
   <a href="#quickstart">Quickstart</a> •
@@ -443,23 +452,32 @@ npm test
 
 ## Roadmap
 
+> Legenda: ✅ validada em runtime — ⚠️ parcial — 🔬 teórica (código + testes, sem runtime real) — 🚧 em andamento — ⏳ não iniciada
+>
+> Detalhes e evidências: [`docs/audit/PHASE_STATUS.md`](docs/audit/PHASE_STATUS.md)
+
 | # | Fase | Status |
 |---|------|--------|
-| 0 | Fundação (Docker, Postgres, Redis, projeto base) | ✅ |
-| 1 | Core mínimo (AIAgent + 4 tools + CLI) | ✅ |
-| 2 | Memória persistente (pgvector + FTS + Curator + Compressor) | ✅ |
-| 3 | Skills (loader, runner, creator, match semântico) | ✅ |
-| 4 | Multi-modelo (Anthropic, OpenAI, OpenRouter, Ollama) | ✅ |
-| 5 | Gateway Node + Telegram + Aprovações | ✅ |
-| 6 | Cron + Subagentes + Orquestrador com Tiers | ✅ |
-| 7 | Missões persistentes + Crítico autônomo + Loop | ✅ |
-| 8 | Sandboxes de execução (subprocess + Docker) | ✅ |
-| 9 | Skills auto-geradas estilo Voyager | ✅ |
-| 10 | Deploy VPS (supervisor, health, métricas, backup) | ✅ |
-| 11 | Web UI Dashboard (8 painéis, WebSocket, auth) | ✅ |
-| 12 | Canais extras (Discord, Slack, E-mail) | ✅ |
-| 13 | Fine-tuning local periódico (LoRA + benchmark gates) | ✅ |
-| 14 | RLAIF (Reinforcement Learning from AI Feedback) | Em breve |
+| 0 | Fundação (Docker, Postgres, Redis, projeto base) | ✅ validada |
+| 1 | Core mínimo (AIAgent + 4 tools + CLI) | ✅ validada |
+| 2 | Memória persistente (pgvector + FTS + Curator + Compressor) | ⚠️ parcial |
+| 3 | Skills builtin (loader, runner; criação dinâmica = teórica) | ⚠️ parcial |
+| 4 | Multi-modelo (Anthropic, OpenAI, OpenRouter, Ollama) | ✅ validada |
+| 5 | Gateway Node + Telegram + Aprovações | 🔬 teórica |
+| 6 | Cron + Subagentes + Orquestrador com Tiers | 🔬 teórica |
+| 7 | Missões persistentes + Crítico autônomo + Loop | 🔬 teórica |
+| 8 | Sandboxes de execução (subprocess + Docker) | 🔬 teórica |
+| 9 | Skills auto-geradas estilo Voyager | 🔬 teórica |
+| 10 | Deploy VPS (supervisor, health, métricas, backup) | 🔬 teórica |
+| 11 | Web UI Dashboard (8 painéis, WebSocket, auth) | 🔬 teórica |
+| 12 | Canais extras (Discord, Slack, E-mail) | 🔬 teórica |
+| 13 | Fine-tuning local periódico (LoRA + benchmark gates) | 🔬 teórica |
+| A | Auditoria de execução real (Fase A) | ✅ concluída |
+| B | Fix do executor (validação de tool calls) | ✅ concluída |
+| D.1 | Tool routing por step | ✅ validada |
+| D.5 | Re-validação F5–F13 em runtime real | ⏳ candidato próximo |
+| D.6 | Skills permissions + router wired | 🚧 em andamento |
+| 14 | RLAIF (Reinforcement Learning from AI Feedback) | ⏳ não iniciada |
 
 ## Fine-tuning local
 

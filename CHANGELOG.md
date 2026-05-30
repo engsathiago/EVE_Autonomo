@@ -9,6 +9,24 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Corrigido
+- **README.md:** roadmap agora reflete status real das fases (✅/⚠️/🔬/🚧/⏳) em vez de tudo ✅ independente de evidência de runtime
+- **Badge de status:** trocado de "active" para "em desenvolvimento" — mais honesto dado que ~64% das fases são teóricas
+
+### Adicionado
+- **`docs/audit/PHASE_STATUS.md`:** verdade auditada de cada fase — VALIDADA, PARCIAL, TEÓRICA, EM ANDAMENTO
+- **`docs/audit/EXECUTION_AUDIT.md`:** movido da raiz para `docs/audit/`
+- **`docs/known-issues.md`:** 6 issues conhecidos documentados sem correção prematura
+- **`docs/phases/FASE_D_BACKLOG.md`:** movido da raiz para `docs/phases/`
+- **`docs/archive/hermes-debris/`:** pasta para artefatos históricos de sessões automatizadas
+
+### Removido
+- `cli/pyproject.toml.bak` e `cli/src/cli/skills.py.bak` — backups rastreados por engano
+- `docker-compose.d5.yml` da raiz — movido para `docs/archive/hermes-debris/` (compose de validação D5 com senha hardcoded)
+- `BUG_PATTERN_MAP.md` do tracking do git — relatório gerado, agora listado no `.gitignore`
+
+---
+
 ### Adicionado
 - **`agent chat` (alias: `eve`) — TUI interativo estilo OpenClaw:** Chat dedicado com banner permanente (modelo, tokens, custo, tempo), auto-complete de comandos via prompt_toolkit, histórico persistente, renderização Markdown nas respostas, e 12 slash commands:
   - `/model [novo]` — troca modelo **ao vivo** sem sair

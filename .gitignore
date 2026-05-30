@@ -75,6 +75,7 @@ core/agent.db
 
 # Reports gerados por auditoria/lint (não são código)
 AUDIT_REPORT.md
+BUG_PATTERN_MAP.md
 LINT_ISSUES.md
 MERGE_ISSUES.md
 VALIDATION_REPORT.md
