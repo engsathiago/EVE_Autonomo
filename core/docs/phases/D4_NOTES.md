@@ -50,17 +50,22 @@ caminho STRATEGIC (usado por missões), os subagentes eram criados sem
   `_orchestrator._critic = _critic` + `_orchestrator._db_pool = _memory_store._pool`
   (retroativos, pois pool/orchestrator são criados em phase 6 antes do Critic)
 
-### Gap 3 — Critic sem db_pool em subagentes (TODO)
+### Gap 3 — Critic sem db_pool em subagentes (CORRIGIDO em D.4.2)
 
-`build_subagent` não recebe `db_pool`. Quando o Critic avalia uma tool
-irreversível em um subagente, a avaliação é executada mas não persiste
-em `critic_evaluations` (a tabela fica sem a linha de evidência).
+`build_subagent` não recebia `db_pool`. Quando o Critic avaliava uma tool
+irreversível em um subagente, a avaliação era executada mas não persistia
+em `critic_evaluations` (a tabela ficava sem a linha de evidência).
 
-O bloqueio funciona (critic_blocked=True é setado no AIAgent e propagado
-ao MissionExecutor), mas a auditoria em DB fica incompleta.
+O bloqueio funcionava (critic_blocked=True era setado e propagado ao
+MissionExecutor), mas a auditoria em DB ficava incompleta.
 
-**TODO D.4.2:** passar `db_pool` para `build_subagent` e AIAgent de subagentes
-para que `Critic.evaluate(db_pool=...)` possa persistir as avaliações.
+**Fix D.4.2:**
+- `build_subagent` ganha param `db_pool: Any | None = None` e propaga pro AIAgent
+- `SubagentPool.__init__` ganha `db_pool`, armazena em `self._db_pool`
+  e passa pro `build_subagent` em `_run_one`
+- `server.py` injeta retroativo: `_subagent_pool._db_pool = _memory_store._pool`
+- Integration test `test_subagent_critic_writes_to_db` garante que
+  `critic_evaluations` recebe INSERT com `mission_id` no caminho STRATEGIC
 
 ---
 
