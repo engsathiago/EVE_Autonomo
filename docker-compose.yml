@@ -37,6 +37,11 @@ services:
       dockerfile: Dockerfile.python
       target: dev
     env_file: .env
+    environment:
+      SKILLS__SKILLS_DIR: /var/lib/agent/skills
+      SKILLS__SKILLS_DRAFTS_DIR: /var/lib/agent/skills/_drafts
+    volumes:
+      - skills_data:/var/lib/agent/skills
     ports:
       - "8000:8000"
     depends_on:
@@ -90,3 +95,4 @@ volumes:
   postgres_data:
   redis_data:
   ollama_models:
+  skills_data:

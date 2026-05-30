@@ -319,10 +319,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 synthesizer=_skill_synthesizer,
             )
         )
+    except PermissionError as _exc:
+        log.error(
+            "skills_router_init_failed",
+            reason="permission_denied",
+            path=str(_skills_root),
+            error=str(_exc),
+            hint="Set SKILLS__SKILLS_DIR env var to a writable path (default: /var/lib/agent/skills)",
+        )
+    except ImportError as _exc:
+        log.error("skills_router_init_failed", reason="import_error", error=str(_exc))
     except Exception as _exc:
-        import logging
-
-        logging.getLogger(__name__).warning("skill_registry_init_failed: %s", _exc)
+        log.error("skills_router_init_failed", reason="unexpected", error=str(_exc))
 
     # ── Fase 10: backup job às 4h ─────────────────────────────────────────────
     if _SCHEDULER_ENABLED and _cron_worker is not None:

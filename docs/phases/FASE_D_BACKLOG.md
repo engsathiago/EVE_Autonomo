@@ -80,6 +80,14 @@ Relatório completo: [`core/docs/phases/D1_REPLAY_RESULTS.md`](core/docs/phases/
 
 ---
 
+## D.6 — Skills perms [done] (2026-05-30)
+- /api/v1/skills volta a responder 200 (era 404 na D.5)
+- Falha de perm agora gritante no log
+- TODO D.6.1: remover hardcode do docker-config.yaml no Dockerfile
+- Replay F9 fica para D.5 re-replay (depende de quota LLM)
+
+---
+
 ## D.5 — Re-validação F5–F13 em runtime real ⭐ CANDIDATO PRÓXIMO
 
 **Pendente da Fase A:** 10 fases marcadas TEÓRICAS (F5 Telegram, F6 Cron, F7 Critic, F8 Sandbox, F9 Voyager, F10 Deploy, F11 Web UI, F12 Channels, F13 LoRA).
