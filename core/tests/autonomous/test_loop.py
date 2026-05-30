@@ -33,6 +33,7 @@ def _make_step(seq=0, status="pending", retry_count=0):
     s.description = f"Step {seq}"
     s.status = status
     s.retry_count = retry_count
+    s.tools_required = []  # D.1: obrigatório para Task creation no _dispatch_step
     return s
 
 
