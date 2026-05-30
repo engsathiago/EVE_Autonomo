@@ -25,6 +25,8 @@ from agent.subagents.subagent import build_subagent
 from agent.tasks.task import Task, TaskSource, TaskStatus
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from agent.approvals.manager import ApprovalManager
     from agent.critic.critic import Critic
     from agent.models.router import ModelRouter
@@ -74,6 +76,7 @@ class SubagentPool:
         max_concurrent: int = 8,
         hard_timeout_s: int = 300,
         critic: "Critic | None" = None,
+        db_pool: "Any | None" = None,
     ) -> None:
         self._model_router = model_router
         self._task_store = task_store
@@ -81,6 +84,7 @@ class SubagentPool:
         self._semaphore = asyncio.Semaphore(max_concurrent)
         self._hard_timeout_s = hard_timeout_s
         self._critic = critic
+        self._db_pool = db_pool
 
     async def spawn(
         self,
@@ -147,6 +151,7 @@ class SubagentPool:
             self._model_router,
             critic=self._critic,
             mission_id=_mission_id,
+            db_pool=self._db_pool,
         )
         start_ms = int(time.monotonic() * 1000)
 

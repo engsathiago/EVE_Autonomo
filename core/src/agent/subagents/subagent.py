@@ -12,7 +12,7 @@ Garantias de isolamento (por construção, não por convenção):
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 from agent.config import get_settings
@@ -31,6 +31,7 @@ def build_subagent(
     model_router: ModelRouter,
     critic: "Critic | None" = None,
     mission_id: UUID | None = None,
+    db_pool: Any | None = None,
 ) -> AIAgent:
     settings = get_settings()
 
@@ -63,6 +64,7 @@ def build_subagent(
         model_router=model_router,
         critic=critic,
         mission_id=mission_id,
+        db_pool=db_pool,
     )
 
 
