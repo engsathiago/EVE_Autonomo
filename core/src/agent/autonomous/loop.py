@@ -20,6 +20,7 @@ from uuid import UUID
 
 from agent.critic.critic import CriticRejected, Decision, needs_critic
 from agent.execution.validation import ExecutionVerdict, analyze_turn
+from agent.missions.executor import MissionExecutor
 from agent.missions.store import MissionStep
 from agent.observability.logger import get_logger
 from agent.orchestrator.tiers import ExecutionTier
@@ -32,6 +33,8 @@ if TYPE_CHECKING:
     from agent.missions.store import MissionStore
     from agent.orchestrator.router import Orchestrator
     from agent.tasks.store import TaskStore
+
+# MissionExecutor é importado diretamente (não TYPE_CHECKING) porque é usado em runtime.
 
 log = get_logger(__name__)
 
@@ -74,6 +77,7 @@ class AutonomousLoop:
         reflector: MissionReflector | None = None,
         planner: Any = None,
         db_pool: Any = None,
+        executor: MissionExecutor | None = None,
     ) -> None:
         self._mission_store = mission_store
         self._orchestrator = orchestrator
@@ -82,6 +86,8 @@ class AutonomousLoop:
         self._reflector = reflector
         self._planner = planner
         self._db_pool = db_pool
+        # D.4: executor com D.1+D.4 integrados — se None, usa lógica legada do loop.
+        self._executor = executor
         self._loop_id = id(self)
         _LOOP_REGISTRY[self._loop_id] = self
         self._running = False
@@ -166,7 +172,7 @@ class AutonomousLoop:
             all_steps = await self._mission_store.get_all_steps(mission.id)
             # D.1: failed_missing_tool é terminal para o step (missão pode completar
             # sem ele se os outros steps terminaram normalmente).
-            terminal = {"done", "skipped", "failed_missing_tool"}
+            terminal = {"done", "skipped", "failed_missing_tool", "blocked_by_critic"}
             if all_steps and all(s.status in terminal for s in all_steps):
                 await self._complete_mission(mission.id)
                 return 0, "completed"
@@ -181,6 +187,13 @@ class AutonomousLoop:
         return dispatched, "ok"
 
     async def _dispatch_step(self, mission: Any, step: MissionStep, report: LoopReport) -> bool:
+        # D.4: delega para MissionExecutor quando disponível (D.1 + Critic integrados).
+        if self._executor is not None:
+            success, result_code = await self._executor.execute_step(mission, step)
+            if not success:
+                report.steps_failed += 1
+            return success
+
         if step.retry_count >= STEP_FAILURE_RETRY_LIMIT:
             log.warning(
                 "autonomous_loop.step.retry_limit",
