@@ -198,6 +198,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         from agent.autonomous.loop import AutonomousLoop
         from agent.critic.critic import Critic
         from agent.memory.reflexive import ReflexiveMemory
+        from agent.missions.executor import MissionExecutor
         from agent.missions.planner import MissionPlanner
         from agent.missions.reflector import MissionReflector
         from agent.missions.store import MissionStore
@@ -229,6 +230,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             model=settings.missions.reflector_model,
         )
 
+        # D.4.1: injeta Critic no orchestrator e pool (criados na fase 6, antes do Critic)
+        if _critic is not None and _orchestrator is not None:
+            _orchestrator._critic = _critic
+            _orchestrator._db_pool = _memory_store._pool
+        if _critic is not None and _subagent_pool is not None:
+            _subagent_pool._critic = _critic
+
+        _mission_executor = MissionExecutor(
+            mission_store=_mission_store,
+            orchestrator=_orchestrator,
+            task_store=_task_store,
+            model_router=_model_router,
+            db_pool=_memory_store._pool,
+        )
+
         _autonomous_loop = AutonomousLoop(
             mission_store=_mission_store,
             orchestrator=_orchestrator,
@@ -237,6 +253,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             reflector=_reflector,
             planner=_planner,
             db_pool=_memory_store._pool,
+            executor=_mission_executor,
         )
 
         if (
