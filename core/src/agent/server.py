@@ -236,6 +236,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             _orchestrator._db_pool = _memory_store._pool
         if _critic is not None and _subagent_pool is not None:
             _subagent_pool._critic = _critic
+            _subagent_pool._db_pool = _memory_store._pool
 
         _mission_executor = MissionExecutor(
             mission_store=_mission_store,
