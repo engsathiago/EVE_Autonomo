@@ -26,6 +26,10 @@ class SubAgentContext:
     # MissingRequiredTool antes de executar.
     # Para tools inferidas (keyword/LLM/fallback), este campo fica vazio.
     tools_required: list[str] = field(default_factory=list)
+    # D.4.1: mission_id do step que originou este subagente (opcional).
+    # Preenchido por _run_strategic quando task.channel_ref tem "mission_id".
+    # Propagado ao AIAgent para que o Critic registre a avaliação na missão.
+    mission_id: str | None = None
 
     def build_system_prompt(self) -> str:
         parts = [

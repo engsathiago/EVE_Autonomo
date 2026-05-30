@@ -13,7 +13,7 @@ Garantias de isolamento (por construção, não por convenção):
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from agent.config import get_settings
 from agent.core import AIAgent
@@ -22,12 +22,15 @@ from agent.tools.registry import ToolRegistry, register_builtin
 from agent.transports.anthropic import AnthropicTransport
 
 if TYPE_CHECKING:
+    from agent.critic.critic import Critic
     from agent.models.router import ModelRouter
 
 
 def build_subagent(
     context: SubAgentContext,
     model_router: ModelRouter,
+    critic: "Critic | None" = None,
+    mission_id: UUID | None = None,
 ) -> AIAgent:
     settings = get_settings()
 
@@ -58,6 +61,8 @@ def build_subagent(
         conversation_id=uuid4(),  # namespace separado
         skill_manager=None,  # sem auto-matching de skills
         model_router=model_router,
+        critic=critic,
+        mission_id=mission_id,
     )
 
 

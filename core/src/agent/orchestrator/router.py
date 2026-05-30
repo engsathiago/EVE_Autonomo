@@ -207,6 +207,7 @@ class Orchestrator:
             except Exception as exc:
                 log.warning("orchestrator.routing_audit.failed", error=str(exc))
 
+        _mission_id_str = (task.channel_ref or {}).get("mission_id")
         ctx = SubAgentContext(
             task=task.content,
             tools_allowed=resolution.tools,
@@ -216,6 +217,7 @@ class Orchestrator:
             timeout_s=120,
             channel_ref=task.channel_ref,
             parent_task_id=str(task.id),
+            mission_id=_mission_id_str,
         )
         log.info(
             "orchestrator.strategic.tools_resolved",

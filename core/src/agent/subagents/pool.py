@@ -26,6 +26,7 @@ from agent.tasks.task import Task, TaskSource, TaskStatus
 
 if TYPE_CHECKING:
     from agent.approvals.manager import ApprovalManager
+    from agent.critic.critic import Critic
     from agent.models.router import ModelRouter
     from agent.tasks.store import TaskStore
 
@@ -72,12 +73,14 @@ class SubagentPool:
         approval_manager: ApprovalManager | None = None,
         max_concurrent: int = 8,
         hard_timeout_s: int = 300,
+        critic: "Critic | None" = None,
     ) -> None:
         self._model_router = model_router
         self._task_store = task_store
         self._approval_manager = approval_manager
         self._semaphore = asyncio.Semaphore(max_concurrent)
         self._hard_timeout_s = hard_timeout_s
+        self._critic = critic
 
     async def spawn(
         self,
@@ -128,7 +131,23 @@ class SubagentPool:
         await self._task_store.create(child_task)
         await self._task_store.update_status(child_task.id, TaskStatus.RUNNING)
 
-        agent = build_subagent(context, self._model_router)
+        # D.4.1: propaga critic e mission_id para que AIAgent._execute_tools
+        # possa interceptar tools irreversíveis e registrar avaliações no Critic.
+        _mission_id_str = context.mission_id or (context.channel_ref or {}).get("mission_id")
+        _mission_id = None
+        if _mission_id_str:
+            from uuid import UUID as _UUID
+            try:
+                _mission_id = _UUID(_mission_id_str)
+            except (ValueError, AttributeError):
+                pass
+
+        agent = build_subagent(
+            context,
+            self._model_router,
+            critic=self._critic,
+            mission_id=_mission_id,
+        )
         start_ms = int(time.monotonic() * 1000)
 
         log.info(
