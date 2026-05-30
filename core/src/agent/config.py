@@ -235,8 +235,17 @@ class Settings(BaseSettings):
                 brave_api_key=search_data.get("brave_api_key") or os.environ.get("BRAVE_API_KEY", ""),
             ),
             skills=SkillsSettings(
-                skills_dir=skills_data.get("skills_dir", "/var/lib/agent/skills"),
-                skills_drafts_dir=skills_data.get("skills_drafts_dir", "/var/lib/agent/skills/_drafts"),
+                # Env var SKILLS__SKILLS_DIR toma precedência sobre docker-config.yaml.
+                # Necessário porque docker-config.yaml é gerado no Dockerfile com path
+                # que pode ser read-only em produção.
+                skills_dir=(
+                    os.environ.get("SKILLS__SKILLS_DIR")
+                    or skills_data.get("skills_dir", "/var/lib/agent/skills")
+                ),
+                skills_drafts_dir=(
+                    os.environ.get("SKILLS__SKILLS_DRAFTS_DIR")
+                    or skills_data.get("skills_drafts_dir", "/var/lib/agent/skills/_drafts")
+                ),
                 skills_auto_create=skills_data.get("skills_auto_create", True),
                 skills_auto_create_threshold=skills_data.get("skills_auto_create_threshold", 3),
                 skills_embedding_cache_dir=skills_data.get("skills_embedding_cache_dir", ".cache/skill_embeddings"),
