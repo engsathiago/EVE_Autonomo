@@ -136,7 +136,7 @@ async def test_subagent_receives_critic_via_pool() -> None:
 
     from agent.core import AgentResult
 
-    def fake_build_subagent(context, model_router, critic=None, mission_id=None):
+    def fake_build_subagent(context, model_router, critic=None, mission_id=None, db_pool=None):
         captured_kwargs["critic"] = critic
         captured_kwargs["mission_id"] = mission_id
         agent = MagicMock()
