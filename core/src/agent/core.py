@@ -75,6 +75,8 @@ class AIAgent:
         conversation_id: UUID | None = None,
         skill_manager: "SkillManager | None" = None,
         model_router: "ModelRouter | None" = None,
+        critic: "Any | None" = None,
+        db_pool: "Any | None" = None,
     ) -> None:
         self._transport = transport
         self._registry = tool_registry
@@ -86,6 +88,8 @@ class AIAgent:
         self._conversation_id = conversation_id
         self._skill_manager = skill_manager
         self._model_router = model_router
+        self._critic = critic
+        self._db_pool = db_pool
 
     async def run(
         self,
@@ -383,7 +387,8 @@ class AIAgent:
                 except SkillError as exc:
                     result = ToolResult(ok=False, error=str(exc))
             else:
-                result = await self._registry.execute(name, args)
+                gate = await self._maybe_gate_tool(name, args)
+                result = gate if gate is not None else await self._registry.execute(name, args)
 
             await emit(
                 AgentEvent(
@@ -421,6 +426,65 @@ class AIAgent:
         messages = [p[0] for p in pairs]
         summaries = [p[1] for p in pairs]
         return messages, summaries
+
+    async def _maybe_gate_tool(
+        self,
+        tool_name: str,
+        args: dict[str, Any],
+    ) -> "ToolResult | None":
+        """
+        Gating por Critic para ações irreversíveis.
+
+        Retorna ToolResult de bloqueio se Critic rejeitar/escalar, None se ok.
+        Sem critic configurado, retorna sempre None (sem gating).
+        Timeout 30s → trata como ESCALATE.
+        """
+        if self._critic is None:
+            return None
+
+        from agent.critic.irreversibility import is_irreversible
+
+        irreversible, reason = is_irreversible(tool_name, args)
+        if not irreversible:
+            return None
+
+        from agent.critic.critic import Decision
+        from agent.tools.base import ToolResult
+
+        decision = Decision(
+            tool_name=tool_name,
+            tool_args=args,
+            context_summary=f"Agente quer executar {tool_name}. Motivo: {reason}",
+            affects_external_world=True,
+        )
+
+        try:
+            verdict = await asyncio.wait_for(
+                self._critic.evaluate(decision, db_pool=self._db_pool),
+                timeout=30.0,
+            )
+        except asyncio.TimeoutError:
+            log.warning("critic.gate.timeout", tool=tool_name)
+            return ToolResult(
+                ok=False,
+                error="critic_escalated: timeout (30s) — ação bloqueada preventivamente",
+                output={"blocked_by_critic": True, "reason": "timeout"},
+            )
+
+        if verdict.verdict in ("reject", "escalate"):
+            log.info(
+                "critic.gate.blocked",
+                tool=tool_name,
+                verdict=verdict.verdict,
+                reasoning=verdict.reasoning[:200],
+            )
+            return ToolResult(
+                ok=False,
+                error=f"critic_{verdict.verdict}: {verdict.reasoning[:300]}",
+                output={"blocked_by_critic": True, "verdict": verdict.verdict},
+            )
+
+        return None
 
     async def _chat(
         self,
