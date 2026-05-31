@@ -101,7 +101,7 @@ class SkillSynthesizer:
             FROM sandbox_executions
             WHERE created_at >= $1
               AND exit_code = 0
-              AND timed_out = false
+              AND timed_out = 0
             ORDER BY created_at DESC
             LIMIT 500
             """,
