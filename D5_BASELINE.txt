@@ -1,0 +1,13 @@
+         t          | count 
+--------------------+-------
+ skill_executions   |     0
+ subagent_runs      |     9
+ critic_evaluations |     9
+ skill_invocations  |     4
+ channel_messages   |     0
+ mission_steps      |    27
+ sandbox_executions |     0
+ model_invocations  |   537
+ missions           |    13
+(9 rows)
+
