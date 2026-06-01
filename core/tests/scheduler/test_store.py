@@ -1,8 +1,8 @@
 """Testa CronStore — CRUD básico com pool mockado."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -32,7 +32,7 @@ async def test_create_executes_insert(store: CronStore) -> None:
         task_tpl="fazer algo",
         source="telegram",
         target="123456",
-        next_run=datetime.now(tz=timezone.utc),
+        next_run=datetime.now(tz=UTC),
     )
     assert store._pool.execute.called
     assert job.name == "test job"

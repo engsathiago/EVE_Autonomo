@@ -7,9 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import yaml
+from cli.finetune_cli import _check_finetune_deps, _load_finetune_config, app
 from typer.testing import CliRunner
-
-from cli.finetune_cli import app, _check_finetune_deps, _load_finetune_config
 
 runner = CliRunner()
 
@@ -30,9 +29,10 @@ class TestCheckFinetuneDeps:
 
     def test_exits_when_package_missing(self):
         """Exit(1) with helpful message when a required package is absent."""
-        import typer
         # Remove peft from sys.modules so __import__ fails for it
         import sys
+
+        import typer
         original = sys.modules.pop("peft", None)
         try:
             with pytest.raises((SystemExit, typer.Exit)):

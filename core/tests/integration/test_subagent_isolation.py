@@ -27,6 +27,7 @@ async def test_subagent_no_parent_memory() -> None:
 async def test_subagent_no_parent_history() -> None:
     """Subagente executa run() com histórico vazio — não vê conversas anteriores."""
     from unittest.mock import AsyncMock
+
     from agent.core import AgentResult
 
     ctx = SubAgentContext(task="tarefa isolada", tools_allowed=[])

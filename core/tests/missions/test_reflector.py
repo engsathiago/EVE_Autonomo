@@ -1,14 +1,12 @@
 """Testa MissionReflector — parse estrito e escrita em memória reflexiva."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 
 from agent.missions.reflector import MissionReflector, ReflectionParseError
-
 
 _VALID_REFLECTION = """\
 ENTREGUE:

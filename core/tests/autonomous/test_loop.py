@@ -1,7 +1,6 @@
 """Testa AutonomousLoop — sem chamar LLM diretamente."""
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
@@ -11,7 +10,6 @@ import pytest
 from agent.autonomous.loop import (
     MAX_STEPS_PER_TICK,
     AutonomousLoop,
-    LoopReport,
 )
 from agent.core import AgentResult, ToolCallSummary
 from agent.missions.store import MissionStep
@@ -22,7 +20,7 @@ def _make_mission(mission_id=None, status="active"):
     m.id = mission_id or uuid4()
     m.title = "Missão teste"
     m.status = status
-    m.updated_at = datetime.now(tz=timezone.utc)
+    m.updated_at = datetime.now(tz=timezone.utc)  # noqa: UP017
     return m
 
 
@@ -33,6 +31,7 @@ def _make_step(seq=0, status="pending", retry_count=0):
     s.description = f"Step {seq}"
     s.status = status
     s.retry_count = retry_count
+    s.tools_required = []  # campo adicionado em D.1 — Pydantic v2 não expõe via spec
     return s
 
 

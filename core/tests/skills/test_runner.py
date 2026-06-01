@@ -2,20 +2,20 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import UUID, uuid4
+from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
 
 import pytest
 
 from agent.skills.manager import SkillManager
-from agent.skills.template_runner import TemplateSkillRunner as SkillRunner, _fill_defaults, _render_prompt
 from agent.skills.schema import (
     SkillArgument,
     SkillError,
     SkillManifest,
     SkillRequiresApproval,
-    SkillResult,
 )
+from agent.skills.template_runner import TemplateSkillRunner as SkillRunner
+from agent.skills.template_runner import _fill_defaults, _render_prompt
 from agent.transports.base import ChatResponse
 
 BUILTIN_DIR = Path(__file__).parents[2] / "src" / "agent" / "skills"

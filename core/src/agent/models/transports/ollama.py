@@ -11,7 +11,6 @@ import httpx
 
 from agent.models.base import (
     Capabilities,
-    CapabilityMismatchError,
     ChatResponse,
     HealthStatus,
     Message,
@@ -45,19 +44,23 @@ class OllamaTransport:
         http_client: httpx.AsyncClient | None = None,
     ) -> None:
         self._base_url = base_url.rstrip("/")
-        self._api_key = api_key
+        # Normaliza string vazia para None — local não tem chave, Cloud tem
+        self._api_key: str | None = api_key or None
         self._timeout = timeout
 
-        # Header Authorization é adicionado apenas se api_key foi fornecida
-        # (Ollama local não exige; Ollama Cloud exige Bearer token).
-        headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         self._http = http_client or httpx.AsyncClient(
             base_url=self._base_url,
             timeout=timeout,
-            headers=headers,
+            headers=self._build_headers(),
         )
         # cache: model_id → Capabilities
         self._caps_cache: dict[str, Capabilities] = {}
+
+    def _build_headers(self) -> dict[str, str]:
+        """Retorna headers HTTP — Bearer token apenas para Ollama Cloud."""
+        if self._api_key:
+            return {"Authorization": f"Bearer {self._api_key}"}
+        return {}
 
     @property
     def is_cloud(self) -> bool:

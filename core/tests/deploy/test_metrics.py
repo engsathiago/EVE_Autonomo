@@ -1,14 +1,12 @@
 """Testes das métricas Prometheus (F10)."""
 from __future__ import annotations
 
-import pytest
-
 import prometheus_client as prom
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from agent.deploy.metrics import METRICS, _REGISTRY, make_metrics_router
-
+from agent.deploy.metrics import _REGISTRY, METRICS, make_metrics_router
 
 # ── Fixture ───────────────────────────────────────────────────────────────────
 
@@ -158,7 +156,7 @@ class TestMetricsBootC7:
 
     def test_sync_worker_restarts_counter_increments_delta(self) -> None:
         """_sync_worker_restarts_counter não duplica counts."""
-        from agent.deploy.metrics import _sync_worker_restarts_counter, _RESTART_SEEN
+        from agent.deploy.metrics import _RESTART_SEEN, _sync_worker_restarts_counter
 
         # Garante estado limpo para o worker de teste
         _RESTART_SEEN.pop("test_worker_sync", None)

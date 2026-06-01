@@ -1,14 +1,11 @@
 """TDD — ChannelRouter: allowlist, rate limit, dispatch, persistência (C2, C3, C4, C14)."""
 from __future__ import annotations
 
-import time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import pytest_asyncio
 
 from agent.channels.base import ChannelAdapter, IncomingMessage, OutgoingMessage
-
 
 # ── Adapter fake para testes ──────────────────────────────────────────────────
 
@@ -240,6 +237,7 @@ async def test_router_persists_outbound_message(mock_orchestrator, mock_approval
 def test_router_source_code_has_no_channel_if():
     """C14: router.py não tem 'if.*channel.*==' — roteamento é por adapter, não por nome."""
     import inspect
+
     from agent.channels import router as router_module
     source = inspect.getsource(router_module)
     # Permitido: comparações em strings de log/persist, não em lógica de dispatch

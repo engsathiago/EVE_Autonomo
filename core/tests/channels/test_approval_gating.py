@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from agent.channels.base import IncomingMessage, OutgoingMessage
+from agent.channels.base import IncomingMessage
 
 
 def _msg(channel: str = "discord", user_id: str = "U1", text: str = "/approve abc-123") -> IncomingMessage:
@@ -61,6 +61,7 @@ async def test_deny_blocked_on_unauthorized_channel():
 async def test_approve_allowed_on_authorized_channel():
     """C6: /approve em canal autorizado chama approval_manager.decide()."""
     from unittest.mock import AsyncMock
+
     from agent.channels.commands import dispatch_command
 
     approval_manager = AsyncMock()
@@ -89,6 +90,7 @@ async def test_approve_allowed_on_authorized_channel():
 async def test_deny_allowed_on_authorized_channel():
     """C6: /deny em canal autorizado chama approval_manager.decide() com reject."""
     from unittest.mock import AsyncMock
+
     from agent.channels.commands import dispatch_command
 
     approval_manager = AsyncMock()

@@ -11,11 +11,9 @@ from fastapi.testclient import TestClient
 
 from agent.deploy.health import (
     _check_scheduler,
-    _check_sqlite,
     _check_subagent_pool,
     make_health_router,
 )
-
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 

@@ -7,11 +7,9 @@ Todos os testes são síncronos e não fazem I/O — função pura.
 Se qualquer teste aqui falhar, o fix do executor está quebrado.
 """
 
-import pytest
 
 from agent.core import AgentResult, ToolCallSummary
 from agent.execution.validation import ExecutionVerdict, analyze_turn
-
 
 # ─── Fixtures ───────────────────────────────────────────────────────────────
 

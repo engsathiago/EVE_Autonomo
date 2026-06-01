@@ -1,8 +1,8 @@
 """Testes do SkillRegistry F9 (C10: persistência + eventos)."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -23,7 +23,7 @@ def _manifest(slug: str = "test_skill") -> SkillManifestF9:
     return SkillManifestF9(
         slug=slug,
         version=1,
-        created_at=datetime.now(tz=timezone.utc),
+        created_at=datetime.now(tz=UTC),
         description="test",
         embedding_text="test skill",
         inputs_schema={"type": "object", "properties": {"x": {"type": "string"}}, "required": ["x"]},

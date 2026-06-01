@@ -188,6 +188,7 @@ class Settings(BaseSettings):
         orchestrator_data = data.get("orchestrator", {})
         scheduler_data = data.get("scheduler", {})
         subagents_data = data.get("subagents", {})
+        missions_data = data.get("missions", {})
 
         return cls(
             log_level=data.get("log_level", "INFO"),
@@ -279,6 +280,18 @@ class Settings(BaseSettings):
                 default_timeout_seconds=int(subagents_data.get("default_timeout_seconds", 120)),
                 hard_timeout_seconds=int(subagents_data.get("hard_timeout_seconds", 300)),
                 max_concurrent_global=int(subagents_data.get("max_concurrent_global", 8)),
+            ),
+            missions=MissionsSettings(
+                planner_model=(
+                    os.environ.get("MISSIONS_PLANNER_MODEL")
+                    or missions_data.get("planner_model", "anthropic:claude-haiku-4-5")
+                ),
+                reflector_model=(
+                    os.environ.get("MISSIONS_REFLECTOR_MODEL")
+                    or missions_data.get("reflector_model", "anthropic:claude-sonnet-4-6")
+                ),
+                loop_interval_minutes=int(missions_data.get("loop_interval_minutes", 5)),
+                loop_enabled=bool(missions_data.get("loop_enabled", True)),
             ),
         )
 

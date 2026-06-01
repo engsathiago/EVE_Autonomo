@@ -1,12 +1,12 @@
 """Testes dos endpoints de approval (sem banco real)."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fastapi.testclient import TestClient
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
 from agent.api.approvals import make_approvals_router_full
 from agent.approvals.manager import (
@@ -18,7 +18,7 @@ from agent.approvals.manager import (
 
 
 def _make_state(status="pending", **kwargs) -> ApprovalState:
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     return ApprovalState(
         id="test-approval-id",
         session_id="tg:123",
@@ -69,7 +69,7 @@ async def test_get_approval_not_found():
 
 @pytest.mark.asyncio
 async def test_reject_returns_rejected():
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     state = ApprovalState(
         id="test-approval-id", session_id="tg:123", skill_name="mock_send_email",
         skill_args={}, summary="s", channel="telegram", channel_ref={},

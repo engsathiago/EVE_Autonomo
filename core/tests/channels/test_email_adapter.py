@@ -1,14 +1,12 @@
 """Testes do EmailAdapter — IMAP IDLE, SMTP, threading (C7-Email, C11)."""
 from __future__ import annotations
 
-import asyncio
 import email
 import email.message
 import email.policy
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
-import pytest_asyncio
 
 from agent.channels.base import ConfigError, IncomingMessage, OutgoingMessage
 from agent.channels.email_adapter import EmailAdapter, _extract_body, _mask_email
@@ -160,8 +158,8 @@ async def test_attachment_email_gets_warning():
     adapter.send = AsyncMock(side_effect=lambda uid, out: sent_responses.append(out))
 
     # Cria email multipart com anexo
-    import email.mime.multipart
     import email.mime.base
+    import email.mime.multipart
     import email.mime.text
     multipart = email.mime.multipart.MIMEMultipart()
     multipart["From"] = "user@example.com"

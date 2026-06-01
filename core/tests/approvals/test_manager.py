@@ -1,8 +1,9 @@
 """Testes do ApprovalManager (sem Postgres real — usa mocks asyncpg)."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
 from agent.approvals.manager import (
@@ -11,7 +12,6 @@ from agent.approvals.manager import (
     ApprovalManager,
     ApprovalNotFoundError,
     ApprovalRequest,
-    ApprovalState,
 )
 
 
@@ -45,7 +45,7 @@ async def test_create_returns_approval_request():
     assert isinstance(result, ApprovalRequest)
     assert result.skill_name == "mock_send_email"
     assert result.type == "approval_request"
-    assert result.expires_at > datetime.now(tz=timezone.utc)
+    assert result.expires_at > datetime.now(tz=UTC)
     conn.execute.assert_called_once()
 
 
@@ -54,7 +54,7 @@ async def test_create_expires_at_respects_timeout():
     pool, conn = _make_pool()
     manager = ApprovalManager(pool, timeout_s=60)
 
-    before = datetime.now(tz=timezone.utc)
+    before = datetime.now(tz=UTC)
     result = await manager.create(
         session_id="cli",
         skill_name="x",
@@ -62,7 +62,7 @@ async def test_create_expires_at_respects_timeout():
         summary="test",
         channel="cli",
     )
-    after = datetime.now(tz=timezone.utc)
+    after = datetime.now(tz=UTC)
 
     assert result.expires_at >= before + timedelta(seconds=59)
     assert result.expires_at <= after + timedelta(seconds=61)
@@ -79,7 +79,7 @@ async def test_get_not_found():
 
 @pytest.mark.asyncio
 async def test_decide_approve_updates_status():
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     row = {
         "id": "abc", "session_id": "tg:1", "skill_name": "x",
         "skill_args": {}, "summary": "s", "channel": "telegram",
@@ -102,7 +102,7 @@ async def test_decide_approve_updates_status():
 
 @pytest.mark.asyncio
 async def test_decide_is_idempotent():
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     row = {
         "id": "abc", "session_id": "tg:1", "skill_name": "x",
         "skill_args": {}, "summary": "s", "channel": "telegram",
@@ -121,7 +121,7 @@ async def test_decide_is_idempotent():
 
 @pytest.mark.asyncio
 async def test_decide_expired_approval():
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     row = {
         "id": "abc", "session_id": "tg:1", "skill_name": "x",
         "skill_args": {}, "summary": "s", "channel": "telegram",

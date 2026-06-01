@@ -40,6 +40,9 @@ services:
     environment:
       SKILLS__SKILLS_DIR: /var/lib/agent/skills
       SKILLS__SKILLS_DRAFTS_DIR: /var/lib/agent/skills/_drafts
+      # Web UI via scripts/run_webui.py (dev local); add_middleware dentro
+      # do lifespan não é suportado pelo Starlette. TODO: mover pro app creation.
+      AGENT_NO_WEB: "1"
     volumes:
       - skills_data:/var/lib/agent/skills
     ports:

@@ -1,10 +1,9 @@
-import os
 import textwrap
 from pathlib import Path
 
 import pytest
 
-from agent.config import Settings, _DEFAULT_CONFIG
+from agent.config import _DEFAULT_CONFIG, Settings
 
 
 def test_settings_from_yaml_loads_agent_name() -> None:

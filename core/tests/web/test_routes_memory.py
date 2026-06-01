@@ -12,8 +12,8 @@ from agent.web.server import make_web_app
 @pytest.fixture()
 def mock_memory_store() -> MagicMock:
     store = MagicMock()
-    from uuid import uuid4
     from datetime import UTC, datetime
+    from uuid import uuid4
 
     entry = MagicMock()
     entry.id = uuid4()

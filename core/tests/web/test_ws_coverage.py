@@ -3,18 +3,18 @@ from __future__ import annotations
 
 import asyncio
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import WebSocketDisconnect
 from starlette.websockets import WebSocketState
 
 from agent.web.routes.ws import (
-    _WsSession,
-    _sessions,
+    _handle_chat,
     _recv_loop,
     _send_loop,
-    _handle_chat,
+    _sessions,
+    _WsSession,
     broadcast,
 )
 
@@ -153,7 +153,7 @@ async def test_recv_loop_timeout_continues() -> None:
         nonlocal call_n
         call_n += 1
         if call_n == 1:
-            raise asyncio.TimeoutError()
+            raise TimeoutError()
         raise WebSocketDisconnect()
 
     mock_ws.receive_text = fake_recv

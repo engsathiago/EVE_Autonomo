@@ -1,10 +1,9 @@
 """Shared fixtures for the finetune test suite (F13)."""
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 import yaml

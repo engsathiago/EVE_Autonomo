@@ -1,7 +1,7 @@
 """Testes do SkillValidator — C3: validação em sandbox."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -17,7 +17,7 @@ def _manifest(slug: str = "test_skill") -> SkillManifestF9:
     return SkillManifestF9(
         slug=slug,
         version=1,
-        created_at=datetime.now(tz=timezone.utc),
+        created_at=datetime.now(tz=UTC),
         description="test",
         embedding_text="test",
         inputs_schema={"type": "object", "properties": {"url": {"type": "string", "format": "uri"}}, "required": ["url"]},

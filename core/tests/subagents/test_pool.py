@@ -9,7 +9,7 @@ import pytest
 from agent.core import AgentResult
 from agent.subagents.context import SubAgentContext
 from agent.subagents.pool import SubagentPool
-from agent.tasks.task import Task, TaskSource, TaskStatus
+from agent.tasks.task import Task, TaskSource
 
 
 def _make_pool(hard_timeout: int = 300) -> SubagentPool:

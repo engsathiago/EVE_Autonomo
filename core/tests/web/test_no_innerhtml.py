@@ -4,7 +4,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-
 _JS_DIR = Path(__file__).parent.parent.parent.parent / "webui" / "public" / "js"
 
 # Padrão que captura atribuições dinâmicas de innerHTML

@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -17,7 +17,7 @@ def _make_mission_row(
     learned: str = "important lesson about efficiency",
     days_ago: int = 5,
 ) -> dict:
-    created_at = datetime.now(tz=timezone.utc) - timedelta(days=days_ago)
+    created_at = datetime.now(tz=UTC) - timedelta(days=days_ago)
     return {
         "mission_id": mission_id,
         "mission_title": f"Mission {mission_id}",
@@ -37,7 +37,7 @@ def _make_skill_row(
     output_json: str | None = None,
     days_ago: int = 3,
 ) -> dict:
-    created_at = datetime.now(tz=timezone.utc) - timedelta(days=days_ago)
+    created_at = datetime.now(tz=UTC) - timedelta(days=days_ago)
     return {
         "exec_id": exec_id,
         "skill_slug": skill_slug,
@@ -93,7 +93,7 @@ class TestTraceCollectorCollect:
         pool = AsyncMock()
         pool.fetch.side_effect = [[], []]
 
-        explicit_since = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        explicit_since = datetime(2026, 1, 1, tzinfo=UTC)
         collector = TraceCollector(pool=pool, lookback_days=30)
         await collector.collect(since=explicit_since)
 

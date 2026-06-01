@@ -11,22 +11,20 @@ import os
 import signal
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
 from agent.deploy.supervisor import (
     Supervisor,
-    _WorkerState,
     _fork_worker,
     _is_pid_alive,
     _log,
     _reap_child,
     _reset_signals_child,
     _run_worker_sync,
+    _WorkerState,
 )
 from agent.deploy.workers.base import Worker
-
 
 # ── Workers para testes ───────────────────────────────────────────────────────
 

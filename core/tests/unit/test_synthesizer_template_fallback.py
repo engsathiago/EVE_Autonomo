@@ -1,6 +1,5 @@
 """Testa que SkillSynthesizer usa template quando model_router=None."""
 
-from pathlib import Path
 
 import pytest
 

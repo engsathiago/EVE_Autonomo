@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -105,7 +104,6 @@ class TestSafetyCheck:
     async def test_query_method_strips_base_prefix(self, tmp_path: Path, respx_mock):
         """_query sends model name without 'base:' prefix to Ollama."""
         import httpx
-        import respx
 
         checker = SafetyCheck(
             safety_tasks_dir=tmp_path,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import mimetypes
+import os
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -11,7 +12,11 @@ from agent.observability.logger import get_logger
 
 log = get_logger(__name__)
 
-_PUBLIC_DIR = Path(__file__).parent.parent.parent.parent.parent.parent / "webui" / "public"
+# Permite override via env var — necessário em Docker onde a estrutura de paths difere.
+# Host: 6x .parent sobe de core/src/agent/web/routes/ até a raiz do projeto.
+# Docker: setamos AGENT_WEBUI_DIR=/app/webui/public explicitamente.
+_DEFAULT_PUBLIC_DIR = Path(__file__).parent.parent.parent.parent.parent.parent / "webui" / "public"
+_PUBLIC_DIR = Path(os.getenv("AGENT_WEBUI_DIR", str(_DEFAULT_PUBLIC_DIR)))
 
 _CACHE_IMMUTABLE_EXTS = {".js", ".css", ".woff2", ".woff", ".ttf", ".svg", ".ico", ".png"}
 _NO_CACHE = "no-cache, no-store, must-revalidate"

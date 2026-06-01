@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -10,7 +9,12 @@ import pytest
 
 from agent.sandbox.base import SandboxResult
 from agent.skills.exceptions import SkillNotActive, SkillNotFound
-from agent.skills.runner import SkillRunner, _manifest_profile_to_policy, _validate_input, _validate_output, SkillRunResult
+from agent.skills.runner import (
+    SkillRunner,
+    _manifest_profile_to_policy,
+    _validate_input,
+    _validate_output,
+)
 
 
 def _make_sandbox_result(output: dict, exit_code: int = 0) -> SandboxResult:

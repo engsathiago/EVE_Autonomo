@@ -13,7 +13,6 @@ from agent.channels.base import (
     OutgoingMessage,
 )
 
-
 # ── Contrato ABC ──────────────────────────────────────────────────────────────
 
 class _FullAdapter(ChannelAdapter):

@@ -15,7 +15,6 @@ Regras verificadas:
 """
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 
 # Raiz do source Python do agente
@@ -159,6 +158,7 @@ def test_router_nao_tem_lista_hardcoded_de_tools_strategic():
 def _make_orchestrator():
     """Orchestrator mínimo para testar check_step_safety sem Postgres/Redis."""
     from unittest.mock import MagicMock
+
     from agent.orchestrator.router import Orchestrator
     from agent.orchestrator.tiers import TierClassifier
 

@@ -5,8 +5,6 @@ Requer Postgres (marcado como integration — pula sem -m integration ou sem DB)
 from __future__ import annotations
 
 import pytest
-import pytest_asyncio
-
 
 pytestmark = pytest.mark.integration
 
@@ -51,8 +49,8 @@ async def test_migration_creates_indexes(tmpdb):
 # ---------------------------------------------------------------------------
 
 async def test_registry_record_inserts_row(tmpdb, tmp_log_dir):
-    from agent.sandbox.registry import SandboxRegistry
     from agent.sandbox.base import SandboxResult
+    from agent.sandbox.registry import SandboxRegistry
 
     reg = SandboxRegistry(db_pool=tmpdb, log_dir=tmp_log_dir)
     result = SandboxResult(
@@ -90,8 +88,8 @@ async def test_registry_record_inserts_row(tmpdb, tmp_log_dir):
 
 
 async def test_registry_stores_mission_and_subagent(tmpdb, tmp_log_dir):
-    from agent.sandbox.registry import SandboxRegistry
     from agent.sandbox.base import SandboxResult
+    from agent.sandbox.registry import SandboxRegistry
 
     reg = SandboxRegistry(db_pool=tmpdb, log_dir=tmp_log_dir)
     result = SandboxResult(
@@ -117,8 +115,8 @@ async def test_registry_stores_mission_and_subagent(tmpdb, tmp_log_dir):
 
 
 async def test_registry_stores_timed_out_flag(tmpdb, tmp_log_dir):
-    from agent.sandbox.registry import SandboxRegistry
     from agent.sandbox.base import SandboxResult
+    from agent.sandbox.registry import SandboxRegistry
 
     reg = SandboxRegistry(db_pool=tmpdb, log_dir=tmp_log_dir)
     result = SandboxResult(
@@ -141,8 +139,8 @@ async def test_registry_stores_timed_out_flag(tmpdb, tmp_log_dir):
 
 
 async def test_registry_command_preview_at_200_chars(tmpdb, tmp_log_dir):
-    from agent.sandbox.registry import SandboxRegistry
     from agent.sandbox.base import SandboxResult
+    from agent.sandbox.registry import SandboxRegistry
 
     reg = SandboxRegistry(db_pool=tmpdb, log_dir=tmp_log_dir)
     long_cmd = "echo " + "A" * 500

@@ -9,10 +9,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 from tests.sandbox.conftest import make_subprocess_sandbox
-
 
 # ---------------------------------------------------------------------------
 # Aprovação do Crítico → executa

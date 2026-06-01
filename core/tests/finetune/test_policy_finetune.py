@@ -1,10 +1,8 @@
 """Tests for POLICY_FINETUNE sandbox profile — C14."""
 from __future__ import annotations
 
-import pytest
-
 from agent.sandbox.base import NetworkPolicy
-from agent.sandbox.policy import POLICY_FINETUNE, get_policy
+from agent.sandbox.policy import get_policy
 
 
 class TestPolicyFinetune:

@@ -87,6 +87,30 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
     configure_logging(settings.log_level, json=settings.log_json)
 
+    # ── Auto-migrate: aplica migrations SQL pendentes no boot ─────────────────
+    if os.getenv("AUTO_MIGRATE", "true").lower() == "true":
+        try:
+            from agent.db.migrate import apply_migrations
+
+            dsn = (
+                os.getenv("DATABASE_URL")
+                or os.getenv("POSTGRES_DSN")
+                or (
+                    f"postgresql://{os.getenv('POSTGRES_USER','agent')}:"
+                    f"{os.getenv('POSTGRES_PASSWORD','')}"
+                    f"@{os.getenv('POSTGRES_HOST','postgres')}:"
+                    f"{os.getenv('POSTGRES_PORT','5432')}/"
+                    f"{os.getenv('POSTGRES_DB','agent')}"
+                )
+            )
+            applied = await apply_migrations(dsn)
+            if applied:
+                import logging as _logging
+                _logging.getLogger(__name__).info("auto-applied migrations: %s", applied)
+        except Exception as _exc:
+            import logging as _logging
+            _logging.getLogger(__name__).warning("auto-migrate falhou (non-fatal): %s", _exc)
+
     # ── Fase 0-5: componentes existentes ─────────────────────────────────────
     _memory_store = await MemoryStore.create()
     _curator = Curator() if _CURATOR_ENABLED else None
@@ -320,17 +344,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             )
         )
     except PermissionError as _exc:
-        log.error(
-            "skills_router_init_failed",
-            reason="permission_denied",
-            path=str(_skills_root),
-            error=str(_exc),
-            hint="Set SKILLS__SKILLS_DIR env var to a writable path (default: /var/lib/agent/skills)",
+        import logging as _log_
+        _log_.getLogger(__name__).error(
+            "skills_router_init_failed permission_denied path=%s error=%s",
+            _skills_root, _exc,
         )
     except ImportError as _exc:
-        log.error("skills_router_init_failed", reason="import_error", error=str(_exc))
+        import logging as _log_
+        _log_.getLogger(__name__).error("skills_router_init_failed import_error: %s", _exc)
     except Exception as _exc:
-        log.error("skills_router_init_failed", reason="unexpected", error=str(_exc))
+        import logging as _log_
+        _log_.getLogger(__name__).error("skills_router_init_failed unexpected: %s", _exc)
 
     # ── Fase 10: backup job às 4h ─────────────────────────────────────────────
     if _SCHEDULER_ENABLED and _cron_worker is not None:

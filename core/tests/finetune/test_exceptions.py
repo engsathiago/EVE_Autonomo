@@ -1,8 +1,6 @@
 """Tests for finetune exceptions."""
 from __future__ import annotations
 
-import pytest
-
 from agent.finetune.exceptions import (
     AutoActivateNotAllowed,
     BenchmarkError,

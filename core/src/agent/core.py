@@ -463,7 +463,7 @@ class AIAgent:
                 self._critic.evaluate(decision, db_pool=self._db_pool),
                 timeout=30.0,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             log.warning("critic.gate.timeout", tool=tool_name)
             return ToolResult(
                 ok=False,

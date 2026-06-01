@@ -164,7 +164,11 @@ class Orchestrator:
 
     async def _run_strategic(self, task: Task) -> AgentResult:
         """STRATEGIC: 1 subagente sequencial com tools resolvidas dinamicamente."""
-        from agent.orchestrator.tool_router import StepSpec, log_routing_audit, resolve_tools_for_step
+        from agent.orchestrator.tool_router import (
+            StepSpec,
+            log_routing_audit,
+            resolve_tools_for_step,
+        )
         from agent.subagents.context import SubAgentContext
 
         step_spec = StepSpec(

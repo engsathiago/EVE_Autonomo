@@ -4,10 +4,6 @@ Testa dataclasses, defaults, exceptions e factory de backend.
 """
 from __future__ import annotations
 
-import os
-
-import pytest
-
 from agent.sandbox.base import NetworkPolicy, Sandbox, SandboxConfig, SandboxResult
 from agent.sandbox.exceptions import (
     SandboxBackendUnsupported,
@@ -16,7 +12,6 @@ from agent.sandbox.exceptions import (
     SandboxOOM,
     SandboxTimeout,
 )
-
 
 # ---------------------------------------------------------------------------
 # SandboxConfig defaults
@@ -143,9 +138,10 @@ def test_get_default_backend_returns_class():
 
 def test_sandbox_backend_env_override_subprocess(monkeypatch):
     monkeypatch.setenv("AGENT_SANDBOX_BACKEND", "subprocess")
-    from agent.sandbox import docker_backend as db
     # Importação fresca
     import importlib
+
+    from agent.sandbox import docker_backend as db
     importlib.reload(db)
     from agent.sandbox.subprocess_backend import SubprocessSandbox
     cls = db.get_default_backend()
@@ -155,6 +151,7 @@ def test_sandbox_backend_env_override_subprocess(monkeypatch):
 def test_sandbox_backend_env_override_docker(monkeypatch):
     monkeypatch.setenv("AGENT_SANDBOX_BACKEND", "docker")
     import importlib
+
     from agent.sandbox import docker_backend as db
     importlib.reload(db)
     from agent.sandbox.docker_backend import DockerSandbox

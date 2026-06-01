@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from agent.skills.synthesizer import (
-    ExecutionCluster,
-    SkillSynthesizer,
     _MIN_CLUSTER_SIZE,
     _MIN_COSINE,
+    ExecutionCluster,
+    SkillSynthesizer,
 )
 
 

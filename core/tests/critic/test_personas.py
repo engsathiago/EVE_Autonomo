@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from agent.critic.critic import Critic, Decision, PersonaVerdict
+from agent.critic.critic import Critic, Decision
 from agent.orchestrator.tiers import ExecutionTier
 
 

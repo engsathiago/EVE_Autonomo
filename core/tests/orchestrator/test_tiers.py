@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from agent.orchestrator.tiers import ExecutionTier, TierClassifier, _DEFAULT_ON_PARSE_ERROR
+from agent.orchestrator.tiers import _DEFAULT_ON_PARSE_ERROR, ExecutionTier, TierClassifier
 
 
 def _make_router(response_text: str) -> MagicMock:

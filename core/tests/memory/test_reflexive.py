@@ -1,7 +1,7 @@
 """Testa ReflexiveMemory — decay e times_recalled."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -34,7 +34,7 @@ def _make_insight_row(
         "forgotten": forgotten,
         "times_recalled": times_recalled,
         "last_recalled_at": None,
-        "created_at": datetime.now(tz=timezone.utc),
+        "created_at": datetime.now(tz=UTC),
     }[key]
     return row
 

@@ -1,10 +1,9 @@
 """Testes do SlackAdapter — allowlist, app_mention, DMs, thread_ts, Blocks (C7-Slack)."""
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import pytest_asyncio
 
 from agent.channels.base import ConfigError, IncomingMessage, OutgoingMessage
 from agent.channels.slack_adapter import SlackAdapter, _strip_bot_mention

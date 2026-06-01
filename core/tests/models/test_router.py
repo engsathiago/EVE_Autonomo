@@ -3,7 +3,6 @@ Testes do ModelRouter: parsing, resolução, fallback chain, capability check.
 """
 from __future__ import annotations
 
-import asyncio
 import pytest
 
 from agent.models.base import (
@@ -11,13 +10,11 @@ from agent.models.base import (
     CapabilityMismatchError,
     ChatResponse,
     HealthStatus,
-    Message,
     ModelInfo,
     Usage,
 )
 from agent.models.registry import TransportRegistry
 from agent.models.router import ModelRouter, _build_effective_chain, parse_model_string
-
 
 # ---------------------------------------------------------------------------
 # parse_model_string

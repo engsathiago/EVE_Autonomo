@@ -1,8 +1,6 @@
 """Testa lista de IRREVERSIBLE_TOOLS e integração com SkillManifest."""
 from __future__ import annotations
 
-import pytest
-
 from agent.critic.irreversible import IRREVERSIBLE_TOOLS, is_irreversible
 from agent.skills.schema import SkillManifest
 

@@ -1,30 +1,29 @@
 import asyncio
-import os
-from pathlib import Path
 
 import typer
 from rich.console import Console
 
 from cli import __version__
+from cli.chat_cmd import app as chat_app
+from cli.config_cmd import app as config_app
 from cli.critic_cli import app as critic_app
 from cli.cron import app as cron_app
+from cli.db_cmd import app as db_app
 from cli.deploy_cmd import app as deploy_app
+from cli.doctor_cmd import app as doctor_app
 from cli.finetune_cli import app as finetune_app
+
+# Setup/config/diagnóstico (estilo OpenClaw / Hermes)
+from cli.init_cmd import app as init_app
 from cli.loop_cli import app as loop_app
 from cli.missions import app as missions_app
 from cli.models import app as models_app
 from cli.reflexive_memory_cli import app as reflexive_app
 from cli.skills import app as skills_app
 from cli.skills_cmd import app as skills_f9_app
+from cli.status_cmd import app as status_app
 from cli.tasks import app as tasks_app
 from cli.web_cmd import app as web_app
-
-# Setup/config/diagnóstico (estilo OpenClaw / Hermes)
-from cli.init_cmd import app as init_app
-from cli.config_cmd import app as config_app
-from cli.status_cmd import app as status_app
-from cli.doctor_cmd import app as doctor_app
-from cli.chat_cmd import app as chat_app
 
 # Subcomando `agent memory` agrupa memória semântica e reflexiva
 _memory_app = typer.Typer(help="Gerencia memória do agente (semântica + reflexiva).")
@@ -52,6 +51,7 @@ app.add_typer(loop_app, name="loop")
 app.add_typer(web_app, name="web")
 app.add_typer(finetune_app, name="finetune")
 app.add_typer(deploy_app, name="deploy")
+app.add_typer(db_app, name="db")
 console = Console()
 
 

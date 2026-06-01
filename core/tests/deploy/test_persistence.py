@@ -15,7 +15,6 @@ from pathlib import Path
 
 import pytest
 
-
 # ── Localização da migration ───────────────────────────────────────────────────
 
 def _migration_path() -> Path:

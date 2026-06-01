@@ -1,11 +1,6 @@
 """Tests for checkpoint_gate.py — C8, C9 (gate decision logic)."""
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any
-
-import pytest
-
 from agent.finetune.checkpoint_gate import CheckpointGate
 from agent.finetune.rubric import Rubric, RubricAxis, RubricThresholds
 from agent.finetune.safety_check import SafetyResult

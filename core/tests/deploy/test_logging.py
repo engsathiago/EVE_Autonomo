@@ -9,7 +9,6 @@ import pytest
 
 from agent.deploy.logging import _JsonFormatter, _redact
 
-
 # ── Redaction ─────────────────────────────────────────────────────────────────
 
 class TestRedaction:
@@ -202,7 +201,7 @@ class TestConfigureDeployLogging:
         configure_deploy_logging(log_dir=str(tmp_path / "logs"))
 
     def test_adds_handler_to_root_logger(self, tmp_path: Path) -> None:
-        from agent.deploy.logging import configure_deploy_logging, _GzipRotatingHandler
+        from agent.deploy.logging import _GzipRotatingHandler, configure_deploy_logging
         configure_deploy_logging(log_dir=str(tmp_path / "logs2"))
         root = logging.getLogger()
         has_handler = any(isinstance(h, _GzipRotatingHandler) for h in root.handlers)
@@ -211,7 +210,7 @@ class TestConfigureDeployLogging:
         root.handlers = [h for h in root.handlers if not isinstance(h, _GzipRotatingHandler)]
 
     def test_no_duplicate_handlers(self, tmp_path: Path) -> None:
-        from agent.deploy.logging import configure_deploy_logging, _GzipRotatingHandler
+        from agent.deploy.logging import _GzipRotatingHandler, configure_deploy_logging
         log_dir = str(tmp_path / "logs3")
         configure_deploy_logging(log_dir=log_dir)
         configure_deploy_logging(log_dir=log_dir)
@@ -223,6 +222,7 @@ class TestConfigureDeployLogging:
     def test_permission_error_silenced(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """PermissionError ao criar dir não propaga — silenciado."""
         from unittest.mock import patch
+
         from agent.deploy.logging import configure_deploy_logging
 
         with patch("pathlib.Path.mkdir", side_effect=PermissionError("no write")):

@@ -5,9 +5,9 @@ Usa respx para mock HTTP — não exige Ollama nem conectividade real.
 """
 from __future__ import annotations
 
+import httpx
 import pytest
 import respx
-import httpx
 
 from agent.models.base import Message
 from agent.models.transports.ollama import OllamaTransport

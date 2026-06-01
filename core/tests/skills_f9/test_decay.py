@@ -1,7 +1,7 @@
 """Testes do SkillDecayManager — C8: decay de skills inúteis."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -11,7 +11,7 @@ from agent.skills.decay import SkillDecayManager, _days_since
 
 
 def _now() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 def _days_ago(n: int) -> datetime:

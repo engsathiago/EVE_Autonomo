@@ -4,9 +4,10 @@ Testes do AnthropicTransport (models/transports): mock HTTP via respx.
 from __future__ import annotations
 
 import json
+
+import httpx
 import pytest
 import respx
-import httpx
 
 from agent.models.base import Message, ToolSchema
 from agent.models.transports.anthropic import AnthropicTransport
@@ -139,7 +140,6 @@ async def test_health_ok() -> None:
 @pytest.mark.asyncio
 @respx.mock
 async def test_health_bad_key() -> None:
-    import anthropic as sdk
     respx.get("https://api.anthropic.com/v1/models").mock(
         return_value=httpx.Response(401, json={"error": {"type": "authentication_error"}})
     )

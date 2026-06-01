@@ -8,7 +8,6 @@ import pytest
 
 from agent.channels.base import ConfigError
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _reset_module():

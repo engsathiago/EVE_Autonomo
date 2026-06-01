@@ -9,8 +9,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 from uuid import UUID
 
-import pytest
-
 from agent.subagents.context import SubAgentContext
 from agent.subagents.subagent import build_subagent
 

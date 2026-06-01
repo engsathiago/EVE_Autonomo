@@ -10,14 +10,12 @@ Cobre §8 critérios 1, 2, 6, 7 (exec_tool E2E):
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import pytest
 
-from agent.sandbox.base import NetworkPolicy, SandboxConfig, SandboxResult
+from agent.sandbox.base import NetworkPolicy, SandboxConfig
 from agent.sandbox.subprocess_backend import SubprocessSandbox
 from tests.sandbox.conftest import make_subprocess_sandbox
-
 
 # ---------------------------------------------------------------------------
 # Execução básica via exec_tool
@@ -131,7 +129,6 @@ async def test_exec_tool_writes_log_files(tmp_log_dir):
 
 async def test_exec_tool_command_preview_truncated(tmp_log_dir):
     from agent.sandbox.registry import SandboxRegistry
-    from agent.tools.exec_tool import exec_tool
 
     long_cmd = "echo " + "x" * 500   # 505 chars
     reg = SandboxRegistry(db_pool=None, log_dir=tmp_log_dir)
@@ -147,10 +144,11 @@ async def test_exec_tool_command_preview_truncated(tmp_log_dir):
 # ---------------------------------------------------------------------------
 
 async def test_exec_tool_emits_started_and_finished(event_collector):
-    from agent.tools.exec_tool import exec_tool
-    from agent.sandbox.registry import SandboxRegistry
-    from pathlib import Path
     import tempfile
+    from pathlib import Path
+
+    from agent.sandbox.registry import SandboxRegistry
+    from agent.tools.exec_tool import exec_tool
 
     with tempfile.TemporaryDirectory() as tmp:
         reg = SandboxRegistry(db_pool=None, log_dir=Path(tmp))
@@ -167,9 +165,10 @@ async def test_exec_tool_emits_started_and_finished(event_collector):
 
 
 async def test_exec_tool_started_event_has_required_fields(event_collector):
-    from agent.tools.exec_tool import exec_tool
-    from agent.sandbox.registry import SandboxRegistry
     import tempfile
+
+    from agent.sandbox.registry import SandboxRegistry
+    from agent.tools.exec_tool import exec_tool
 
     with tempfile.TemporaryDirectory() as tmp:
         reg = SandboxRegistry(db_pool=None, log_dir=Path(tmp))
@@ -188,9 +187,10 @@ async def test_exec_tool_started_event_has_required_fields(event_collector):
 
 
 async def test_exec_tool_finished_event_has_required_fields(event_collector):
-    from agent.tools.exec_tool import exec_tool
-    from agent.sandbox.registry import SandboxRegistry
     import tempfile
+
+    from agent.sandbox.registry import SandboxRegistry
+    from agent.tools.exec_tool import exec_tool
 
     with tempfile.TemporaryDirectory() as tmp:
         reg = SandboxRegistry(db_pool=None, log_dir=Path(tmp))
@@ -217,6 +217,7 @@ async def test_exec_tool_finished_event_has_required_fields(event_collector):
 async def test_exec_tool_critic_approved_runs_command():
     """Com critic aprovando, exec_tool executa o comando normalmente."""
     from unittest.mock import AsyncMock
+
     from agent.tools.exec_tool import exec_tool
 
     mock_critic = AsyncMock()
@@ -236,6 +237,7 @@ async def test_exec_tool_critic_approved_runs_command():
 async def test_exec_tool_critic_rejected_returns_minus_one():
     """Com critic rejeitando, exec_tool retorna exit_code=-1 sem executar (§8 critério 5)."""
     from unittest.mock import AsyncMock
+
     from agent.tools.exec_tool import exec_tool
 
     mock_critic = AsyncMock()
@@ -272,10 +274,9 @@ async def test_exec_tool_untrusted_without_critic_runs():
 
 async def test_exec_tool_timeout_propagates():
     """Timeout interno da sandbox chega ao chamador via SandboxResult.timed_out."""
-    from tests.sandbox.conftest import make_subprocess_sandbox as f
-    from agent.tools.exec_tool import exec_tool
-    from agent.sandbox.base import SandboxConfig, NetworkPolicy
+    from agent.sandbox.base import SandboxConfig
     from agent.sandbox.subprocess_backend import SubprocessSandbox
+    from agent.tools.exec_tool import exec_tool
 
     def _fast_sandbox(cfg: SandboxConfig) -> SubprocessSandbox:
         return SubprocessSandbox(SandboxConfig(
@@ -307,7 +308,8 @@ async def test_exec_tool_handles_cancelled_error_in_finally(tmp_log_dir):
     - Log file escrito com stderr="cancelled" (registro de cancelamento).
     """
     import asyncio
-    from agent.sandbox.base import Sandbox, SandboxConfig
+
+    from agent.sandbox.base import Sandbox
     from agent.sandbox.registry import SandboxRegistry
     from agent.tools.exec_tool import exec_tool
 

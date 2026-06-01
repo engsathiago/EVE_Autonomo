@@ -6,7 +6,6 @@ Guia o usuário pela escolha de provider, model, key, e grava o .env.
 """
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import typer

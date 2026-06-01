@@ -1,18 +1,18 @@
 """Testes do SkillManifestF9 — C2: manifesto obrigatório."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
-from agent.skills.manifest import SkillManifestF9, NetworkPolicy
+from agent.skills.manifest import NetworkPolicy, SkillManifestF9
 
 
 def _valid_manifest(**kwargs: object) -> dict:
     base: dict = {
         "slug": "my_skill",
         "version": 1,
-        "created_at": datetime.now(tz=timezone.utc),
+        "created_at": datetime.now(tz=UTC),
         "description": "Test skill",
         "embedding_text": "test skill embedding",
         "inputs_schema": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]},

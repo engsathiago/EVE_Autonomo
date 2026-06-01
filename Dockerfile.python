@@ -34,6 +34,8 @@ COPY --from=builder /usr/local/lib/python3.11 /usr/local/lib/python3.11
 COPY --from=builder /usr/local/bin/uvicorn    /usr/local/bin/uvicorn
 COPY --from=builder /usr/local/bin/agent      /usr/local/bin/agent
 COPY core/src /app/src
+# F11.1: webui estática para o container poder servir o dashboard
+COPY webui/public /app/webui/public
 
 # config.yaml real não é copiado para o container; o from_yaml cai para defaults
 # que usam caminhos relativos (core/src/…) que não existem em /app.
@@ -43,6 +45,7 @@ RUN printf 'skills:\n  skills_dir: /app/src/agent/skills\n  skills_drafts_dir: /
 
 ENV PYTHONPATH=/app/src
 ENV CONFIG_PATH=/app/docker-config.yaml
+ENV AGENT_WEBUI_DIR=/app/webui/public
 
 USER agent
 

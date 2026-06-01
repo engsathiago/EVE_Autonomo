@@ -1,8 +1,6 @@
 """Testa que métricas agent_web_ aparecem no registry F11."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_web_metrics_registered() -> None:
     """Todos os 7 counters/gauges/histograms agent_web_ devem estar no registry."""

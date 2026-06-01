@@ -1,10 +1,8 @@
 """Tests for checkpoint_registry.py — C9, C10, C11 (activation/rollback)."""
 from __future__ import annotations
 
-import os
-import stat
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 

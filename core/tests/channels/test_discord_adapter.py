@@ -1,15 +1,12 @@
 """Testes do DiscordAdapter — allowlist, on_message, embeds, threading (C7-Discord)."""
 from __future__ import annotations
 
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import pytest_asyncio
 
 from agent.channels.base import ConfigError, IncomingMessage, OutgoingMessage
 from agent.channels.discord_adapter import DiscordAdapter, _parse_allowlist
-
 
 # ── Construção ────────────────────────────────────────────────────────────────
 

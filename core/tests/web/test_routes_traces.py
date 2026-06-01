@@ -12,7 +12,8 @@ from agent.web.server import make_web_app
 
 def _make_task(status_val="done"):
     from datetime import UTC, datetime
-    from agent.tasks.task import TaskStatus, TaskSource
+
+    from agent.tasks.task import TaskSource, TaskStatus
 
     t = MagicMock()
     t.id = uuid4()

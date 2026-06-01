@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Fixture mínima do Orchestrator sem dependências de Postgres/Redis
 # ---------------------------------------------------------------------------
@@ -15,6 +14,7 @@ import pytest
 def orchestrator():
     """Instância de Orchestrator com mocks mínimos para testar check_step_safety."""
     from unittest.mock import MagicMock
+
     from agent.orchestrator.router import Orchestrator
     from agent.orchestrator.tiers import TierClassifier
 

@@ -41,7 +41,7 @@ def _make(
     wall_time: int = 15,
     network: NetworkPolicy = NetworkPolicy.DENY_ALL,
     allowed_domains: list[str] | None = None,
-) -> "DockerSandbox":  # type: ignore[name-defined]
+) -> DockerSandbox:  # type: ignore[name-defined]
     from agent.sandbox.docker_backend import DockerSandbox
     return DockerSandbox(SandboxConfig(
         wall_time_seconds=wall_time,

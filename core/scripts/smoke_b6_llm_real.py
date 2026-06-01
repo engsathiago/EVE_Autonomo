@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+from datetime import UTC
 from unittest.mock import patch
 
 os.environ["POSTGRES_DSN"] = "postgresql://agent:qualquercoisa123@localhost:5432/agent"
@@ -92,7 +93,7 @@ async def run_scenario(
     Cria missão real, chama _process_mission() diretamente (evita processar
     outras missões ativas do DB), aguarda conclusão dos steps.
     """
-    from agent.autonomous.loop import AutonomousLoop, MAX_STEPS_PER_TICK
+    from agent.autonomous.loop import MAX_STEPS_PER_TICK, AutonomousLoop
 
     mission = await mission_store.create(
         title=f"smoke-B6-{name}",
@@ -114,12 +115,13 @@ async def run_scenario(
     )
 
     # Usa _process_mission diretamente em vez de tick() para não afetar outras missões
+    from datetime import datetime
+
     from agent.autonomous.loop import LoopReport
-    from datetime import datetime, timezone
 
     for attempt in range(5):
         report = LoopReport(
-            tick_at=datetime.now(tz=timezone.utc),
+            tick_at=datetime.now(tz=UTC),
             missions_checked=1,
             steps_dispatched=0,
             steps_failed=0,
@@ -189,7 +191,6 @@ async def main() -> int:
 
     from agent.memory.store import MemoryStore
     from agent.missions.store import MissionStore
-    from agent.tasks.store import TaskStore
 
     mem = await MemoryStore.create()
     pool = mem._pool
@@ -248,10 +249,10 @@ async def main() -> int:
 
             # Valida critérios de falha do fix
             if status == "done" and verdict == "prose_only":
-                print(f"  ❌ BUG NÃO CORRIGIDO: done + prose_only!")
+                print("  ❌ BUG NÃO CORRIGIDO: done + prose_only!")
                 all_ok = False
             if s.get("tool_count") and int(s["tool_count"] or 0) > 0 and verdict == "prose_only":
-                print(f"  ❌ analyze_turn QUEBRADO: tool_count>0 mas prose_only!")
+                print("  ❌ analyze_turn QUEBRADO: tool_count>0 mas prose_only!")
                 all_ok = False
 
         cost_str = f"${scenario['cost_usd']:.4f}" if scenario["cost_usd"] else "n/d"

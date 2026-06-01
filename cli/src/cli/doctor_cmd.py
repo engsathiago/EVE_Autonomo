@@ -188,7 +188,7 @@ def _check_default_model(settings) -> CheckResult:
         return CheckResult(
             "DEFAULT_MODEL", False,
             f"modelo é {model} mas {provider.upper()}_API_KEY não está configurada",
-            hint=f"Configure a key ou troque o default: agent config use <outro_modelo>",
+            hint="Configure a key ou troque o default: agent config use <outro_modelo>",
         )
 
     return CheckResult("DEFAULT_MODEL", True, model)

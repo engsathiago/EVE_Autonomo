@@ -9,10 +9,12 @@ Cache do módulo é limpo em cada teste via fixture clear_llm_cache.
 """
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import agent.orchestrator.tool_router as _tr
+from agent.orchestrator.tiers import ExecutionTier
 from agent.orchestrator.tool_router import (
     ALWAYS_TOOLS,
     KNOWN_BUILTIN_TOOLS,
@@ -20,9 +22,7 @@ from agent.orchestrator.tool_router import (
     resolve_tools_for_step,
     validate_declared_tools,
 )
-from agent.orchestrator.tiers import ExecutionTier
 from agent.subagents.pool import MissingRequiredTool
-
 
 # ─── Fixture: limpa o cache de inferência LLM entre testes ──────────────────
 

@@ -3,15 +3,15 @@ from __future__ import annotations
 
 import pytest
 
-from agent.channels.base import IncomingMessage, OutgoingMessage
-
+from agent.channels.base import OutgoingMessage
 
 # ── Email threading ───────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_email_reply_preserves_thread_id():
     """OutgoingMessage com thread_id resulta em email com In-Reply-To correto (C7-Email)."""
-    from unittest.mock import patch, AsyncMock
+    from unittest.mock import patch
+
     from agent.channels.email_adapter import EmailAdapter
 
     sent = []
@@ -41,6 +41,7 @@ async def test_email_reply_preserves_thread_id():
 async def test_email_reply_without_thread_id_has_no_in_reply_to():
     """Email de resposta sem thread_id não inclui In-Reply-To."""
     from unittest.mock import patch
+
     from agent.channels.email_adapter import EmailAdapter
 
     sent = []
@@ -96,6 +97,7 @@ async def test_discord_long_mission_creates_thread(mock_discord_message):
 async def test_slack_reply_uses_thread_ts():
     """Slack: reply sempre usa thread_ts da mensagem original (C7-Slack)."""
     from unittest.mock import AsyncMock, MagicMock
+
     from agent.channels.slack_adapter import SlackAdapter
 
     adapter = SlackAdapter(
@@ -122,6 +124,7 @@ async def test_slack_reply_uses_thread_ts():
 async def test_slack_long_response_becomes_file():
     """Slack: resposta > 4000 chars é enviada como arquivo .txt (C7-Slack)."""
     from unittest.mock import AsyncMock, MagicMock
+
     from agent.channels.slack_adapter import SlackAdapter
 
     adapter = SlackAdapter(

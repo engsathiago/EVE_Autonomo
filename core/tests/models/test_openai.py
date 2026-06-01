@@ -4,9 +4,10 @@ Testes do OpenAITransport: mock HTTP via respx.
 from __future__ import annotations
 
 import json
+
+import httpx
 import pytest
 import respx
-import httpx
 
 from agent.models.base import Message, ToolSchema
 from agent.models.transports.openai import OpenAITransport

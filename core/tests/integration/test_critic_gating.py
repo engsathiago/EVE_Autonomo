@@ -10,8 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from agent.critic.critic import CriticVerdict, Decision, PersonaVerdict
-from agent.critic.irreversibility import is_irreversible
+from agent.critic.critic import CriticVerdict, PersonaVerdict
 
 
 def _make_verdict(verdict: str) -> CriticVerdict:
@@ -34,7 +33,6 @@ def _make_verdict(verdict: str) -> CriticVerdict:
 
 def _make_agent(critic_verdict: str):
     """Cria AIAgent mínimo com critic mockado."""
-    from unittest.mock import MagicMock
 
     from agent.core import AIAgent
     from agent.tools.registry import ToolRegistry
@@ -87,7 +85,6 @@ async def test_timeout_treated_as_escalate():
     """Timeout de 30s → gate retorna bloqueio preventivo."""
     from agent.core import AIAgent
     from agent.tools.registry import ToolRegistry
-    from unittest.mock import MagicMock
 
     mock_critic = MagicMock()
 
@@ -106,7 +103,7 @@ async def test_timeout_treated_as_escalate():
     original_wait = asyncio.wait_for
 
     async def fast_timeout(coro, timeout):
-        raise asyncio.TimeoutError
+        raise TimeoutError
 
     import unittest.mock as mock_module
     with mock_module.patch("asyncio.wait_for", side_effect=fast_timeout):

@@ -1,10 +1,6 @@
 """Testes de métricas Prometheus dos canais (C12)."""
 from __future__ import annotations
 
-import prometheus_client as prom
-
-import pytest
-
 
 def test_all_channel_metrics_exported():
     """C12: todos os agent_channel_* estão no prometheus_text."""

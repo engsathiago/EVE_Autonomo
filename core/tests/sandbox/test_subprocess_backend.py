@@ -8,11 +8,9 @@ Cobre §8 critérios 1, 2, 3, 4 (SubprocessSandbox):
 """
 from __future__ import annotations
 
-import sys
-
 import pytest
 
-from agent.sandbox.base import NetworkPolicy, SandboxConfig, SandboxResult
+from agent.sandbox.base import NetworkPolicy, SandboxConfig
 from agent.sandbox.exceptions import SandboxBackendUnsupported
 from agent.sandbox.subprocess_backend import SubprocessSandbox
 
@@ -94,8 +92,8 @@ async def test_run_fs_is_ephemeral_between_exec_tool_calls():
     Dois exec_tool consecutivos usam sandboxes distintas.
     Arquivo criado na 1a run não aparece na 2a (§8 critério 4).
     """
-    from tests.sandbox.conftest import make_subprocess_sandbox
     from agent.tools.exec_tool import exec_tool
+    from tests.sandbox.conftest import make_subprocess_sandbox
 
     # 1a execução: cria arquivo em /work (via cwd do subprocess)
     r1 = await exec_tool(

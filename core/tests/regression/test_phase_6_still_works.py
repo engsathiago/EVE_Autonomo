@@ -3,14 +3,9 @@ Testes de não-regressão: verifica que componentes da F6 não foram quebrados.
 """
 from __future__ import annotations
 
-import json
-from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
-
-import pytest
+from unittest.mock import MagicMock
 
 from agent.orchestrator.tiers import ExecutionTier, TierClassifier
-from agent.subagents.pool import SubagentPool
 from agent.scheduler.worker import CronWorker
 
 

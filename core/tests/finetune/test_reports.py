@@ -175,7 +175,7 @@ class TestNotifyTelegram:
     async def test_continues_on_http_error(self, respx_mock):
         """notify_telegram swallows HTTP errors and does not reraise."""
         import httpx
-        import respx
+
         from agent.finetune.reports import notify_telegram
 
         respx_mock.post(url__regex=r".*sendMessage.*").mock(

@@ -20,27 +20,22 @@ Resultado em: core/docs/phases/D1_REPLAY_RESULTS.md
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from uuid import UUID, uuid4
 
 # Garante imports do pacote local
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
+from agent.orchestrator.tiers import ExecutionTier
 from agent.orchestrator.tool_router import (
     ALWAYS_TOOLS,
-    KNOWN_BUILTIN_TOOLS,
     StepSpec,
-    ToolResolution,
     resolve_tools_for_step,
-    log_routing_audit,
 )
-from agent.orchestrator.tiers import ExecutionTier
 
 # ─── Dados de entrada ─────────────────────────────────────────────────────────
 # Steps TEATRO identificados na Fase A (EXECUTION_AUDIT.md + DB query)
@@ -200,8 +195,8 @@ async def _run_single_step(
     Executa um step via Orchestrator real e captura resultado.
     O orchestrator internamente chama resolve_tools_for_step() (D.1).
     """
-    from agent.tasks.task import Task, TaskSource
     from agent.orchestrator.tool_router import StepSpec, resolve_tools_for_step
+    from agent.tasks.task import Task, TaskSource
 
     t0 = time.monotonic()
 
@@ -210,8 +205,9 @@ async def _run_single_step(
     resolution = await resolve_tools_for_step(spec, ExecutionTier.STRATEGIC, model_router=None)
 
     # Task com tools_required=[] → D.1 vai inferir por keyword/fallback
-    from agent.tasks.store import TaskStore
     import asyncpg as _apg
+
+    from agent.tasks.store import TaskStore
     postgres_dsn = os.getenv("POSTGRES_DSN", "postgresql://agent:qualquercoisa123@localhost:5432/agent").replace("@postgres:", "@localhost:")
     _task_pool = await _apg.create_pool(postgres_dsn, min_size=1, max_size=1)
     task_store = TaskStore(_task_pool)
@@ -246,7 +242,7 @@ async def _run_single_step(
             duration_s=duration,
             error=None,
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         duration = time.monotonic() - t0
         return ExecutionResult(
             step_description=description,
@@ -424,7 +420,7 @@ def generate_report(
     execution_results: list[ExecutionResult],
     elapsed_s: float,
 ) -> str:
-    now = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    now = datetime.now(tz=UTC).strftime("%Y-%m-%d %H:%M UTC")
 
     # Métricas de resolução
     steps_with_new_tools = sum(1 for r in resolution_results if r.new_tools_added)
@@ -440,7 +436,7 @@ def generate_report(
         "# D1_REPLAY_RESULTS — C10 Replay",
         "",
         f"> Data: {now}",
-        f"> Branch: `feature/d1-tool-routing`",
+        "> Branch: `feature/d1-tool-routing`",
         f"> Duração total: {elapsed_s:.1f}s",
         f"> Calls LLM: {total_llm_calls}/{50} (limite)",
         "",
@@ -568,7 +564,7 @@ def generate_report(
         ]
     elif total_exec == 0:
         lines += [
-            f"A análise de resolução (Fase 1) confirma que D.1 expandiria o conjunto de tools para",
+            "A análise de resolução (Fase 1) confirma que D.1 expandiria o conjunto de tools para",
             f"{steps_with_new_tools} dos {total_steps} steps TEATRO históricos.",
             "",
             "A Fase 2 (execução real) foi pulada por falta de API key ou limite de LLM calls.",
@@ -620,7 +616,7 @@ async def main():
     if changed >= 2:
         print(f"\n✅ VEREDICTO: D.1 CONFIRMADO ({changed}/{total} missions TEATRO→done)")
     elif total == 0:
-        print(f"\n⚠️  VEREDICTO: Fase 2 pulada — apenas análise de resolução concluída")
+        print("\n⚠️  VEREDICTO: Fase 2 pulada — apenas análise de resolução concluída")
         print(f"   Análise mostra: {sum(1 for r in resolution_results if r.new_tools_added)}/{len(resolution_results)} steps ganham novas tools com D.1")
     else:
         print(f"\n❌ VEREDICTO: D.1 não resolveu ({changed}/{total} missions mudaram) — investigar")

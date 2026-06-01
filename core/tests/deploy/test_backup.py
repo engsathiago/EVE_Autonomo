@@ -17,6 +17,7 @@ from agent.deploy.backup import (
     run_backup,
 )
 
+
 # Fixture helper para configurar caminhos via env vars
 def _set_backup_env(
     monkeypatch: pytest.MonkeyPatch,

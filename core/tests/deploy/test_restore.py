@@ -1,15 +1,13 @@
 """Testes do sistema de restore (F10)."""
 from __future__ import annotations
 
-import gzip
 import shutil
 import sqlite3
-import tarfile
 from pathlib import Path
 
 import pytest
 
-from agent.deploy.restore import _restore_sqlite, _restore_skills, run_restore
+from agent.deploy.restore import _restore_skills, _restore_sqlite, run_restore
 
 
 def _make_sqlite_backup(

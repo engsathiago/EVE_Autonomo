@@ -9,7 +9,6 @@ import email.message
 import email.policy
 
 import pytest
-import pytest_asyncio
 
 from agent.channels.email_adapter import (
     EmailAdapter,

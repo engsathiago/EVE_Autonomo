@@ -18,7 +18,6 @@ from agent.sandbox.policy import (
     get_policy,
 )
 
-
 # ---------------------------------------------------------------------------
 # POLICY_DEFAULT
 # ---------------------------------------------------------------------------
@@ -92,9 +91,9 @@ async def test_open_network_requires_explicit_gate():
     exec_tool com NetworkPolicy.OPEN sem allow_open_network=True deve levantar ValueError.
     Validação em exec_tool.py garante gate explícito (§4).
     """
-    from tests.sandbox.conftest import make_subprocess_sandbox
-    from agent.tools.exec_tool import exec_tool
     from agent.sandbox.policy import SandboxPolicy, _register
+    from agent.tools.exec_tool import exec_tool
+    from tests.sandbox.conftest import make_subprocess_sandbox
 
     # Registra política temporária com OPEN mas sem gate
     open_policy = SandboxPolicy(

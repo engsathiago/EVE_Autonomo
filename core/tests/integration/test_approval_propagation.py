@@ -6,6 +6,7 @@ Usa ApprovalManager com pool mockado (sem Postgres real).
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -24,12 +25,12 @@ def _make_approval_manager() -> ApprovalManager:
     manager = ApprovalManager(db_pool=mock_pool, timeout_s=30)
 
     # Patch create para retornar ApprovalRequest sem Postgres
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
     fake_req = ApprovalRequest(
         approval_id="test-approval-123",
         skill_name="test_action",
         summary="Subagente precisa de aprovação",
-        expires_at=datetime.now(tz=timezone.utc) + timedelta(seconds=30),
+        expires_at=datetime.now(tz=UTC) + timedelta(seconds=30),
     )
     manager.create = AsyncMock(return_value=fake_req)
 

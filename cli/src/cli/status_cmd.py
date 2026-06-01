@@ -32,7 +32,6 @@ def status(
 
 
 async def _show_status(detailed: bool) -> None:
-    import httpx
 
     # ─── 1. Carrega settings ────────────────────────────────────────
     try:
@@ -150,6 +149,7 @@ async def _check_redis(settings) -> tuple[str, str]:
 
 async def _check_core_http() -> tuple[str, str]:
     import time
+
     import httpx
     try:
         t0 = time.monotonic()
@@ -165,6 +165,7 @@ async def _check_core_http() -> tuple[str, str]:
 
 async def _check_gateway_http() -> tuple[str, str]:
     import time
+
     import httpx
     try:
         t0 = time.monotonic()

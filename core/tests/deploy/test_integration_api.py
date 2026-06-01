@@ -21,7 +21,6 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _make_app(
@@ -105,6 +104,7 @@ class TestReadinessC5:
         monkeypatch.setenv("AGENT_DB_SQLITE", "/totally/nonexistent/agent.db")
         monkeypatch.setenv("AGENT_DB_POSTGRES_URL", "")
         from fastapi import FastAPI
+
         from agent.deploy.health import make_health_router
         app = FastAPI()
         app.include_router(make_health_router())
@@ -115,6 +115,7 @@ class TestReadinessC5:
     def test_503_when_postgres_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """C5: Postgres down → 503 sem restart manual."""
         from fastapi import FastAPI
+
         from agent.deploy.health import make_health_router
 
         db = tmp_path / "agent.db"

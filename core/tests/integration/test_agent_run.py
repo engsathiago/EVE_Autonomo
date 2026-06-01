@@ -7,7 +7,6 @@ import pytest
 from agent.core import AIAgent
 from agent.tools.registry import ToolRegistry
 from agent.transports.base import ChatResponse
-
 from tests.test_core import MockTransport
 
 
@@ -25,7 +24,7 @@ async def test_agent_reads_file_and_reports(tmp_path, monkeypatch):
     target = tmp_path / "info.txt"
     target.write_text("o segredo é 42")
 
-    from agent.tools.builtin.filesystem import ReadFileTool, ListDirTool, WriteFileTool
+    from agent.tools.builtin.filesystem import ListDirTool, ReadFileTool, WriteFileTool
     from agent.tools.builtin.shell import ShellTool
     from agent.tools.builtin.web_search import WebSearchTool
 

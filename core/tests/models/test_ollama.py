@@ -3,10 +3,9 @@ Testes do OllamaTransport: mock HTTP via respx (não exige Ollama rodando).
 """
 from __future__ import annotations
 
-import json
+import httpx
 import pytest
 import respx
-import httpx
 
 from agent.models.base import Message, ModelNotPulledError, ToolSchema
 from agent.models.transports.ollama import OllamaTransport

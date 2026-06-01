@@ -40,7 +40,7 @@ class ExecutionAnalysis:
     reason: str                    # explicação humana
 
 
-def analyze_turn(result: "AgentResult", *, allow_planning: bool = False) -> ExecutionAnalysis:
+def analyze_turn(result: AgentResult, *, allow_planning: bool = False) -> ExecutionAnalysis:
     """
     Analisa o resultado de um AgentResult e retorna um ExecutionAnalysis com verdict.
 

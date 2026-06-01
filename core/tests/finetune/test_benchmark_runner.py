@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -161,6 +160,7 @@ class TestLlmJudgeUsesAnthropicTransport:
     def test_benchmark_runner_imports_anthropic_transport(self):
         """BenchmarkRunner source imports AnthropicTransport (not Ollama) for judging."""
         import inspect
+
         import agent.finetune.benchmark_runner as bm_module
         source = inspect.getsource(bm_module)
         assert "AnthropicTransport" in source, "BenchmarkRunner must use AnthropicTransport as LLM judge"

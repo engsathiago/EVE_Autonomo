@@ -10,20 +10,15 @@ Marcados com @pytest.mark.integration.
 from __future__ import annotations
 
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
 
 import pytest
 
-from agent.missions.store import MissionStep
+from agent.orchestrator.tiers import ExecutionTier
 from agent.orchestrator.tool_router import (
     StepSpec,
-    ToolResolution,
     log_routing_audit,
     resolve_tools_for_step,
 )
-from agent.orchestrator.tiers import ExecutionTier
-from agent.subagents.pool import MissingRequiredTool
 
 # ─── Helpers e fixtures ─────────────────────────────────────────────────────
 
@@ -149,7 +144,6 @@ async def test_step_missing_tool_marca_status_correto(mission_store, fresh_missi
     Testa a lógica do loop sem levantar infra completa (mock orchestrator).
     """
     _skip_if_no_db()
-    from unittest.mock import AsyncMock, MagicMock
 
     step = await mission_store.add_step(
         fresh_mission.id,

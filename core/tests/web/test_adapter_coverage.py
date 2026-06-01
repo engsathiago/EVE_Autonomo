@@ -2,16 +2,14 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import UUID, uuid4
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 
 from agent.web.server import make_web_app
-
 
 # ── adapters/missions ────────────────────────────────────────────────────────
 
@@ -456,7 +454,6 @@ def test_get_mission_happy_path(missions_client) -> None:
 
 def test_system_info_git_unavailable(client_no_deps: TestClient) -> None:
     """system_info cobre except blocks quando git falha."""
-    import subprocess
     with patch("subprocess.check_output", side_effect=Exception("no git")):
         resp = client_no_deps.get("/api/v1/system/info", headers=_h())
     assert resp.status_code == 200

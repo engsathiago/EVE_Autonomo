@@ -12,7 +12,7 @@ class TestFinetuneEvents:
 
     @pytest.mark.asyncio
     async def test_finetune_handler_receives_event(self):
-        from agent.events import emit_finetune_event, register_finetune_handler, _finetune_handlers
+        from agent.events import _finetune_handlers, emit_finetune_event, register_finetune_handler
 
         received = []
 
@@ -33,7 +33,7 @@ class TestFinetuneEvents:
 
     @pytest.mark.asyncio
     async def test_finetune_handler_exception_does_not_propagate(self):
-        from agent.events import emit_finetune_event, register_finetune_handler, _finetune_handlers
+        from agent.events import _finetune_handlers, emit_finetune_event, register_finetune_handler
 
         async def bad_handler(event_type: str, data: dict) -> None:
             raise RuntimeError("handler exploded")
@@ -48,6 +48,7 @@ class TestFinetuneEvents:
     def test_agent_event_type_includes_finetune_events(self):
         """All 7 finetune events are in the AgentEvent type Literal."""
         import typing
+
         from agent.events import AgentEvent
 
         expected_events = [

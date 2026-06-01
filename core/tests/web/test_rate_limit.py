@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from agent.web.server import make_web_app, _check_rate_limit, _rate_counters
+from agent.web.server import _check_rate_limit, _rate_counters, make_web_app
 
 
 def test_check_rate_limit_allows_up_to_60() -> None:

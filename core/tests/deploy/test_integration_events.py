@@ -11,23 +11,17 @@ Não sobe Postgres real. Não faz systemctl.
 """
 from __future__ import annotations
 
-import asyncio
 import sqlite3
-import time
-from collections import deque
 from pathlib import Path
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from agent.deploy.supervisor import (
     _FLAPPING_MAX_RESTARTS,
-    _WorkerState,
     _db_record_event,
+    _WorkerState,
 )
 from agent.deploy.workers.base import Worker
-
 
 # ── Fake event bus ────────────────────────────────────────────────────────────
 
@@ -310,6 +304,7 @@ class TestHealthDegradedEvent:
         """Quando /ready retorna 503, o estado é 'degraded' no body."""
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
+
         from agent.deploy.health import make_health_router
 
         monkeypatch.setenv("AGENT_DB_SQLITE", "/nonexistent/agent.db")
@@ -325,6 +320,7 @@ class TestHealthDegradedEvent:
         """Quando SQLite volta a funcionar, /ready retorna 200."""
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
+
         from agent.deploy.health import make_health_router
 
         db = tmp_path / "agent.db"

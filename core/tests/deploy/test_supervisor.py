@@ -15,9 +15,9 @@ from agent.deploy.supervisor import (
     _BACKOFF_SEQUENCE,
     _FLAPPING_MAX_RESTARTS,
     _FLAPPING_WINDOW_S,
-    _WorkerState,
     _is_pid_alive,
     _sd_notify,
+    _WorkerState,
 )
 from agent.deploy.workers.base import Worker
 

@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 
-from agent.missions.store import Mission, MissionStore
+from agent.missions.store import MissionStore
 
 
 def _make_pool() -> MagicMock:
@@ -36,8 +36,8 @@ def _make_mission_row(
         ),
         "deadline": None,
         "status": status,
-        "created_at": datetime.now(tz=timezone.utc),
-        "updated_at": datetime.now(tz=timezone.utc),
+        "created_at": datetime.now(tz=UTC),
+        "updated_at": datetime.now(tz=UTC),
         "completed_at": None,
         "source": "cli",
         "source_ref": None,

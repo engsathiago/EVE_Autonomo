@@ -225,7 +225,7 @@ async def _handle_slash(line: str, state: ChatState, registry, settings) -> bool
 
     else:
         console.print(f"[red]Comando desconhecido:[/red] {cmd}")
-        console.print(f"[dim]Use /help para ver comandos disponíveis[/dim]")
+        console.print("[dim]Use /help para ver comandos disponíveis[/dim]")
 
     return False
 
@@ -241,7 +241,7 @@ def _cmd_help() -> None:
 
 def _cmd_switch_model(state: ChatState, new_model: str) -> None:
     if ":" not in new_model:
-        console.print(f"[red]Formato inválido. Use provider:model_id[/red]")
+        console.print("[red]Formato inválido. Use provider:model_id[/red]")
         return
 
     old = state.model
@@ -305,8 +305,9 @@ async def _cmd_skills(settings) -> None:
 
 async def _cmd_missions(settings) -> None:
     try:
-        import asyncpg
         import os
+
+        import asyncpg
         conn = await asyncpg.connect(os.environ.get("POSTGRES_URL", ""), timeout=3)
         try:
             rows = await conn.fetch(
@@ -364,13 +365,13 @@ def _cmd_save(state: ChatState, arg: str) -> None:
 
     path = Path(arg) if arg else Path(f"eve-chat-{int(time.time())}.md")
     lines = [
-        f"# Conversa com EVE",
-        f"",
+        "# Conversa com EVE",
+        "",
         f"- **Modelo:** {state.model}",
         f"- **Mensagens:** {state.messages}",
         f"- **Tokens:** {state.total_input_tokens + state.total_output_tokens:,}",
         f"- **Custo:** ${state.total_cost_usd:.4f}",
-        f"",
+        "",
         "---",
         "",
     ]

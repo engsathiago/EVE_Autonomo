@@ -92,7 +92,6 @@ class TestMigrationFile:
 class TestInstallSystemd:
     def test_renders_user_placeholder(self, tmp_path: Path) -> None:
         """_install_systemd substitui {{USER}} no template."""
-        from unittest.mock import patch
 
         unit_dest = tmp_path / "agent.service"
         systemd_dir = str(tmp_path)
@@ -107,7 +106,6 @@ class TestInstallSystemd:
         assert "{{USER}}" not in content
 
     def test_renders_group_placeholder(self, tmp_path: Path) -> None:
-        from unittest.mock import patch
 
         with patch("agent.deploy.install._SYSTEMD_UNIT_DIR", str(tmp_path)):
             with patch("agent.deploy.install._run"):
@@ -119,7 +117,6 @@ class TestInstallSystemd:
         assert "{{GROUP}}" not in content
 
     def test_renders_install_dir_placeholder(self, tmp_path: Path) -> None:
-        from unittest.mock import patch
 
         prefix = tmp_path / "opt" / "agent"
         with patch("agent.deploy.install._SYSTEMD_UNIT_DIR", str(tmp_path)):
@@ -132,7 +129,6 @@ class TestInstallSystemd:
         assert "{{INSTALL_DIR}}" not in content
 
     def test_renders_python_placeholder(self, tmp_path: Path) -> None:
-        from unittest.mock import patch
 
         prefix = tmp_path / "opt"
         with patch("agent.deploy.install._SYSTEMD_UNIT_DIR", str(tmp_path)):
@@ -144,7 +140,6 @@ class TestInstallSystemd:
         assert "{{PYTHON}}" not in content
 
     def test_unit_file_has_correct_permissions(self, tmp_path: Path) -> None:
-        from unittest.mock import patch
 
         with patch("agent.deploy.install._SYSTEMD_UNIT_DIR", str(tmp_path)):
             with patch("agent.deploy.install._run"):
@@ -162,7 +157,6 @@ class TestInstallSystemd:
 class TestChown:
     def test_chown_silently_ignores_errors(self) -> None:
         """_chown não levanta exceção se path não existe."""
-        from unittest.mock import patch
         from agent.deploy.install import _chown
 
         with patch("agent.deploy.install._run", side_effect=RuntimeError("no chown")):
@@ -174,7 +168,6 @@ class TestChown:
 class TestCreateUser:
     def test_skips_creation_if_user_exists(self) -> None:
         """_create_user não chama useradd se id retorna 0."""
-        from unittest.mock import MagicMock, call, patch
         from agent.deploy.install import _create_user
 
         mock_run = MagicMock()
@@ -190,8 +183,6 @@ class TestCreateUser:
 
     def test_calls_useradd_if_user_missing(self) -> None:
         """_create_user chama useradd quando id retorna != 0."""
-        from unittest.mock import MagicMock, patch
-        import shutil
 
         from agent.deploy.install import _create_user
 
@@ -225,7 +216,6 @@ class TestInstallMocked:
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         """install(enable_systemd=False) não chama systemctl."""
-        from unittest.mock import MagicMock, patch
         from agent.deploy.install import install
 
         monkeypatch.setattr("os.geteuid", lambda: 0)
@@ -255,8 +245,7 @@ class TestInstallMocked:
 class TestCreateDirs:
     def test_creates_all_install_dirs(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """_create_dirs cria os diretórios da lista _INSTALL_DIRS."""
-        from unittest.mock import MagicMock, call, patch
-        from agent.deploy.install import _create_dirs, _INSTALL_DIRS
+        from agent.deploy.install import _INSTALL_DIRS, _create_dirs
 
         created: list[str] = []
 
@@ -275,8 +264,7 @@ class TestCreateDirs:
 
     def test_chown_called_for_each_dir(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """_create_dirs chama _chown para cada dir."""
-        from unittest.mock import MagicMock, patch
-        from agent.deploy.install import _create_dirs, _INSTALL_DIRS
+        from agent.deploy.install import _INSTALL_DIRS, _create_dirs
 
         chown_calls: list[tuple] = []
 
@@ -295,7 +283,6 @@ class TestUninstallMocked:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """uninstall() chama systemctl stop e disable."""
-        from unittest.mock import MagicMock, patch
         from agent.deploy.install import uninstall
 
         monkeypatch.setattr("os.geteuid", lambda: 0)
@@ -318,7 +305,6 @@ class TestUninstallMocked:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """uninstall(keep_data=True) não remove /var/lib/agent."""
-        from unittest.mock import MagicMock, patch
         from agent.deploy.install import uninstall
 
         monkeypatch.setattr("os.geteuid", lambda: 0)
@@ -338,7 +324,6 @@ class TestUninstallMocked:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """uninstall(keep_data=False) remove /var/lib/agent."""
-        from unittest.mock import MagicMock, patch
         from agent.deploy.install import uninstall
 
         monkeypatch.setattr("os.geteuid", lambda: 0)

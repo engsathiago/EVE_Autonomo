@@ -2,6 +2,12 @@
   <strong>🤖 EVE — Agente Autônomo</strong>
 </p>
 
+<p align="center">
+  <a href="https://github.com/engsathiago/EVE_Autonomo/actions/workflows/ci.yml">
+    <img src="https://github.com/engsathiago/EVE_Autonomo/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+</p>
+
 <h1 align="center">EVE_Autonomo</h1>
 
 <p align="center">

@@ -5,6 +5,7 @@ Regra: se esse teste falhar, NÃO mergeia. O bug voltou.
 """
 from __future__ import annotations
 
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -16,7 +17,6 @@ from agent.subagents.context import SubAgentContext
 from agent.subagents.pool import SubagentPool
 from agent.tasks.task import Task, TaskSource
 
-
 # ---------------------------------------------------------------------------
 # Helpers compartilhados
 # ---------------------------------------------------------------------------
@@ -27,8 +27,8 @@ def _make_mission(mission_id=None):
     m.id = mission_id or uuid4()
     m.title = "Missão de regressão"
     m.status = "active"
-    from datetime import datetime, timezone
-    m.updated_at = datetime.now(tz=timezone.utc)
+    from datetime import datetime
+    m.updated_at = datetime.now(tz=UTC)
     return m
 
 

@@ -5,6 +5,7 @@ Execute com: pytest -m integration
 from __future__ import annotations
 
 import os
+
 import pytest
 
 from agent.models.base import Message

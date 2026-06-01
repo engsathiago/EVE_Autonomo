@@ -17,7 +17,6 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
 
 app = typer.Typer(help="Gerencia configuração da EVE (estilo OpenClaw).")
@@ -158,7 +157,7 @@ def use(
     """Define o modelo padrão (atualiza DEFAULT_MODEL no .env)."""
     # Validação básica
     if ":" not in model:
-        console.print(f"[red]Formato inválido. Use provider:model_id (ex: anthropic:claude-haiku-4-5)[/red]")
+        console.print("[red]Formato inválido. Use provider:model_id (ex: anthropic:claude-haiku-4-5)[/red]")
         raise typer.Exit(1)
 
     provider = model.split(":")[0]
@@ -325,4 +324,4 @@ def providers() -> None:
         table.add_row(label, status, notes)
 
     console.print(table)
-    console.print(f"\n[dim]Trocar default: agent config use <provider>:<model>[/dim]")
+    console.print("\n[dim]Trocar default: agent config use <provider>:<model>[/dim]")

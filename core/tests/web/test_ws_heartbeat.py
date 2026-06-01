@@ -6,12 +6,11 @@ Valida que:
 """
 from __future__ import annotations
 
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from agent.web.routes.ws import _WsSession, _MAX_MISSED_PINGS, _HEARTBEAT_INTERVAL_S
+from agent.web.routes.ws import _HEARTBEAT_INTERVAL_S, _MAX_MISSED_PINGS, _WsSession
 
 
 @pytest.mark.asyncio

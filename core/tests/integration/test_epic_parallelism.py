@@ -11,11 +11,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from agent.core import AgentResult
-from agent.orchestrator.tiers import ExecutionTier, TierClassifier
 from agent.orchestrator.router import Orchestrator
+from agent.orchestrator.tiers import ExecutionTier
 from agent.subagents.pool import SubagentPool
 from agent.tasks.task import Task, TaskSource
-from agent.tasks.store import TaskStore
 
 
 def _make_task_store() -> MagicMock:

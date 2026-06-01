@@ -6,19 +6,16 @@ Os testes verificam contratos de comportamento, não implementações.
 """
 from __future__ import annotations
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
 
-from agent.autonomous.loop import AutonomousLoop, MAX_STEPS_PER_TICK
-from agent.critic.critic import Critic, CriticRejected, Decision
-from agent.missions.planner import MissionPlanner, ObjectiveSubjectiveError
+from agent.autonomous.loop import AutonomousLoop
+from agent.core import AgentResult, ToolCallSummary
 from agent.missions.reflector import MissionReflector
-from agent.missions.store import Mission, MissionReflection, MissionStep
-
+from agent.missions.store import Mission, MissionStep
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -29,7 +26,7 @@ def _mock_mission(status="active", step_count=3):
     m.objective = "Publicar 3 cortes de saúde mental"
     m.status = status
     m.success_criteria = [{"criterion": "publicar 3 cortes", "verifiable_via": "manual"}]
-    m.updated_at = datetime.now(tz=timezone.utc)
+    m.updated_at = datetime.now(tz=UTC)
     return m
 
 
@@ -40,6 +37,7 @@ def _mock_step(seq, status="pending", retry_count=0):
     s.description = f"Step {seq}: parte da missão"
     s.status = status
     s.retry_count = retry_count
+    s.tools_required = []  # campo D.1 — Pydantic v2 não expõe via spec
     return s
 
 
@@ -87,8 +85,15 @@ async def test_full_mission_create_plan_execute_reflect() -> None:
     task_store = MagicMock()
     task_store.create = AsyncMock()
 
-    result = MagicMock()
-    result.final_text = "task concluída"
+    result = AgentResult(
+        final_text="task concluída",
+        iterations=1,
+        total_input_tokens=50,
+        total_output_tokens=30,
+        estimated_cost_usd=0.001,
+        duration_s=0.5,
+        tool_calls_made=[ToolCallSummary(tool_name="read_file", succeeded=True)],
+    )
     orchestrator = MagicMock()
     orchestrator.route = AsyncMock(return_value=result)
 
@@ -149,8 +154,15 @@ async def test_mission_survives_restart() -> None:
     task_store = MagicMock()
     task_store.create = AsyncMock()
 
-    result = MagicMock()
-    result.final_text = "ok"
+    result = AgentResult(
+        final_text="ok",
+        iterations=1,
+        total_input_tokens=20,
+        total_output_tokens=10,
+        estimated_cost_usd=0.0,
+        duration_s=0.1,
+        tool_calls_made=[ToolCallSummary(tool_name="read_file", succeeded=True)],
+    )
     orchestrator = MagicMock()
     orchestrator.route = AsyncMock(return_value=result)
 

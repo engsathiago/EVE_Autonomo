@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 from agent.core import AgentResult
 from agent.execution.validation import ExecutionVerdict, analyze_turn
 from agent.observability.logger import get_logger
-from agent.orchestrator.tool_router import KNOWN_BUILTIN_TOOLS, validate_declared_tools
+from agent.orchestrator.tool_router import validate_declared_tools
 from agent.subagents.context import SubAgentContext
 from agent.subagents.subagent import build_subagent
 from agent.tasks.task import Task, TaskSource, TaskStatus

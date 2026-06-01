@@ -3,11 +3,9 @@ from __future__ import annotations
 
 import asyncio
 import email.message
-import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 
 # ── EmailAdapter: start / stop / send edge cases ─────────────────────────────
 
@@ -62,7 +60,6 @@ async def test_email_adapter_stop_without_task_is_safe():
 
 @pytest.mark.asyncio
 async def test_email_send_large_body_becomes_attachment():
-    import aiosmtplib
     adapter = _email_adapter()
 
     large_text = "x" * (51 * 1024)  # > 50 KB
@@ -196,7 +193,6 @@ async def test_discord_send_falls_through_when_thread_not_found():
 
 @pytest.mark.asyncio
 async def test_discord_send_embed_for_long_text():
-    import discord
     adapter = _discord_adapter()
     channel_mock = AsyncMock()
     channel_mock.send = AsyncMock()

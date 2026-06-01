@@ -7,9 +7,6 @@ Cobre §8 critério 7: eventos sandbox.* emitidos no event_registry.
 """
 from __future__ import annotations
 
-from pathlib import Path
-import tempfile
-
 import pytest
 
 from tests.sandbox.conftest import make_subprocess_sandbox
@@ -78,9 +75,9 @@ async def test_happy_path_no_network_denied_event(event_collector, tmp_path):
 
 async def test_timeout_emits_limit_exceeded(event_collector, tmp_path):
     """Timeout deve emitir sandbox.limit.exceeded com limit_type=wall_time."""
-    from agent.tools.exec_tool import exec_tool
-    from agent.sandbox.base import SandboxConfig, NetworkPolicy
+    from agent.sandbox.base import NetworkPolicy, SandboxConfig
     from agent.sandbox.subprocess_backend import SubprocessSandbox
+    from agent.tools.exec_tool import exec_tool
 
     def _timeout_factory(cfg: SandboxConfig) -> SubprocessSandbox:
         return SubprocessSandbox(SandboxConfig(
@@ -208,8 +205,9 @@ def test_agent_event_accepts_sandbox_types():
 
 
 def test_agent_event_rejects_unknown_sandbox_type():
-    from agent.events import AgentEvent
     from pydantic import ValidationError
+
+    from agent.events import AgentEvent
 
     with pytest.raises(ValidationError):
         AgentEvent(type="sandbox.unknown.event", data={})

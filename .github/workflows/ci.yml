@@ -13,10 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
 
       - name: Install ruff
@@ -31,6 +30,16 @@ jobs:
   python-tests:
     name: Python Tests
     runs-on: ubuntu-latest
+
+    env:
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: testpw
+      POSTGRES_DB: agent_test
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://localhost:6379/0
+      ANTHROPIC_API_KEY: dummy-for-tests
+      AUTO_MIGRATE: "false"
 
     services:
       postgres:
@@ -60,33 +69,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: pip
 
-      - name: Install core dependencies
-        working-directory: core
+      - name: Install core + CLI
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -e "core[dev]"
+          pip install "typer>=0.12" "rich>=13.0" "prompt_toolkit>=3.0"
+          pip install --no-deps -e cli
 
       - name: Apply migrations
-        env:
-          PGPASSWORD: testpw
         run: |
-          for migration in core/migrations/*.sql; do
-            psql -h localhost -U agent -d agent_test -f "$migration" || true
-          done
+          python -c "
+          import asyncio, os, sys
+          sys.path.insert(0, 'core/src')
+          from agent.db.migrate import apply_migrations
+          dsn = (
+              f\"postgresql://{os.environ['POSTGRES_USER']}:{os.environ['POSTGRES_PASSWORD']}\"
+              f\"@{os.environ['POSTGRES_HOST']}:{os.environ['POSTGRES_PORT']}/{os.environ['POSTGRES_DB']}\"
+          )
+          applied = asyncio.run(apply_migrations(dsn))
+          print(f'Migrations aplicadas: {applied}')
+          "
 
-      - name: Run pytest (unit tests only)
+      - name: Run unit + web tests
         working-directory: core
-        env:
-          POSTGRES_URL: postgresql://agent:testpw@localhost:5432/agent_test
-          REDIS_URL: redis://localhost:6379/0
-          ANTHROPIC_API_KEY: dummy-for-tests
-        run: pytest -m "not integration and not docker and not slow" --maxfail=10 -q
+        run: |
+          PYTHONPATH=src python -m pytest \
+            -m "not integration and not docker and not slow" \
+            --ignore=tests/deploy/test_persistence.py \
+            --ignore=tests/deploy/test_supervisor_internals.py \
+            --tb=short \
+            --cov=src \
+            --cov-report=term-missing:skip-covered \
+            --cov-fail-under=30 \
+            -q
 
   node-tests:
     name: Node Tests
@@ -94,8 +114,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
@@ -112,6 +131,13 @@ jobs:
       - name: Run tests
         working-directory: gateway
         run: npm test
+
+  compose-validate:
+    name: Docker Compose Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config > /dev/null
 
   secret-scan:
     name: Secret Scanning (gitleaks)

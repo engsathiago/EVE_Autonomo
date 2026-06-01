@@ -3,10 +3,9 @@ Testes do OpenRouterTransport: headers obrigatórios e herança de OpenAITranspo
 """
 from __future__ import annotations
 
-import json
+import httpx
 import pytest
 import respx
-import httpx
 
 from agent.models.base import Message
 from agent.models.transports.openrouter import OpenRouterTransport

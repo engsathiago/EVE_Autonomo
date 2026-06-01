@@ -10,7 +10,6 @@ from agent.deploy.workers.heartbeat_worker import HeartbeatWorker
 from agent.deploy.workers.orchestrator_worker import OrchestratorWorker
 from agent.deploy.workers.scheduler_worker import SchedulerWorker
 
-
 # ── Worker ABC ────────────────────────────────────────────────────────────────
 
 class _ConcreteWorker(Worker):
@@ -110,8 +109,9 @@ class TestApiWorker:
         assert w.name == "api"
 
     def test_request_stop_sets_server_exit(self) -> None:
-        from agent.deploy.workers.api_worker import ApiWorker
         from unittest.mock import MagicMock
+
+        from agent.deploy.workers.api_worker import ApiWorker
         w = ApiWorker()
         mock_server = MagicMock()
         w._server = mock_server

@@ -30,6 +30,7 @@ from agent.orchestrator.tiers import ExecutionTier
 
 if TYPE_CHECKING:
     import asyncpg
+
     from agent.models.router import ModelRouter
 
 log = get_logger(__name__)

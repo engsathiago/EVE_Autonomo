@@ -4,15 +4,12 @@ skills_dir é writable E que a falha sai em log.error (não silenciosa).
 """
 from __future__ import annotations
 
-import logging
 import os
 import stat
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 
 # ─── helpers ────────────────────────────────────────────────────────────────
 

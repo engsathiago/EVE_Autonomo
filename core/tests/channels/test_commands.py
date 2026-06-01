@@ -1,7 +1,7 @@
 """Testes dos comandos de canal — transversal a todos os canais."""
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
