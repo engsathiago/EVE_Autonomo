@@ -1,0 +1,107 @@
+# Compose para produção (VPS).
+# Diferenças em relação ao docker-compose.yml de dev:
+#   - target: runtime (sem dev deps)
+#   - restart: always
+#   - Portas de DB/Redis não expostas ao host
+#   - AUTO_MIGRATE=true
+#   - AGENT_LOG_JSON=true
+#   - start_period maior para VPS fria
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-agent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD obrigatório}
+      POSTGRES_DB: ${POSTGRES_DB:-agent}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agent}"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  core:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+      target: runtime
+    env_file: .env
+    environment:
+      SKILLS__SKILLS_DIR: /var/lib/agent/skills
+      SKILLS__SKILLS_DRAFTS_DIR: /var/lib/agent/skills/_drafts
+      AGENT_NO_WEB: "1"
+      AUTO_MIGRATE: "true"
+      AGENT_LOG_JSON: "true"
+      AGENT_WEBUI_DIR: /app/webui/public
+    volumes:
+      - skills_data:/var/lib/agent/skills
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    restart: always
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+      target: runtime
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      GATEWAY_CORE_URL: http://core:8000
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      core:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: always
+
+  webui:
+    image: nginx:alpine
+    volumes:
+      - ./webui/public:/usr/share/nginx/html:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - core
+    restart: always
+
+volumes:
+  postgres_data:
+  redis_data:
+  skills_data:

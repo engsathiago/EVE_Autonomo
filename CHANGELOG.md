@@ -7,6 +7,66 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.0.0] — 2026-06-01 — Primeira Release Estável
+
+### Fases validadas em runtime
+
+| Fase | Descrição | Status |
+|------|-----------|--------|
+| F0 | Fundação (estrutura, Docker, CI) | ✅ runtime |
+| F1 | Core ReAct (AIAgent, tool loop, tool registry) | ✅ runtime |
+| F2 | Memória pgvector (MemoryStore, Curator, ContextCompressor) | ✅ runtime |
+| F3 | Skills (SkillManager, SkillRunner, 4 builtins) | ✅ runtime |
+| F4 | Multi-modelo (Anthropic, OpenAI, OpenRouter, Ollama) | ✅ runtime |
+| F7 | Critic + Missões (3 personas, MissionStore, AutonomousLoop) | ✅ runtime |
+| F8 | Sandboxes (SubprocessSandbox + DockerSandbox, 5 perfis) | ✅ runtime |
+| F9 | Voyager skill synthesis (SkillSynthesizer, cluster scan) | ✅ runtime |
+| F11 | Web UI (8 painéis terminal, WebSocket, auth token) | ✅ runtime |
+| Infra | CI GitHub Actions, auto-migrations, Dockerfile completo | ✅ runtime |
+
+### Parciais
+
+- **F5** — Gateway funcional; webhook Telegram retorna 404 ([#3](https://github.com/engsathiago/EVE_Autonomo/issues/3))
+- **F6** — Importa OK; testes E2E requerem Anthropic/Ollama configurados
+- **F10** — docker-compose.prod.yml adicionado nesta release
+
+### Deferidas para v1.1
+
+- **F12** — Canais extras Discord/Slack/Email ([#6](https://github.com/engsathiago/EVE_Autonomo/issues/6))
+- **F13** — Ciclo LoRA real end-to-end ([#7](https://github.com/engsathiago/EVE_Autonomo/issues/7))
+
+### Adicionado
+
+- `docker-compose.prod.yml` — compose de produção com nginx, restart always, AUTO_MIGRATE
+- `agent.db.migrate` — auto-migrations idempotentes com stamp_all para bootstrap
+- CLI `agent db migrate [--dry-run] [--stamp]`
+- `docs/ARCHITECTURE.md`, `docs/DEPLOY.md`, `docs/SECURITY.md` reescritos
+- Webui: `scripts/run_webui.py` para desenvolvimento local na porta 8080
+
+### Corrigido
+
+- OllamaTransport `_build_headers()` + normalização `api_key=""→None`
+- `MISSIONS_PLANNER_MODEL/REFLECTOR_MODEL` env vars lidas em `Settings.from_yaml()`
+- Mocks de MissionStep com `tools_required=[]` (Pydantic v2 não expõe via spec)
+- Fixture `invalid_tools_py/tools.py` estava vazia
+- AutonomousLoop: mocks com `AgentResult` real + tool_calls_made
+
+### Métricas
+
+- **1158 testes passando**, 0 falhas
+- Cobertura: 30%+ (target → 60% em v1.1)
+- Migrations: 16 arquivos SQL
+
+### Bugs em aberto
+
+- [#1](https://github.com/engsathiago/EVE_Autonomo/issues/1) ALTO: OllamaTransport não callable via ModelRouter (workaround: template fallback)
+- [#2](https://github.com/engsathiago/EVE_Autonomo/issues/2) ALTO: needs_critic() nunca retorna True no AutonomousLoop
+- [#3](https://github.com/engsathiago/EVE_Autonomo/issues/3) MÉDIO: webhook /webhook/telegram retorna 404
+- [#4](https://github.com/engsathiago/EVE_Autonomo/issues/4) MÉDIO: AGENT_NO_WEB=1 workaround Starlette lifespan
+- [#5](https://github.com/engsathiago/EVE_Autonomo/issues/5) MÉDIO: SkillSynthesizer não persiste candidates automaticamente
+
+---
+
 ## [Unreleased]
 
 ### Corrigido
