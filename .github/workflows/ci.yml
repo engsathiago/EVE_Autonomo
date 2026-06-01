@@ -102,6 +102,7 @@ jobs:
             -m "not integration and not docker and not slow" \
             --ignore=tests/deploy/test_persistence.py \
             --ignore=tests/deploy/test_supervisor_internals.py \
+            --ignore=tests/integration/test_voyager_cycle.py \
             --tb=short \
             --cov=src \
             --cov-report=term-missing:skip-covered \
@@ -137,6 +138,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Create minimal .env for compose validation
+        run: cp .env.example .env 2>/dev/null || touch .env
       - run: docker compose config > /dev/null
 
   secret-scan:

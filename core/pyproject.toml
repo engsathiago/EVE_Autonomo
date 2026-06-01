@@ -77,6 +77,9 @@ packages = ["src/agent"]
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+exclude = [
+  "tests/skills/fixtures",  # fixtures de teste com importações propositalmente inválidas
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
