@@ -16,6 +16,7 @@ Critérios cobertos:
   C3: 11 kills em 10 min → flapping + worker disabled
   C10: reboot → agente volta em <60s
 """
+
 from __future__ import annotations
 
 import os
@@ -52,6 +53,7 @@ _SYSTEMD = pytest.mark.skipif(
 
 # ── C1: install → systemctl status active ─────────────────────────────────────
 
+
 @_SYSTEMD
 class TestInstallC1:
     """Requer sudo. Pula em ambiente sem root."""
@@ -64,6 +66,7 @@ class TestInstallC1:
     def test_install_creates_service_file(self, tmp_path: Path) -> None:
         """agent deploy install --no-systemd cria o unit file sem falhar."""
         from agent.deploy.install import install
+
         # Com --no-systemd não precisa de root para o systemctl, mas precisa para criar dirs
         try:
             install(prefix=str(tmp_path / "agent"), user="root", enable_systemd=False)
@@ -92,6 +95,7 @@ class TestInstallC1:
 
 
 # ── C2: kill -9 orchestrator → restart em <10s ───────────────────────────────
+
 
 class TestKillRestartC2:
     """Teste de restart via subprocess.fork() real (sem systemd).
@@ -123,7 +127,9 @@ class TestKillRestartC2:
 
         class _W(Worker):
             name = "orchestrator"
-            async def run(self) -> None: pass
+
+            async def run(self) -> None:
+                pass
 
         state = _WorkerState(worker=_W())
         state.record_restart()
@@ -136,7 +142,9 @@ class TestKillRestartC2:
 
         class _W(Worker):
             name = "orchestrator"
-            async def run(self) -> None: pass
+
+            async def run(self) -> None:
+                pass
 
         state = _WorkerState(worker=_W())
         state.record_restart()
@@ -146,6 +154,7 @@ class TestKillRestartC2:
 
 # ── C3: 11 kills → flapping ───────────────────────────────────────────────────
 
+
 class TestFlappingC3:
     def test_11_restarts_triggers_flapping(self) -> None:
         """C3: 11 restarts em janela de 10min → restarts_in_window >= 10."""
@@ -154,7 +163,9 @@ class TestFlappingC3:
 
         class _W(Worker):
             name = "orchestrator"
-            async def run(self) -> None: pass
+
+            async def run(self) -> None:
+                pass
 
         state = _WorkerState(worker=_W())
         for _ in range(_FLAPPING_MAX_RESTARTS + 1):
@@ -169,7 +180,9 @@ class TestFlappingC3:
 
         class _W(Worker):
             name = "orchestrator"
-            async def run(self) -> None: pass
+
+            async def run(self) -> None:
+                pass
 
         state = _WorkerState(worker=_W())
         for _ in range(_FLAPPING_MAX_RESTARTS + 1):
@@ -185,11 +198,15 @@ class TestFlappingC3:
 
         class _W(Worker):
             name = "orchestrator"
-            async def run(self) -> None: pass
+
+            async def run(self) -> None:
+                pass
 
         class _W2(Worker):
             name = "api"
-            async def run(self) -> None: pass
+
+            async def run(self) -> None:
+                pass
 
         state1 = _WorkerState(worker=_W())
         state2 = _WorkerState(worker=_W2())
@@ -204,6 +221,7 @@ class TestFlappingC3:
 
 
 # ── C10: reboot → agente volta em <60s ────────────────────────────────────────
+
 
 @_SYSTEMD
 class TestRebootRecoveryC10:
@@ -240,7 +258,8 @@ class TestRebootRecoveryC10:
         """C10: simula restart do serviço e verifica que /health/live responde."""
         result = subprocess.run(
             ["systemctl", "is-active", "agent"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         if result.returncode != 0:
             pytest.skip("agent.service não está ativo")
@@ -254,6 +273,7 @@ class TestRebootRecoveryC10:
         while time.monotonic() < deadline:
             try:
                 import httpx
+
                 resp = httpx.get("http://127.0.0.1:8000/health/live", timeout=2)
                 if resp.status_code == 200:
                     return  # sucesso
@@ -265,6 +285,7 @@ class TestRebootRecoveryC10:
 
 
 # ── Testes de configuração do unit file ──────────────────────────────────────
+
 
 class TestUnitFileConfig:
     """Testa o template do unit file sem precisar de systemd real."""

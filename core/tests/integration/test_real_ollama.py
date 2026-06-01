@@ -2,6 +2,7 @@
 Testes de integração com Ollama real. Pula automaticamente se Ollama não responder.
 Execute com: pytest -m integration
 """
+
 from __future__ import annotations
 
 import os

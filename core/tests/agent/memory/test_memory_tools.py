@@ -1,4 +1,5 @@
 """Testes das memory tools — store mockado, sem Postgres ou API."""
+
 from __future__ import annotations
 
 import uuid
@@ -66,9 +67,7 @@ async def test_ler_memoria_returns_relevant(mock_store):
         _fake_entry("O projeto se chama OpenClaw", score=0.95),
         _fake_entry("O usuário prefere Python", score=0.80),
     ]
-    mock_store.search_hybrid.return_value = SearchResult(
-        entries=entries, query="nome do projeto", method="hybrid"
-    )
+    mock_store.search_hybrid.return_value = SearchResult(entries=entries, query="nome do projeto", method="hybrid")
 
     tool = LerMemoriaTool(store=mock_store)
     result = await tool.execute(query="nome do projeto", k=5)
@@ -81,9 +80,7 @@ async def test_ler_memoria_returns_relevant(mock_store):
 
 
 async def test_ler_memoria_empty_results(mock_store):
-    mock_store.search_hybrid.return_value = SearchResult(
-        entries=[], query="xyz", method="hybrid"
-    )
+    mock_store.search_hybrid.return_value = SearchResult(entries=[], query="xyz", method="hybrid")
 
     tool = LerMemoriaTool(store=mock_store)
     result = await tool.execute(query="xyz")

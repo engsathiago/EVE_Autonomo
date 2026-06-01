@@ -1,4 +1,5 @@
 """Testa MissionPlanner — rejeição de objetivos subjetivos e steps paralelos."""
+
 from __future__ import annotations
 
 import json
@@ -18,25 +19,29 @@ def _make_router(response_text: str) -> MagicMock:
     return router
 
 
-_VALID_PLAN = json.dumps({
-    "title": "Canal de cortes de saúde mental",
-    "success_criteria": [
-        {"criterion": "publicar 10 cortes em 30 dias", "verifiable_via": "manual"},
-        {"criterion": "atingir 500 visualizações por corte", "verifiable_via": "metric"},
-    ],
-    "steps": [
-        "Definir calendário editorial com 10 temas de saúde mental",
-        "Gravar e editar 5 cortes na primeira semana",
-        "[PARALELO 1]: Publicar no Instagram os primeiros 5 cortes",
-        "[PARALELO 1]: Publicar no TikTok os primeiros 5 cortes",
-        "Analisar métricas e ajustar estratégia",
-    ],
-})
+_VALID_PLAN = json.dumps(
+    {
+        "title": "Canal de cortes de saúde mental",
+        "success_criteria": [
+            {"criterion": "publicar 10 cortes em 30 dias", "verifiable_via": "manual"},
+            {"criterion": "atingir 500 visualizações por corte", "verifiable_via": "metric"},
+        ],
+        "steps": [
+            "Definir calendário editorial com 10 temas de saúde mental",
+            "Gravar e editar 5 cortes na primeira semana",
+            "[PARALELO 1]: Publicar no Instagram os primeiros 5 cortes",
+            "[PARALELO 1]: Publicar no TikTok os primeiros 5 cortes",
+            "Analisar métricas e ajustar estratégia",
+        ],
+    }
+)
 
-_SUBJECTIVE_RESPONSE = json.dumps({
-    "error": "objetivo_subjetivo",
-    "reason": "Não é possível definir critério verificável para 'fazer um bom canal'",
-})
+_SUBJECTIVE_RESPONSE = json.dumps(
+    {
+        "error": "objetivo_subjetivo",
+        "reason": "Não é possível definir critério verificável para 'fazer um bom canal'",
+    }
+)
 
 
 @pytest.fixture
@@ -74,9 +79,7 @@ async def test_planner_marks_parallel_steps(planner: MissionPlanner) -> None:
 @pytest.mark.asyncio
 async def test_replan_preserves_success_criteria() -> None:
     """replan() deve manter success_criteria original da missão."""
-    original_criteria = [
-        {"criterion": "publicar 10 cortes", "verifiable_via": "manual"}
-    ]
+    original_criteria = [{"criterion": "publicar 10 cortes", "verifiable_via": "manual"}]
 
     # Mock mission_store
     mission_store = MagicMock()
@@ -96,12 +99,14 @@ async def test_replan_preserves_success_criteria() -> None:
     mission_store.get = AsyncMock(return_value=mission)
     mission_store.get_all_steps = AsyncMock(return_value=[step1, step2])
 
-    replan_response = json.dumps({
-        "steps": [
-            "Regravar cortes com nova abordagem",
-            "Publicar na semana seguinte",
-        ]
-    })
+    replan_response = json.dumps(
+        {
+            "steps": [
+                "Regravar cortes com nova abordagem",
+                "Publicar na semana seguinte",
+            ]
+        }
+    )
     router = _make_router(replan_response)
     planner = MissionPlanner(router)
 

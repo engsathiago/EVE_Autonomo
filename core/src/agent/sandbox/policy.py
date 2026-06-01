@@ -84,7 +84,5 @@ POLICY_FINETUNE = _register(
 def get_policy(name: str) -> SandboxPolicy:
     policy = _POLICY_REGISTRY.get(name)
     if policy is None:
-        raise KeyError(
-            f"Política de sandbox não encontrada: {name!r}. Disponíveis: {list(_POLICY_REGISTRY)}"
-        )
+        raise KeyError(f"Política de sandbox não encontrada: {name!r}. Disponíveis: {list(_POLICY_REGISTRY)}")
     return policy

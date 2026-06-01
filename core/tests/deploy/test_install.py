@@ -1,4 +1,5 @@
 """Testes do install.py — sem root, sem systemd real."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -37,14 +38,17 @@ class TestRun:
 class TestTemplatesExist:
     def test_env_example_exists(self) -> None:
         from agent.deploy.install import _TEMPLATES_DIR
+
         assert (_TEMPLATES_DIR / "env.example").exists()
 
     def test_agent_service_exists(self) -> None:
         from agent.deploy.install import _TEMPLATES_DIR
+
         assert (_TEMPLATES_DIR / "agent.service").exists()
 
     def test_service_has_placeholders(self) -> None:
         from agent.deploy.install import _TEMPLATES_DIR
+
         content = (_TEMPLATES_DIR / "agent.service").read_text()
         assert "{{USER}}" in content
         assert "{{GROUP}}" in content
@@ -52,16 +56,19 @@ class TestTemplatesExist:
 
     def test_env_has_change_me_placeholders(self) -> None:
         from agent.deploy.install import _TEMPLATES_DIR
+
         content = (_TEMPLATES_DIR / "env.example").read_text()
         assert "CHANGE_ME" in content
 
     def test_service_type_notify(self) -> None:
         from agent.deploy.install import _TEMPLATES_DIR
+
         content = (_TEMPLATES_DIR / "agent.service").read_text()
         assert "Type=notify" in content
 
     def test_service_watchdog(self) -> None:
         from agent.deploy.install import _TEMPLATES_DIR
+
         content = (_TEMPLATES_DIR / "agent.service").read_text()
         assert "WatchdogSec=" in content
 
@@ -80,14 +87,14 @@ class TestMigrationFile:
         content = (migrations_dir / "011_deploy.sql").read_text()
         # Deve conter IF NOT EXISTS em todas as criações
         import re
-        creates = re.findall(r'CREATE\s+(TABLE|INDEX)\s+(\w+)', content, re.IGNORECASE)
+
+        creates = re.findall(r"CREATE\s+(TABLE|INDEX)\s+(\w+)", content, re.IGNORECASE)
         for kind, name in creates:
-            assert "IF NOT EXISTS" in content, (
-                f"CREATE {kind} {name} deve usar IF NOT EXISTS"
-            )
+            assert "IF NOT EXISTS" in content, f"CREATE {kind} {name} deve usar IF NOT EXISTS"
 
 
 # ── _install_systemd (template rendering) ─────────────────────────────────────
+
 
 class TestInstallSystemd:
     def test_renders_user_placeholder(self, tmp_path: Path) -> None:
@@ -99,6 +106,7 @@ class TestInstallSystemd:
         with patch("agent.deploy.install._SYSTEMD_UNIT_DIR", systemd_dir):
             with patch("agent.deploy.install._run"):  # não roda systemctl real
                 from agent.deploy.install import _install_systemd
+
                 _install_systemd(tmp_path / "opt", "myuser", "mygroup")
 
         content = unit_dest.read_text()
@@ -110,6 +118,7 @@ class TestInstallSystemd:
         with patch("agent.deploy.install._SYSTEMD_UNIT_DIR", str(tmp_path)):
             with patch("agent.deploy.install._run"):
                 from agent.deploy.install import _install_systemd
+
                 _install_systemd(tmp_path / "opt", "agent", "mygroup")
 
         content = (tmp_path / "agent.service").read_text()
@@ -122,6 +131,7 @@ class TestInstallSystemd:
         with patch("agent.deploy.install._SYSTEMD_UNIT_DIR", str(tmp_path)):
             with patch("agent.deploy.install._run"):
                 from agent.deploy.install import _install_systemd
+
                 _install_systemd(prefix, "agent", "agent")
 
         content = (tmp_path / "agent.service").read_text()
@@ -134,6 +144,7 @@ class TestInstallSystemd:
         with patch("agent.deploy.install._SYSTEMD_UNIT_DIR", str(tmp_path)):
             with patch("agent.deploy.install._run"):
                 from agent.deploy.install import _install_systemd
+
                 _install_systemd(prefix, "agent", "agent")
 
         content = (tmp_path / "agent.service").read_text()
@@ -144,6 +155,7 @@ class TestInstallSystemd:
         with patch("agent.deploy.install._SYSTEMD_UNIT_DIR", str(tmp_path)):
             with patch("agent.deploy.install._run"):
                 from agent.deploy.install import _install_systemd
+
                 _install_systemd(tmp_path / "opt", "agent", "agent")
 
         unit_file = tmp_path / "agent.service"
@@ -153,6 +165,7 @@ class TestInstallSystemd:
 
 
 # ── _chown ────────────────────────────────────────────────────────────────────
+
 
 class TestChown:
     def test_chown_silently_ignores_errors(self) -> None:
@@ -164,6 +177,7 @@ class TestChown:
 
 
 # ── _create_user ─────────────────────────────────────────────────────────────
+
 
 class TestCreateUser:
     def test_skips_creation_if_user_exists(self) -> None:
@@ -199,22 +213,23 @@ class TestCreateUser:
 
 # ── install / uninstall com mocks ─────────────────────────────────────────────
 
+
 class TestInstallMocked:
     def test_install_raises_without_root(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr("os.geteuid", lambda: 1000)
         from agent.deploy.install import install
+
         with pytest.raises(PermissionError):
             install()
 
     def test_uninstall_raises_without_root(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr("os.geteuid", lambda: 1000)
         from agent.deploy.install import uninstall
+
         with pytest.raises(PermissionError):
             uninstall()
 
-    def test_install_no_systemd_skips_daemon_reload(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_install_no_systemd_skips_daemon_reload(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """install(enable_systemd=False) não chama systemctl."""
         from agent.deploy.install import install
 
@@ -241,6 +256,7 @@ class TestInstallMocked:
 
 
 # ── _create_dirs ─────────────────────────────────────────────────────────────
+
 
 class TestCreateDirs:
     def test_creates_all_install_dirs(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -278,10 +294,9 @@ class TestCreateDirs:
 
 # ── uninstall com mocks ───────────────────────────────────────────────────────
 
+
 class TestUninstallMocked:
-    def test_uninstall_calls_systemctl_stop(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_uninstall_calls_systemctl_stop(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """uninstall() chama systemctl stop e disable."""
         from agent.deploy.install import uninstall
 
@@ -301,9 +316,7 @@ class TestUninstallMocked:
         assert any("stop" in c for c in cmds_str)
         assert any("disable" in c for c in cmds_str)
 
-    def test_uninstall_keep_data_preserves_var_lib(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_uninstall_keep_data_preserves_var_lib(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """uninstall(keep_data=True) não remove /var/lib/agent."""
         from agent.deploy.install import uninstall
 
@@ -320,9 +333,7 @@ class TestUninstallMocked:
 
         assert not any("/var/lib/agent" in p for p in removed_paths)
 
-    def test_uninstall_removes_var_lib_when_not_keep_data(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_uninstall_removes_var_lib_when_not_keep_data(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """uninstall(keep_data=False) remove /var/lib/agent."""
         from agent.deploy.install import uninstall
 

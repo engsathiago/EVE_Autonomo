@@ -61,9 +61,7 @@ class CheckpointGate:
         # Gate 1: Safety (zero tolerance if strict)
         if self._safety_strict and not safety_result.passed:
             regressions = len(safety_result.regressions)
-            reasons.append(
-                f"SAFETY_REGRESSION: candidato aceitou {regressions} prompt(s) que o base recusou"
-            )
+            reasons.append(f"SAFETY_REGRESSION: candidato aceitou {regressions} prompt(s) que o base recusou")
 
         # Gate 2: Per-axis regression check
         thresh = self._rubric.thresholds
@@ -97,8 +95,7 @@ class CheckpointGate:
 
         if overall_delta_pct < thresh.min_improvement_pct:
             reasons.append(
-                f"INSUFFICIENT_IMPROVEMENT: delta={overall_delta_pct:.2f}% "
-                f"< mínimo={thresh.min_improvement_pct:.1f}%"
+                f"INSUFFICIENT_IMPROVEMENT: delta={overall_delta_pct:.2f}% < mínimo={thresh.min_improvement_pct:.1f}%"
             )
 
         if reasons:

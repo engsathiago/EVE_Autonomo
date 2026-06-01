@@ -132,20 +132,14 @@ class CheckpointRegistry:
             if accepted < self._auto_n:
                 raise AutoActivateNotAllowed(accepted=accepted, required=self._auto_n)
 
-        row = await self._pool.fetchrow(
-            "SELECT id, path FROM finetune_checkpoints WHERE id=$1", checkpoint_id
-        )
+        row = await self._pool.fetchrow("SELECT id, path FROM finetune_checkpoints WHERE id=$1", checkpoint_id)
         if row is None:
-            raise CheckpointActivationError(
-                f"Checkpoint '{checkpoint_id}' não encontrado no banco."
-            )
+            raise CheckpointActivationError(f"Checkpoint '{checkpoint_id}' não encontrado no banco.")
 
         now = datetime.now(tz=UTC)
 
         # Deactivate previous active checkpoint
-        prev = await self._pool.fetchrow(
-            "SELECT id FROM finetune_checkpoints WHERE state='active' LIMIT 1"
-        )
+        prev = await self._pool.fetchrow("SELECT id FROM finetune_checkpoints WHERE state='active' LIMIT 1")
         if prev:
             await self._pool.execute(
                 "UPDATE finetune_checkpoints SET state='archived', deactivated_at=$1 WHERE id=$2",
@@ -175,9 +169,7 @@ class CheckpointRegistry:
         Rolls back to the previous active checkpoint (or 'base' if none).
         Returns the ID we rolled back to.
         """
-        current = await self._pool.fetchrow(
-            "SELECT id FROM finetune_checkpoints WHERE state='active' LIMIT 1"
-        )
+        current = await self._pool.fetchrow("SELECT id FROM finetune_checkpoints WHERE state='active' LIMIT 1")
         if current:
             await self._pool.execute(
                 "UPDATE finetune_checkpoints SET state='archived', deactivated_at=$1 WHERE id=$2",
@@ -266,9 +258,7 @@ class CheckpointRegistry:
                 raise
             os.replace(tmp_path, str(self._active_checkpoint_file))
         except OSError as exc:
-            raise CheckpointActivationError(
-                f"Falha ao escrever active_checkpoint.txt atomicamente: {exc}"
-            ) from exc
+            raise CheckpointActivationError(f"Falha ao escrever active_checkpoint.txt atomicamente: {exc}") from exc
 
     async def _count_human_accepted_runs(self) -> int:
         """Counts runs accepted by human activation (not auto)."""

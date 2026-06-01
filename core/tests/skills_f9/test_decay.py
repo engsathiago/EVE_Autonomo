@@ -1,4 +1,5 @@
 """Testes do SkillDecayManager — C8: decay de skills inúteis."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta

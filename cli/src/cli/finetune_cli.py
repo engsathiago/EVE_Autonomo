@@ -62,12 +62,8 @@ def finetune_run(
     auto_activate: bool = typer.Option(
         False, "--auto-activate", help="Ativa automaticamente se aprovado (só após N runs manuais)"
     ),
-    triggered_by: str = typer.Option(
-        "cli", "--triggered-by", help="Quem disparou: 'cli', 'cron:weekly', etc."
-    ),
-    dry_run: bool = typer.Option(
-        False, "--dry-run", help="Só coleta e exibe estatísticas do dataset, sem treinar"
-    ),
+    triggered_by: str = typer.Option("cli", "--triggered-by", help="Quem disparou: 'cli', 'cron:weekly', etc."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Só coleta e exibe estatísticas do dataset, sem treinar"),
 ) -> None:
     """Executa um ciclo completo: coleta → dataset → benchmark → treino → gate → relatório."""
     _check_finetune_deps()
@@ -100,9 +96,7 @@ def finetune_run(
         pool = await asyncpg.create_pool(db_url, min_size=1, max_size=3)
 
         benchmarks_dir = _PROJECT_ROOT / "benchmarks"
-        rubric_path = benchmarks_dir / bench_cfg.get("rubric_path", "rubric.yaml").replace(
-            "benchmarks/", ""
-        )
+        rubric_path = benchmarks_dir / bench_cfg.get("rubric_path", "rubric.yaml").replace("benchmarks/", "")
 
         # C1: Benchmark é pré-requisito — falha explícita se rubric.yaml não existe
         try:
@@ -120,9 +114,7 @@ def finetune_run(
             pool=pool,
             models_dir=models_dir,
             auto_activate=ft_cfg.get("activation", {}).get("auto_activate", False),
-            auto_activate_after_n_accepted=ft_cfg.get("activation", {}).get(
-                "auto_activate_after_n_accepted", 5
-            ),
+            auto_activate_after_n_accepted=ft_cfg.get("activation", {}).get("auto_activate_after_n_accepted", 5),
         )
 
         console.print(f"\n[bold cyan]F13 Fine-tuning — Run {run_id[:8]}[/bold cyan]")
@@ -154,9 +146,7 @@ def finetune_run(
             console.print(f"[red]DatasetTooSmall:[/red] {exc}")
             raise typer.Exit(1)
 
-        console.print(
-            f"   {stats.train_size} treino + {stats.eval_size} eval | ID: {stats.dataset_id}"
-        )
+        console.print(f"   {stats.train_size} treino + {stats.eval_size} eval | ID: {stats.dataset_id}")
 
         if dry_run:
             console.print("\n[yellow]--dry-run: parando aqui (sem treino).[/yellow]")
@@ -201,15 +191,11 @@ def finetune_run(
 
         # Step 4: Train
         console.print("[bold]4.[/bold] Treinando LoRA...")
-        trainer = LoraTrainer(
-            checkpoints_dir=models_dir / "checkpoints", ollama_base_url=ollama_url
-        )
+        trainer = LoraTrainer(checkpoints_dir=models_dir / "checkpoints", ollama_base_url=ollama_url)
         from agent.finetune.exceptions import FinetuneError
 
         try:
-            train_result = await trainer.train(
-                dataset_path=dataset_path, run_id=run_id, config=train_config
-            )
+            train_result = await trainer.train(dataset_path=dataset_path, run_id=run_id, config=train_config)
         except FinetuneError as exc:
             await registry.finish_run(run_id=run_id, status="failed", rejection_reason=str(exc))
             console.print(f"[red]Treino falhou:[/red] {exc}")
@@ -482,9 +468,7 @@ def finetune_bench(
         base_model = ft_cfg.get("base_model", "qwen2.5-7b-instruct")
 
         benchmarks_dir = _PROJECT_ROOT / "benchmarks"
-        rubric_path = benchmarks_dir / bench_cfg.get("rubric_path", "rubric.yaml").replace(
-            "benchmarks/", ""
-        )
+        rubric_path = benchmarks_dir / bench_cfg.get("rubric_path", "rubric.yaml").replace("benchmarks/", "")
 
         try:
             rubric = Rubric.load(rubric_path)

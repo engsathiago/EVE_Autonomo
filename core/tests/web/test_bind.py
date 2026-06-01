@@ -1,4 +1,5 @@
 """Teste de bind — C3: nunca 0.0.0.0, sempre 127.0.0.1."""
+
 from __future__ import annotations
 
 from pathlib import Path

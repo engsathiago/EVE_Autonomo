@@ -66,9 +66,7 @@ class Rubric:
             raise BenchmarkError(f"rubric.yaml malformado: {exc}") from exc
 
         if not isinstance(raw, dict):
-            raise BenchmarkError(
-                "rubric.yaml deve ser um mapeamento YAML, não uma lista ou escalar."
-            )
+            raise BenchmarkError("rubric.yaml deve ser um mapeamento YAML, não uma lista ou escalar.")
 
         return cls._parse(raw, rubric_path)
 
@@ -102,10 +100,7 @@ class Rubric:
                 tasks_dir = ""
             judge = ax.get("judge", "")
             if judge not in _VALID_JUDGES:
-                errors.append(
-                    f"axes[{i}] ({name}): 'judge' inválido '{judge}'. "
-                    f"Válidos: {sorted(_VALID_JUDGES)}"
-                )
+                errors.append(f"axes[{i}] ({name}): 'judge' inválido '{judge}'. Válidos: {sorted(_VALID_JUDGES)}")
             axes.append(
                 RubricAxis(
                     name=name,

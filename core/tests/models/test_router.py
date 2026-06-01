@@ -1,6 +1,7 @@
 """
 Testes do ModelRouter: parsing, resolução, fallback chain, capability check.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -19,6 +20,7 @@ from agent.models.router import ModelRouter, _build_effective_chain, parse_model
 # ---------------------------------------------------------------------------
 # parse_model_string
 # ---------------------------------------------------------------------------
+
 
 def test_parse_anthropic() -> None:
     provider, model = parse_model_string("anthropic:claude-haiku-4-5")
@@ -52,6 +54,7 @@ def test_parse_invalid_provider() -> None:
 # _build_effective_chain
 # ---------------------------------------------------------------------------
 
+
 def test_chain_primary_first() -> None:
     chain = _build_effective_chain(
         "ollama:qwen2.5:7b",
@@ -72,6 +75,7 @@ def test_chain_deduplicates_primary() -> None:
 # ---------------------------------------------------------------------------
 # Mock transport
 # ---------------------------------------------------------------------------
+
 
 class MockTransport:
     name = "mock"
@@ -116,6 +120,7 @@ class MockTransport:
 # ModelRouter — basic routing
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def registry_with_mock() -> tuple[TransportRegistry, MockTransport]:
     mock = MockTransport()
@@ -151,6 +156,7 @@ async def test_router_uses_default_model_when_no_override(registry_with_mock) ->
 # Fallback chain
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_fallback_triggered_on_connection_error() -> None:
     failing = MockTransport(raise_exc=ConnectionError("Ollama down"))
@@ -183,9 +189,11 @@ async def test_fallback_NOT_triggered_on_rate_limit() -> None:
         request=httpx.Request("POST", "https://api.anthropic.com/v1/messages"),
         json={"error": {"type": "rate_limit_error", "message": "rate limited"}},
     )
-    failing = MockTransport(raise_exc=sdk.RateLimitError(
-        "rate limited", response=fake_response, body={"error": {"type": "rate_limit_error"}}
-    ))
+    failing = MockTransport(
+        raise_exc=sdk.RateLimitError(
+            "rate limited", response=fake_response, body={"error": {"type": "rate_limit_error"}}
+        )
+    )
     fallback = MockTransport()
 
     registry = TransportRegistry()
@@ -208,6 +216,7 @@ async def test_fallback_NOT_triggered_on_rate_limit() -> None:
 # ---------------------------------------------------------------------------
 # Capability check
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_capability_mismatch_raises_early() -> None:

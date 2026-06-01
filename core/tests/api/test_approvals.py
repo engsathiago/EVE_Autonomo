@@ -1,4 +1,5 @@
 """Testes dos endpoints de approval (sem banco real)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -71,10 +72,18 @@ async def test_get_approval_not_found():
 async def test_reject_returns_rejected():
     now = datetime.now(tz=UTC)
     state = ApprovalState(
-        id="test-approval-id", session_id="tg:123", skill_name="mock_send_email",
-        skill_args={}, summary="s", channel="telegram", channel_ref={},
-        status="rejected", decided_by="user1", decided_at=now,
-        expires_at=now + timedelta(hours=1), created_at=now,
+        id="test-approval-id",
+        session_id="tg:123",
+        skill_name="mock_send_email",
+        skill_args={},
+        summary="s",
+        channel="telegram",
+        channel_ref={},
+        status="rejected",
+        decided_by="user1",
+        decided_at=now,
+        expires_at=now + timedelta(hours=1),
+        created_at=now,
     )
     manager = MagicMock()
     manager.decide = AsyncMock(return_value=state)

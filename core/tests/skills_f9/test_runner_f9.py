@@ -1,4 +1,5 @@
 """Testes do SkillRunner F9 — C5/C6/C7: single entry point via exec_tool."""
+
 from __future__ import annotations
 
 import json
@@ -32,31 +33,39 @@ def _make_sandbox_result(output: dict, exit_code: int = 0) -> SandboxResult:
 
 
 def _manifest_json(slug: str = "test_skill", profile: str = "DEFAULT") -> str:
-    return json.dumps({
-        "slug": slug,
-        "version": 1,
-        "created_at": "2026-05-10T00:00:00+00:00",
-        "description": "test",
-        "embedding_text": "test",
-        "inputs_schema": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]},
-        "outputs_schema": {"type": "object", "properties": {"transcript": {"type": "string"}}, "required": ["transcript"]},
-        "sandbox_profile": profile,
-        "network_policy": {"allow_domains": []},
-        "irreversible": False,
-        "estimated_wall_time_seconds": 30,
-        "estimated_memory_mb": 256,
-        "stats": {},
-        "provenance": {},
-    })
+    return json.dumps(
+        {
+            "slug": slug,
+            "version": 1,
+            "created_at": "2026-05-10T00:00:00+00:00",
+            "description": "test",
+            "embedding_text": "test",
+            "inputs_schema": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]},
+            "outputs_schema": {
+                "type": "object",
+                "properties": {"transcript": {"type": "string"}},
+                "required": ["transcript"],
+            },
+            "sandbox_profile": profile,
+            "network_policy": {"allow_domains": []},
+            "irreversible": False,
+            "estimated_wall_time_seconds": 30,
+            "estimated_memory_mb": 256,
+            "stats": {},
+            "provenance": {},
+        }
+    )
 
 
 def _make_registry(slug: str = "test_skill", status: str = "active") -> MagicMock:
     registry = MagicMock()
-    registry.get = AsyncMock(return_value={
-        "slug": slug,
-        "status": status,
-        "manifest_json": _manifest_json(slug),
-    })
+    registry.get = AsyncMock(
+        return_value={
+            "slug": slug,
+            "status": status,
+            "manifest_json": _manifest_json(slug),
+        }
+    )
     registry.record_execution = AsyncMock(return_value="exec_id_abc123")
     return registry
 
@@ -149,6 +158,7 @@ def test_manifest_profile_to_policy() -> None:
 
 def test_validate_input_missing_required() -> None:
     from agent.skills.exceptions import SkillInputInvalid
+
     schema = {"required": ["url"]}
     with pytest.raises(SkillInputInvalid):
         _validate_input({}, schema, "slug")
@@ -161,6 +171,7 @@ def test_validate_input_ok() -> None:
 
 def test_validate_output_not_dict() -> None:
     from agent.skills.exceptions import SkillOutputInvalid
+
     schema = {"required": ["result"]}
     with pytest.raises(SkillOutputInvalid):
         _validate_output("string", schema, "slug")
@@ -168,6 +179,7 @@ def test_validate_output_not_dict() -> None:
 
 def test_validate_output_missing_required() -> None:
     from agent.skills.exceptions import SkillOutputInvalid
+
     schema = {"required": ["result"]}
     with pytest.raises(SkillOutputInvalid):
         _validate_output({}, schema, "slug")

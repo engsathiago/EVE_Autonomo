@@ -2,6 +2,7 @@
 
 Escrito ANTES da implementação para definir a interface pública.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -15,8 +16,10 @@ from agent.channels.base import (
 
 # ── Contrato ABC ──────────────────────────────────────────────────────────────
 
+
 class _FullAdapter(ChannelAdapter):
     """Implementação completa — deve ser instanciável."""
+
     name = "test"
 
     async def start(self) -> None:
@@ -34,6 +37,7 @@ class _FullAdapter(ChannelAdapter):
 
 class _PartialAdapter(ChannelAdapter):
     """Implementação incompleta (falta send e is_authorized)."""
+
     name = "partial"
 
     async def start(self) -> None:
@@ -74,6 +78,7 @@ async def test_adapter_full_methods_callable():
 
 # ── IncomingMessage ───────────────────────────────────────────────────────────
 
+
 def test_incoming_message_required_fields():
     """IncomingMessage requer channel, user_id, user_display e text."""
     msg = IncomingMessage(
@@ -111,6 +116,7 @@ def test_incoming_message_with_thread():
 
 # ── OutgoingMessage ───────────────────────────────────────────────────────────
 
+
 def test_outgoing_message_defaults():
     """OutgoingMessage requer só text; demais campos têm defaults."""
     msg = OutgoingMessage(text="resposta")
@@ -128,6 +134,7 @@ def test_outgoing_message_approval_flag():
 
 
 # ── ConfigError ───────────────────────────────────────────────────────────────
+
 
 def test_config_error_is_exception():
     """ConfigError deve ser uma exceção."""

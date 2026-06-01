@@ -1,4 +1,5 @@
 """Testes do SkillLoader — Milestone A."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -92,9 +93,7 @@ class TestLoadAllFromDir:
     def test_ignores_drafts_dir(self, tmp_path: Path) -> None:
         drafts = tmp_path / "_drafts"
         drafts.mkdir()
-        (drafts / "draft.md").write_text(
-            "---\nname: draft_skill\ndescription: d\n---\np"
-        )
+        (drafts / "draft.md").write_text("---\nname: draft_skill\ndescription: d\n---\np")
         # Sem skills fora de _drafts → lista vazia (não levanta)
         skills = load_all_from_dir(tmp_path)
         assert not any(s.name == "draft_skill" for s in skills)

@@ -3,6 +3,7 @@ Integração: subagente que precisa de aprovação propaga o pedido ao canal do 
 
 Usa ApprovalManager com pool mockado (sem Postgres real).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -26,6 +27,7 @@ def _make_approval_manager() -> ApprovalManager:
 
     # Patch create para retornar ApprovalRequest sem Postgres
     from datetime import datetime, timedelta
+
     fake_req = ApprovalRequest(
         approval_id="test-approval-123",
         skill_name="test_action",
@@ -36,6 +38,7 @@ def _make_approval_manager() -> ApprovalManager:
 
     # Patch get para retornar estado "approved"
     from agent.approvals.manager import ApprovalState
+
     fake_state = MagicMock(spec=ApprovalState)
     fake_state.status = "approved"
     manager.get = AsyncMock(return_value=fake_state)

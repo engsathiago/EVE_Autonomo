@@ -64,8 +64,7 @@ class ReflectionParseError(Exception):
 
     def __init__(self, raw: str) -> None:
         super().__init__(
-            f"Reflector recebeu formato livre — 4 campos obrigatórios ausentes.\n"
-            f"Raw (truncado): {raw[:300]}"
+            f"Reflector recebeu formato livre — 4 campos obrigatórios ausentes.\nRaw (truncado): {raw[:300]}"
         )
         self.raw = raw
 
@@ -116,9 +115,7 @@ class MissionReflector:
         return reflection
 
     def _build_prompt(self, mission, steps, critic_evals) -> str:
-        steps_lines = "\n".join(
-            f"  [{s.status.upper()}] seq={s.sequence}: {s.description}" for s in steps
-        )
+        steps_lines = "\n".join(f"  [{s.status.upper()}] seq={s.sequence}: {s.description}" for s in steps)
         if not steps_lines:
             steps_lines = "  (nenhum step registrado)"
 

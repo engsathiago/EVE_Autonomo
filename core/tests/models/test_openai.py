@@ -1,6 +1,7 @@
 """
 Testes do OpenAITransport: mock HTTP via respx.
 """
+
 from __future__ import annotations
 
 import json
@@ -42,6 +43,7 @@ def _openai_response(text: str = "pong", tool_calls: list | None = None) -> dict
 # ---------------------------------------------------------------------------
 # chat básico
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 @respx.mock
@@ -95,12 +97,11 @@ async def test_usage_mapped_correctly() -> None:
 # health
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 @respx.mock
 async def test_health_ok() -> None:
-    respx.get("https://api.openai.com/v1/models").mock(
-        return_value=httpx.Response(200, json={"data": []})
-    )
+    respx.get("https://api.openai.com/v1/models").mock(return_value=httpx.Response(200, json={"data": []}))
     transport = _make_transport()
     status = await transport.health()
     assert status.ok

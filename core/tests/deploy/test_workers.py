@@ -1,4 +1,5 @@
 """Testes dos workers (F10)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -11,6 +12,7 @@ from agent.deploy.workers.orchestrator_worker import OrchestratorWorker
 from agent.deploy.workers.scheduler_worker import SchedulerWorker
 
 # ── Worker ABC ────────────────────────────────────────────────────────────────
+
 
 class _ConcreteWorker(Worker):
     name = "concrete"
@@ -39,6 +41,7 @@ class TestWorkerBase:
 
 # ── OrchestratorWorker ────────────────────────────────────────────────────────
 
+
 class TestOrchestratorWorker:
     def test_name(self) -> None:
         w = OrchestratorWorker()
@@ -56,6 +59,7 @@ class TestOrchestratorWorker:
 
 # ── SchedulerWorker ───────────────────────────────────────────────────────────
 
+
 class TestSchedulerWorker:
     def test_name(self) -> None:
         w = SchedulerWorker()
@@ -71,6 +75,7 @@ class TestSchedulerWorker:
 
 
 # ── HeartbeatWorker ───────────────────────────────────────────────────────────
+
 
 class TestHeartbeatWorker:
     def test_name(self) -> None:
@@ -102,9 +107,11 @@ class TestHeartbeatWorker:
 
 # ── ApiWorker ─────────────────────────────────────────────────────────────────
 
+
 class TestApiWorker:
     def test_name(self) -> None:
         from agent.deploy.workers.api_worker import ApiWorker
+
         w = ApiWorker()
         assert w.name == "api"
 
@@ -112,6 +119,7 @@ class TestApiWorker:
         from unittest.mock import MagicMock
 
         from agent.deploy.workers.api_worker import ApiWorker
+
         w = ApiWorker()
         mock_server = MagicMock()
         w._server = mock_server

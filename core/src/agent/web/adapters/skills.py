@@ -12,9 +12,7 @@ if TYPE_CHECKING:
 log = get_logger(__name__)
 
 
-async def list_skills(
-    manager: SkillManager, limit: int = 50, offset: int = 0
-) -> list[dict[str, Any]]:
+async def list_skills(manager: SkillManager, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
     try:
         all_skills = manager.list()
         result = []

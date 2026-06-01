@@ -1,4 +1,5 @@
 """Testes do SkillRunner + SkillManager.run — Milestone C."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -130,12 +131,15 @@ class TestSkillRunnerExecute:
 
         tool_registry = MagicMock()
         from agent.tools.base import ToolResult
-        tool_registry.get = MagicMock(return_value=MagicMock(to_anthropic_schema=MagicMock(
-            return_value={"name": "web_search", "description": "busca", "input_schema": {}}
-        )))
-        tool_registry.execute = AsyncMock(
-            return_value=ToolResult(ok=True, output={"results": ["link1"]})
+
+        tool_registry.get = MagicMock(
+            return_value=MagicMock(
+                to_anthropic_schema=MagicMock(
+                    return_value={"name": "web_search", "description": "busca", "input_schema": {}}
+                )
+            )
         )
+        tool_registry.execute = AsyncMock(return_value=ToolResult(ok=True, output={"results": ["link1"]}))
 
         runner = SkillRunner(transport=transport, tool_registry=tool_registry)
         manifest = _make_manifest(tools=["web_search"])
@@ -158,12 +162,13 @@ class TestSkillRunnerExecute:
 
         tool_registry = MagicMock()
         from agent.tools.base import ToolResult
-        tool_registry.get = MagicMock(return_value=MagicMock(
-            to_anthropic_schema=MagicMock(return_value={"name": "web_search", "input_schema": {}})
-        ))
-        tool_registry.execute = AsyncMock(
-            return_value=ToolResult(ok=False, error="rate limit")
+
+        tool_registry.get = MagicMock(
+            return_value=MagicMock(
+                to_anthropic_schema=MagicMock(return_value={"name": "web_search", "input_schema": {}})
+            )
         )
+        tool_registry.execute = AsyncMock(return_value=ToolResult(ok=False, error="rate limit"))
 
         runner = SkillRunner(transport=transport, tool_registry=tool_registry)
         manifest = _make_manifest(tools=["web_search"])
@@ -178,6 +183,7 @@ class TestManagerRun:
         manager = SkillManager(skills_dir=Path("/tmp"), transport=transport)
         manifest = _make_manifest(requires_approval=requires_approval)
         from tests.skills.test_manager import _fake_embed
+
         manager._registry.add(manifest, _fake_embed(manifest.description))
         return manager, transport
 
@@ -195,6 +201,7 @@ class TestManagerRun:
     async def test_run_not_found_raises(self) -> None:
         manager, _ = self._make_manager()
         from agent.skills.schema import SkillNotFound
+
         with pytest.raises(SkillNotFound):
             await manager.run("nao_existe", {})
 
@@ -204,6 +211,7 @@ class TestManagerRun:
         manager = SkillManager(skills_dir=Path("/tmp"), transport=transport)
         manifest = _make_manifest()
         from tests.skills.test_manager import _fake_embed
+
         manager._registry.add(manifest, _fake_embed(manifest.description))
 
         # MemoryStore mock para verificar que invocation é persistida com success=False

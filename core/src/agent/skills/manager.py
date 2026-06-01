@@ -111,9 +111,7 @@ class SkillManager:
     def has(self, name: str) -> bool:
         return self._registry.has(name)
 
-    async def match(
-        self, query: str, k: int = 3, must_have_tag: str | None = None
-    ) -> list[SkillMatch]:
+    async def match(self, query: str, k: int = 3, must_have_tag: str | None = None) -> list[SkillMatch]:
         """
         Busca semântica nas descrições + boost 0.2 por correspondência exata de nome.
         Retorna top-k ordenado por score descendente.

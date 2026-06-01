@@ -56,9 +56,7 @@ def mission_create(
 
         console.print("\n[bold]Steps:[/bold]")
         for i, step in enumerate(plan["steps"], 1):
-            parallel = (
-                " [dim][PARALELO][/dim]" if plan.get("is_parallel", [])[i - 1 : i] == [True] else ""
-            )
+            parallel = " [dim][PARALELO][/dim]" if plan.get("is_parallel", [])[i - 1 : i] == [True] else ""
             console.print(f"  {i}. {step}{parallel}")
 
         confirmed = typer.confirm("\nConfirmar criação da missão?", default=True)
@@ -87,9 +85,7 @@ def mission_create(
 
 @app.command("list")
 def mission_list(
-    status: str | None = typer.Option(
-        None, "--status", "-s", help="active, done, abandoned, failed, all"
-    ),
+    status: str | None = typer.Option(None, "--status", "-s", help="active, done, abandoned, failed, all"),
 ) -> None:
     """Lista missões."""
 
@@ -173,9 +169,7 @@ def mission_steps(mission_id: str = typer.Argument(...)) -> None:
         for s in steps:
             color = status_colors.get(s["status"], "white")
             retries = f" [dim](retry={s['retry_count']})[/dim]" if s["retry_count"] else ""
-            console.print(
-                f"  [{s['sequence']}] [{color}]{s['status']}[/{color}] {s['description']}{retries}"
-            )
+            console.print(f"  [{s['sequence']}] [{color}]{s['status']}[/{color}] {s['description']}{retries}")
 
     asyncio.run(_run())
 
@@ -237,8 +231,6 @@ def mission_reflect(mission_id: str = typer.Argument(...)) -> None:
 
 async def _update_status(mission_id: str, status: str, reason: str | None = None) -> None:
     async with _http() as client:
-        resp = await client.patch(
-            f"/v1/missions/{mission_id}/status", json={"status": status, "reason": reason}
-        )
+        resp = await client.patch(f"/v1/missions/{mission_id}/status", json={"status": status, "reason": reason})
         resp.raise_for_status()
     console.print(f"[green]✓[/green] Missão → {status}")

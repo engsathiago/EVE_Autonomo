@@ -4,6 +4,7 @@ agent init — Wizard interativo de configuração inicial.
 Inspirado no `claude init` (OpenClaw) e no `hermes setup` (Nous Research).
 Guia o usuário pela escolha de provider, model, key, e grava o .env.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -88,11 +89,12 @@ PROVIDERS = {
 
 
 def _banner() -> None:
-    console.print(Panel.fit(
-        "[bold cyan]EVE[/bold cyan] — Agente Autônomo\n"
-        "[dim]Setup interativo (estilo OpenClaw / Hermes)[/dim]",
-        border_style="cyan",
-    ))
+    console.print(
+        Panel.fit(
+            "[bold cyan]EVE[/bold cyan] — Agente Autônomo\n[dim]Setup interativo (estilo OpenClaw / Hermes)[/dim]",
+            border_style="cyan",
+        )
+    )
 
 
 def _choose_provider() -> dict:
@@ -157,7 +159,7 @@ def _ask_postgres() -> dict:
 
     if use_docker:
         return {
-            "host": "postgres",   # nome do serviço no docker-compose
+            "host": "postgres",  # nome do serviço no docker-compose
             "user": "agent",
             "password": Prompt.ask("Senha do Postgres", default="changeme", password=True),
             "db": "agent",
@@ -237,6 +239,7 @@ def _test_connection(provider: dict, key: str) -> bool:
         try:
             if provider["id"].startswith("ollama"):
                 from agent.models.transports.ollama import OllamaTransport
+
                 t = OllamaTransport(
                     base_url=provider.get("base_url", "http://localhost:11434"),
                     api_key=key if provider["needs_key"] else "",
@@ -245,6 +248,7 @@ def _test_connection(provider: dict, key: str) -> bool:
                 return status.ok
             elif provider["id"] == "anthropic":
                 import httpx
+
                 async with httpx.AsyncClient(timeout=10) as c:
                     r = await c.get(
                         "https://api.anthropic.com/v1/models",
@@ -253,6 +257,7 @@ def _test_connection(provider: dict, key: str) -> bool:
                     return r.status_code == 200
             elif provider["id"] == "openai":
                 import httpx
+
                 async with httpx.AsyncClient(timeout=10) as c:
                     r = await c.get(
                         "https://api.openai.com/v1/models",
@@ -261,6 +266,7 @@ def _test_connection(provider: dict, key: str) -> bool:
                     return r.status_code == 200
             elif provider["id"] == "openrouter":
                 import httpx
+
                 async with httpx.AsyncClient(timeout=10) as c:
                     r = await c.get(
                         "https://openrouter.ai/api/v1/models",
@@ -355,16 +361,18 @@ def init(
 
     # 8. Próximos passos
     console.print()
-    console.print(Panel(
-        "[bold]Próximos passos:[/bold]\n\n"
-        "  [cyan]1.[/cyan] Suba os serviços:\n"
-        "     [dim]docker compose up --build -d[/dim]\n\n"
-        "  [cyan]2.[/cyan] Valide a instalação:\n"
-        "     [dim]agent doctor[/dim]\n\n"
-        "  [cyan]3.[/cyan] Veja o status:\n"
-        "     [dim]agent status[/dim]\n\n"
-        "  [cyan]4.[/cyan] Converse com a EVE:\n"
-        "     [dim]agent run \"Quem é você?\"[/dim]",
-        title="Setup Concluído",
-        border_style="green",
-    ))
+    console.print(
+        Panel(
+            "[bold]Próximos passos:[/bold]\n\n"
+            "  [cyan]1.[/cyan] Suba os serviços:\n"
+            "     [dim]docker compose up --build -d[/dim]\n\n"
+            "  [cyan]2.[/cyan] Valide a instalação:\n"
+            "     [dim]agent doctor[/dim]\n\n"
+            "  [cyan]3.[/cyan] Veja o status:\n"
+            "     [dim]agent status[/dim]\n\n"
+            "  [cyan]4.[/cyan] Converse com a EVE:\n"
+            '     [dim]agent run "Quem é você?"[/dim]',
+            title="Setup Concluído",
+            border_style="green",
+        )
+    )

@@ -1,6 +1,7 @@
 """
 Testes do OpenRouterTransport: headers obrigatórios e herança de OpenAITransport.
 """
+
 from __future__ import annotations
 
 import httpx
@@ -32,6 +33,7 @@ def _openrouter_response(text: str = "pong") -> dict:
 # ---------------------------------------------------------------------------
 # Headers obrigatórios
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 @respx.mock
@@ -68,6 +70,7 @@ async def test_base_url_is_openrouter() -> None:
 # Nome do provider
 # ---------------------------------------------------------------------------
 
+
 def test_provider_name() -> None:
     transport = _make_transport()
     assert transport.name == "openrouter"
@@ -76,6 +79,7 @@ def test_provider_name() -> None:
 # ---------------------------------------------------------------------------
 # Sem API key
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_health_no_key() -> None:

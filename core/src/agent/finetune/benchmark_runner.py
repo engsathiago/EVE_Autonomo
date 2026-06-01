@@ -123,14 +123,10 @@ class BenchmarkRunner:
             score = self._score_refusal(model_output, task)
         elif judge == "rouge_l_plus_llm":
             rouge_score = self._rouge_l(model_output, str(expected))
-            llm_score = await self._llm_judge(
-                task["prompt"], str(expected), model_output, axis.judge_model
-            )
+            llm_score = await self._llm_judge(task["prompt"], str(expected), model_output, axis.judge_model)
             score = 0.5 * rouge_score + 0.5 * llm_score
         elif judge == "llm_judge_claude":
-            score = await self._llm_judge(
-                task["prompt"], str(expected), model_output, axis.judge_model
-            )
+            score = await self._llm_judge(task["prompt"], str(expected), model_output, axis.judge_model)
         else:
             log.warning("benchmark_runner.unknown_judge", judge=judge)
             score = 0.0

@@ -1,4 +1,5 @@
 """Testes do SkillCreator — Milestone E."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -52,7 +53,8 @@ def _make_creator(
 
     memory_store = MagicMock()
     memory_store.get_messages = AsyncMock(
-        return_value=messages or [
+        return_value=messages
+        or [
             {"role": "user", "content": "Resuma este artigo"},
             {"role": "assistant", "content": "Aqui está o resumo: ..."},
             {"role": "user", "content": "Perfeito, obrigado!"},
@@ -113,6 +115,7 @@ class TestExtractFromSession:
         path = await creator.extract_from_session(uuid4())
 
         import frontmatter as fm
+
         post = fm.loads(path.read_text())
         assert post.metadata["name"] == "my_extracted_skill"
         assert "description" in post.metadata

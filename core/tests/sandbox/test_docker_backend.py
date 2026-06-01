@@ -7,6 +7,7 @@ Cobre §8 critérios 1, 3 (DockerSandbox):
 
 Todos os testes deste módulo são pulados se Docker não estiver disponível.
 """
+
 from __future__ import annotations
 
 import shutil
@@ -19,9 +20,11 @@ from agent.sandbox.base import NetworkPolicy, SandboxConfig
 def _check_docker() -> bool:
     try:
         import subprocess
+
         r = subprocess.run(
             ["docker", "info", "--format", "{{.ServerVersion}}"],
-            capture_output=True, timeout=3,
+            capture_output=True,
+            timeout=3,
         )
         return r.returncode == 0
     except Exception:
@@ -43,16 +46,20 @@ def _make(
     allowed_domains: list[str] | None = None,
 ) -> DockerSandbox:  # type: ignore[name-defined]
     from agent.sandbox.docker_backend import DockerSandbox
-    return DockerSandbox(SandboxConfig(
-        wall_time_seconds=wall_time,
-        network=network,
-        allowed_domains=allowed_domains or [],
-    ))
+
+    return DockerSandbox(
+        SandboxConfig(
+            wall_time_seconds=wall_time,
+            network=network,
+            allowed_domains=allowed_domains or [],
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
 # Básico
 # ---------------------------------------------------------------------------
+
 
 @skip_no_docker
 @pytest.mark.docker
@@ -77,6 +84,7 @@ async def test_docker_captures_stderr():
 # Timeout
 # ---------------------------------------------------------------------------
 
+
 @skip_no_docker
 @pytest.mark.docker
 async def test_docker_timeout():
@@ -90,6 +98,7 @@ async def test_docker_timeout():
 # ---------------------------------------------------------------------------
 # Segurança: roda como nobody (uid=65534)
 # ---------------------------------------------------------------------------
+
 
 @skip_no_docker
 @pytest.mark.docker
@@ -105,6 +114,7 @@ async def test_docker_runs_as_nonroot():
 # ---------------------------------------------------------------------------
 # Segurança: raiz read-only, /work gravável
 # ---------------------------------------------------------------------------
+
 
 @skip_no_docker
 @pytest.mark.docker
@@ -131,6 +141,7 @@ async def test_docker_work_tmpfs_is_writable():
 # Rede: DENY_ALL bloqueia acesso externo
 # ---------------------------------------------------------------------------
 
+
 @skip_no_docker
 @pytest.mark.docker
 async def test_docker_network_none_blocks_network():
@@ -138,9 +149,7 @@ async def test_docker_network_none_blocks_network():
     sb = _make(network=NetworkPolicy.DENY_ALL)
     # wget pode não estar na imagem; usa python3 diretamente
     result = await sb.run(
-        "python3 -c \""
-        "import urllib.request; urllib.request.urlopen('http://example.com', timeout=3)"
-        "\""
+        "python3 -c \"import urllib.request; urllib.request.urlopen('http://example.com', timeout=3)\""
     )
     await sb.cleanup()
     assert result.exit_code != 0
@@ -149,6 +158,7 @@ async def test_docker_network_none_blocks_network():
 # ---------------------------------------------------------------------------
 # Arquivos de input
 # ---------------------------------------------------------------------------
+
 
 @skip_no_docker
 @pytest.mark.docker
@@ -172,6 +182,7 @@ async def test_docker_input_files_accessible():
 # OOM: exit_code 137 detectado como oom_killed
 # ---------------------------------------------------------------------------
 
+
 @skip_no_docker
 @pytest.mark.docker
 async def test_docker_oom_detected_via_exit_137():
@@ -180,14 +191,15 @@ async def test_docker_oom_detected_via_exit_137():
     oom_killed=True quando exit_code==137 (sem timeout).
     """
     from agent.sandbox.docker_backend import DockerSandbox
-    sb = DockerSandbox(SandboxConfig(
-        memory_limit_mb=32,
-        wall_time_seconds=15,
-        network=NetworkPolicy.DENY_ALL,
-    ))
-    result = await sb.run(
-        "python3 -c \"x = bytearray(256 * 1024 * 1024)\""
+
+    sb = DockerSandbox(
+        SandboxConfig(
+            memory_limit_mb=32,
+            wall_time_seconds=15,
+            network=NetworkPolicy.DENY_ALL,
+        )
     )
+    result = await sb.run('python3 -c "x = bytearray(256 * 1024 * 1024)"')
     await sb.cleanup()
     # Docker mata com exit 137 (SIGKILL por OOM)
     assert result.oom_killed is True or result.exit_code == 137

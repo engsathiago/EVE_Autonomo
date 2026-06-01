@@ -42,9 +42,7 @@ def loop_status() -> None:
         if upcoming:
             console.print("\n[bold]Próximos steps:[/bold]")
             for step in upcoming[:5]:
-                console.print(
-                    f"  • [{step['mission_title'][:30]}] seq={step['sequence']} {step['description'][:60]}"
-                )
+                console.print(f"  • [{step['mission_title'][:30]}] seq={step['sequence']} {step['description'][:60]}")
 
     asyncio.run(_run())
 

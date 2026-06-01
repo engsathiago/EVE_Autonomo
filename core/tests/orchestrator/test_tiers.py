@@ -1,4 +1,5 @@
 """Testa TierClassifier — classificação mockada e roteamento por tier."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -17,14 +18,17 @@ def _make_router(response_text: str) -> MagicMock:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("llm_response,expected", [
-    ("INSTANT", ExecutionTier.INSTANT),
-    ("FAST", ExecutionTier.FAST),
-    ("STRATEGIC", ExecutionTier.STRATEGIC),
-    ("EPIC", ExecutionTier.EPIC),
-    ("instant", ExecutionTier.INSTANT),   # case-insensitive
-    ("  FAST  ", ExecutionTier.FAST),     # whitespace
-])
+@pytest.mark.parametrize(
+    "llm_response,expected",
+    [
+        ("INSTANT", ExecutionTier.INSTANT),
+        ("FAST", ExecutionTier.FAST),
+        ("STRATEGIC", ExecutionTier.STRATEGIC),
+        ("EPIC", ExecutionTier.EPIC),
+        ("instant", ExecutionTier.INSTANT),  # case-insensitive
+        ("  FAST  ", ExecutionTier.FAST),  # whitespace
+    ],
+)
 async def test_classify_valid_responses(llm_response: str, expected: ExecutionTier) -> None:
     classifier = TierClassifier(_make_router(llm_response), cache_ttl_s=0)
     result = await classifier.classify("qualquer tarefa")

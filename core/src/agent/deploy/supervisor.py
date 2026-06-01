@@ -149,9 +149,7 @@ def _db_update_worker_health(
 ) -> None:
     try:
         conn = sqlite3.connect(_get_db_path())
-        started_iso = (
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(started_at)) if started_at else None
-        )
+        started_iso = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(started_at)) if started_at else None
         conn.execute(
             """
             INSERT INTO worker_health (worker, pid, started_at, last_seen, restarts, state)
@@ -282,9 +280,7 @@ class Supervisor:
 
     def _handle_worker_died(self, state: _WorkerState) -> None:
         exit_code = _reap_child(state.pid)
-        _db_record_event(
-            "crash", state.worker.name, {"pid": state.pid, "exit_code": exit_code}, False
-        )
+        _db_record_event("crash", state.worker.name, {"pid": state.pid, "exit_code": exit_code}, False)
         _log(f"worker.died worker={state.worker.name} pid={state.pid} exit={exit_code}")
 
         state.record_restart()
@@ -300,10 +296,7 @@ class Supervisor:
                 {"event": "worker.flapping", "restarts_in_window": n_in_window},
                 False,
             )
-            _log(
-                f"worker.flapping worker={state.worker.name} "
-                f"restarts_in_window={n_in_window} — DESATIVADO"
-            )
+            _log(f"worker.flapping worker={state.worker.name} restarts_in_window={n_in_window} — DESATIVADO")
             return
 
         backoff = state.backoff_seconds()

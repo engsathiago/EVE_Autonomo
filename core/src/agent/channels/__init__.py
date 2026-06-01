@@ -147,6 +147,4 @@ def _create_adapter(channel_name: str) -> ChannelAdapter:
 
         return EmailAdapter.from_env()
 
-    raise ConfigError(
-        f"Canal desconhecido: '{channel_name}'. Valores válidos: discord, slack, email"
-    )
+    raise ConfigError(f"Canal desconhecido: '{channel_name}'. Valores válidos: discord, slack, email")

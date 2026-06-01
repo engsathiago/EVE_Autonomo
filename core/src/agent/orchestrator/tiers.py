@@ -106,6 +106,7 @@ def _hash(text: str) -> str:
 # D.1: tool routing é agora dinâmico (por step), não estático (por tier).
 # Este símbolo será removido em D.2+. Use tool_router.resolve_tools_for_step().
 
+
 def __getattr__(name: str) -> object:
     if name == "TIER_TOOLS":
         warnings.warn(

@@ -7,6 +7,7 @@ Cobertura: C2 (declared), C3 (keyword), C4 (llm cached), C5 (fallback),
 Todos os testes são unitários: LLM mockado, sem I/O, sem banco.
 Cache do módulo é limpo em cada teste via fixture clear_llm_cache.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -26,6 +27,7 @@ from agent.subagents.pool import MissingRequiredTool
 
 # ─── Fixture: limpa o cache de inferência LLM entre testes ──────────────────
 
+
 @pytest.fixture(autouse=True)
 def clear_llm_cache():
     """Garante que o cache module-level não vaze entre testes."""
@@ -35,6 +37,7 @@ def clear_llm_cache():
 
 
 # ─── Helper ──────────────────────────────────────────────────────────────────
+
 
 def _make_model_router(json_response: str) -> MagicMock:
     """Cria mock de ModelRouter que retorna json_response como texto."""
@@ -46,6 +49,7 @@ def _make_model_router(json_response: str) -> MagicMock:
 
 
 # ─── C2 — Declarado ──────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_declared_passa_direto():
@@ -92,6 +96,7 @@ async def test_declared_multiplas_tools():
 
 
 # ─── C3 — Keyword ────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_keyword_write_file():
@@ -148,12 +153,12 @@ async def test_keyword_metafora_executar_nao_aciona_shell_via_keyword():
     # Se veio de keyword (não fallback), shell também não deve estar no resultado final
     if res.source == "inferred_keyword":
         assert "shell" not in res.tools, (
-            f"'shell' apareceu via inferred_keyword para descrição metafórica. "
-            f"tools={res.tools}"
+            f"'shell' apareceu via inferred_keyword para descrição metafórica. tools={res.tools}"
         )
 
 
 # ─── C4 — LLM inferência ─────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_llm_inferencia_strategic():
@@ -201,6 +206,7 @@ async def test_llm_inferencia_retorna_apenas_tools_conhecidas():
 
 # ─── C5 — Fallback ───────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_fallback_instant_nao_chama_llm():
     """C5: tier INSTANT com descrição ambígua → fallback sem chamar LLM."""
@@ -244,6 +250,7 @@ async def test_fallback_strategic_sem_router_recebe_todas_tools():
 
 # ─── C6 — Validação de tools declaradas ──────────────────────────────────────
 
+
 def test_validate_declared_tools_detecta_ausente():
     """C6: tool inexistente no registry → detectada por validate_declared_tools."""
     missing = validate_declared_tools(["write_file", "tool_inexistente_xyz"])
@@ -279,6 +286,7 @@ def test_missing_required_tool_sem_step_id():
 
 # ─── ALWAYS_TOOLS ────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_always_tools_sempre_presentes_em_declared():
     """ALWAYS_TOOLS aparecem mesmo quando declared não os listou."""
@@ -302,6 +310,7 @@ async def test_sem_duplicatas_no_resultado():
 
 
 # ─── Audit dict ──────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_audit_declared_tem_campos_corretos():

@@ -1,4 +1,5 @@
 """Testes do SkillRegistry F9 (C10: persistência + eventos)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

@@ -2,6 +2,7 @@
 Integration tests D.6: verifica que skills router é registrado quando
 skills_dir é writable E que a falha sai em log.error (não silenciosa).
 """
+
 from __future__ import annotations
 
 import os
@@ -12,6 +13,7 @@ from pathlib import Path
 import pytest
 
 # ─── helpers ────────────────────────────────────────────────────────────────
+
 
 def _make_writable_skills_dir() -> Path:
     """Cria um diretório temporário writable para skills."""
@@ -28,12 +30,14 @@ def _make_readonly_skills_dir() -> Path:
 
 # ─── testes ─────────────────────────────────────────────────────────────────
 
+
 def test_skills_router_registered_when_dir_writable(tmp_path: Path) -> None:
     """
     Quando skills_dir é writable, o skills router é registrado e
     os subdirs são criados com sucesso.
     """
     import sys
+
     sys.path.insert(0, "/app/src")
 
     skills_root = tmp_path / "skills"
@@ -42,6 +46,7 @@ def test_skills_router_registered_when_dir_writable(tmp_path: Path) -> None:
 
     # Monta as funções de registro reais
     from agent.config import get_settings
+
     get_settings.cache_clear()
     s = get_settings()
     assert s.skills.skills_dir == str(skills_root)
@@ -62,6 +67,7 @@ def test_skills_router_registered_when_dir_writable(tmp_path: Path) -> None:
 
     # Verifica que make_skills_router pode ser importado
     from agent.api.skills import make_skills_router
+
     assert make_skills_router is not None
 
 
@@ -72,6 +78,7 @@ def test_skills_router_fails_loud_when_dir_readonly(tmp_path: Path, caplog: pyte
     - NÃO travar o startup (skills é feature, não core)
     """
     import sys
+
     sys.path.insert(0, "/app/src")
     from agent.config import get_settings
     from agent.observability.logger import get_logger
@@ -134,6 +141,7 @@ def test_skills_dir_env_takes_precedence_over_yaml() -> None:
     (que pode conter /app/src/agent/skills read-only).
     """
     import sys
+
     sys.path.insert(0, "/app/src")
     from agent.config import get_settings
 

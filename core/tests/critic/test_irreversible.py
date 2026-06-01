@@ -1,4 +1,5 @@
 """Testa lista de IRREVERSIBLE_TOOLS e integração com SkillManifest."""
+
 from __future__ import annotations
 
 from agent.critic.irreversible import IRREVERSIBLE_TOOLS, is_irreversible
@@ -18,9 +19,7 @@ def test_irreversible_tools_list_is_explicit() -> None:
         "delete_record",
         "execute_sql_write",
     }
-    assert required.issubset(IRREVERSIBLE_TOOLS), (
-        f"Tools ausentes: {required - IRREVERSIBLE_TOOLS}"
-    )
+    assert required.issubset(IRREVERSIBLE_TOOLS), f"Tools ausentes: {required - IRREVERSIBLE_TOOLS}"
 
 
 def test_irreversible_is_not_heuristic() -> None:

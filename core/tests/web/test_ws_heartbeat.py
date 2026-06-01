@@ -4,6 +4,7 @@ Valida que:
 - _WsSession acumula missed pings
 - Após MAX_MISSED_PINGS, a sessão é fechada
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -23,6 +24,7 @@ async def test_heartbeat_closes_zombie() -> None:
     session = _WsSession(mock_ws, "test-session")
 
     from starlette.websockets import WebSocketState
+
     mock_ws.client_state = WebSocketState.CONNECTED
 
     ping_count = 0

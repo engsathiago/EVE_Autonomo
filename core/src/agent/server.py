@@ -96,19 +96,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 os.getenv("DATABASE_URL")
                 or os.getenv("POSTGRES_DSN")
                 or (
-                    f"postgresql://{os.getenv('POSTGRES_USER','agent')}:"
-                    f"{os.getenv('POSTGRES_PASSWORD','')}"
-                    f"@{os.getenv('POSTGRES_HOST','postgres')}:"
-                    f"{os.getenv('POSTGRES_PORT','5432')}/"
-                    f"{os.getenv('POSTGRES_DB','agent')}"
+                    f"postgresql://{os.getenv('POSTGRES_USER', 'agent')}:"
+                    f"{os.getenv('POSTGRES_PASSWORD', '')}"
+                    f"@{os.getenv('POSTGRES_HOST', 'postgres')}:"
+                    f"{os.getenv('POSTGRES_PORT', '5432')}/"
+                    f"{os.getenv('POSTGRES_DB', 'agent')}"
                 )
             )
             applied = await apply_migrations(dsn)
             if applied:
                 import logging as _logging
+
                 _logging.getLogger(__name__).info("auto-applied migrations: %s", applied)
         except Exception as _exc:
             import logging as _logging
+
             _logging.getLogger(__name__).warning("auto-migrate falhou (non-fatal): %s", _exc)
 
     # ── Fase 0-5: componentes existentes ─────────────────────────────────────
@@ -345,15 +347,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         )
     except PermissionError as _exc:
         import logging as _log_
+
         _log_.getLogger(__name__).error(
             "skills_router_init_failed permission_denied path=%s error=%s",
-            _skills_root, _exc,
+            _skills_root,
+            _exc,
         )
     except ImportError as _exc:
         import logging as _log_
+
         _log_.getLogger(__name__).error("skills_router_init_failed import_error: %s", _exc)
     except Exception as _exc:
         import logging as _log_
+
         _log_.getLogger(__name__).error("skills_router_init_failed unexpected: %s", _exc)
 
     # ── Fase 10: backup job às 4h ─────────────────────────────────────────────
@@ -730,11 +736,7 @@ def _rows_to_messages(rows: list[dict]) -> list[dict]:
         if role in ("user", "assistant", "system"):
             tool_calls_raw = row.get("tool_calls")
             if role == "assistant" and tool_calls_raw:
-                tool_calls = (
-                    json.loads(tool_calls_raw)
-                    if isinstance(tool_calls_raw, str)
-                    else tool_calls_raw
-                )
+                tool_calls = json.loads(tool_calls_raw) if isinstance(tool_calls_raw, str) else tool_calls_raw
                 messages.append({"role": role, "content": content, "tool_calls": tool_calls})
             else:
                 messages.append({"role": role, "content": content})

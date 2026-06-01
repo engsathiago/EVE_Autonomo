@@ -2,6 +2,7 @@
 
 Testa o processor structlog de redação de segredos.
 """
+
 from __future__ import annotations
 
 from agent.channels.redaction import redact_secrets

@@ -17,6 +17,7 @@ Metodologia:
 
 Resultado em: core/docs/phases/D1_REPLAY_RESULTS.md
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -102,6 +103,7 @@ PRE_D1_TOOLS = frozenset(["web_search", "read_file", "salvar_memoria", "ler_memo
 
 # ─── Fase 1: Análise de resolução ─────────────────────────────────────────────
 
+
 @dataclass
 class ResolutionResult:
     step_id: str
@@ -114,14 +116,14 @@ class ResolutionResult:
     d1_inferred: list[str]
     expected_tools: list[str]
     new_tools_added: list[str]  # tools em D.1 que não estavam pre-D.1
-    expected_covered: bool       # D.1 cobre todas as expected_tools?
+    expected_covered: bool  # D.1 cobre todas as expected_tools?
 
 
 async def fase1_resolution_analysis() -> list[ResolutionResult]:
     """Roda resolve_tools_for_step para cada step TEATRO. Zero LLM calls."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("FASE 1 — Análise de resolução de tools (zero LLM calls)")
-    print("="*70)
+    print("=" * 70)
 
     results = []
     for step in TEATRO_STEPS:
@@ -171,6 +173,7 @@ async def fase1_resolution_analysis() -> list[ResolutionResult]:
 
 # ─── Fase 2: Execução real via Orchestrator ───────────────────────────────────
 
+
 @dataclass
 class ExecutionResult:
     step_description: str
@@ -208,7 +211,10 @@ async def _run_single_step(
     import asyncpg as _apg
 
     from agent.tasks.store import TaskStore
-    postgres_dsn = os.getenv("POSTGRES_DSN", "postgresql://agent:qualquercoisa123@localhost:5432/agent").replace("@postgres:", "@localhost:")
+
+    postgres_dsn = os.getenv("POSTGRES_DSN", "postgresql://agent:qualquercoisa123@localhost:5432/agent").replace(
+        "@postgres:", "@localhost:"
+    )
     _task_pool = await _apg.create_pool(postgres_dsn, min_size=1, max_size=1)
     task_store = TaskStore(_task_pool)
     task = Task(
@@ -238,7 +244,7 @@ async def _run_single_step(
             tools_resolved=resolution.tools,
             tools_used=tools_used,
             changed=bool(tools_used),
-            llm_calls=getattr(result, 'iterations', 1) or 1,
+            llm_calls=getattr(result, "iterations", 1) or 1,
             duration_s=duration,
             error=None,
         )
@@ -279,9 +285,9 @@ async def fase2_live_execution(resolution_results: list[ResolutionResult]) -> li
     Executa 5 steps representativos via Orchestrator real.
     Max 50 LLM calls total. Timeout 180s por step.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("FASE 2 — Execução real via Orchestrator (LLM calls ativadas)")
-    print("="*70)
+    print("=" * 70)
 
     # Seleciona 5 steps para execução real:
     # - 2+ steps que precisam de write_file/shell (faltavam antes de D.1)
@@ -322,6 +328,7 @@ async def fase2_live_execution(resolution_results: list[ResolutionResult]) -> li
 
     # Setup
     import asyncpg
+
     postgres_dsn = os.getenv("POSTGRES_DSN", "postgresql://agent:qualquercoisa123@localhost:5432/agent")
     # Substitui hostname interno 'postgres' por 'localhost' se necessário
     postgres_dsn = postgres_dsn.replace("@postgres:", "@localhost:")
@@ -338,6 +345,7 @@ async def fase2_live_execution(resolution_results: list[ResolutionResult]) -> li
 
         # Testa Ollama primeiro (API Anthropic pode estar rate-limited)
         import httpx
+
         ollama_ok = False
         try:
             r = httpx.get(f"{ollama_url}/api/tags", timeout=3)
@@ -350,6 +358,7 @@ async def fase2_live_execution(resolution_results: list[ResolutionResult]) -> li
             return []
 
         from agent.config import build_model_router
+
         model_router = build_model_router(db_pool=db_pool)
 
         # Override: força uso de Ollama se disponível (Anthropic pode estar rate-limited)
@@ -363,6 +372,7 @@ async def fase2_live_execution(resolution_results: list[ResolutionResult]) -> li
         )
         from agent.subagents.pool import SubagentPool
         from agent.tasks.store import TaskStore
+
         task_store = TaskStore(db_pool)
         pool = SubagentPool(
             model_router=model_router,
@@ -401,7 +411,11 @@ async def fase2_live_execution(resolution_results: list[ResolutionResult]) -> li
             total_llm_calls += res.llm_calls
             results.append(res)
 
-            status = "✅ TEATRO→EXECUTED" if res.changed else ("❌ AINDA TEATRO" if not res.error else f"❌ ERROR: {res.error[:60]}")
+            status = (
+                "✅ TEATRO→EXECUTED"
+                if res.changed
+                else ("❌ AINDA TEATRO" if not res.error else f"❌ ERROR: {res.error[:60]}")
+            )
             print(f"  resultado : {status}")
             print(f"  tools_resolved: {res.tools_resolved}")
             print(f"  tools_used    : {res.tools_used}")
@@ -414,6 +428,7 @@ async def fase2_live_execution(resolution_results: list[ResolutionResult]) -> li
 
 
 # ─── Geração do relatório ─────────────────────────────────────────────────────
+
 
 def generate_report(
     resolution_results: list[ResolutionResult],
@@ -558,7 +573,7 @@ def generate_report(
             "",
             f"A análise de resolução mostra que {steps_with_new_tools} dos {total_steps} steps TEATRO históricos",
             "recebem tools novas com D.1 que não estavam disponíveis pre-D.1 (STRATEGIC hardcoded",
-            "`[\"web_search\", \"read_file\", \"salvar_memoria\", \"ler_memoria\"]`).",
+            '`["web_search", "read_file", "salvar_memoria", "ler_memoria"]`).',
             "",
             "**Próximo passo:** tag `d1-done` e merge para `main`.",
         ]
@@ -586,6 +601,7 @@ def generate_report(
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
+
 async def main():
     t0 = time.monotonic()
 
@@ -605,10 +621,10 @@ async def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(report, encoding="utf-8")
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"Relatório salvo: {out_path}")
     print(f"Duração total: {elapsed:.1f}s")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
 
     # Imprime veredicto
     changed = sum(1 for r in execution_results if r.changed)
@@ -617,7 +633,9 @@ async def main():
         print(f"\n✅ VEREDICTO: D.1 CONFIRMADO ({changed}/{total} missions TEATRO→done)")
     elif total == 0:
         print("\n⚠️  VEREDICTO: Fase 2 pulada — apenas análise de resolução concluída")
-        print(f"   Análise mostra: {sum(1 for r in resolution_results if r.new_tools_added)}/{len(resolution_results)} steps ganham novas tools com D.1")
+        print(
+            f"   Análise mostra: {sum(1 for r in resolution_results if r.new_tools_added)}/{len(resolution_results)} steps ganham novas tools com D.1"
+        )
     else:
         print(f"\n❌ VEREDICTO: D.1 não resolveu ({changed}/{total} missions mudaram) — investigar")
 

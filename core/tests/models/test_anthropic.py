@@ -1,6 +1,7 @@
 """
 Testes do AnthropicTransport (models/transports): mock HTTP via respx.
 """
+
 from __future__ import annotations
 
 import json
@@ -24,12 +25,14 @@ def _anthropic_response(text: str = "pong", tool_calls: list | None = None) -> d
     content = [{"type": "text", "text": text}]
     if tool_calls:
         for tc in tool_calls:
-            content.append({
-                "type": "tool_use",
-                "id": tc["id"],
-                "name": tc["name"],
-                "input": tc["input"],
-            })
+            content.append(
+                {
+                    "type": "tool_use",
+                    "id": tc["id"],
+                    "name": tc["name"],
+                    "input": tc["input"],
+                }
+            )
     return {
         "id": "msg_123",
         "type": "message",
@@ -44,6 +47,7 @@ def _anthropic_response(text: str = "pong", tool_calls: list | None = None) -> d
 # ---------------------------------------------------------------------------
 # chat básico
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 @respx.mock
@@ -73,7 +77,13 @@ async def test_chat_with_tool_call() -> None:
     resp = await transport.chat(
         messages=[Message(role="user", content="search something")],
         model="claude-haiku-4-5",
-        tools=[ToolSchema(name="web_search", description="Search", input_schema={"type": "object", "properties": {"query": {"type": "string"}}})],
+        tools=[
+            ToolSchema(
+                name="web_search",
+                description="Search",
+                input_schema={"type": "object", "properties": {"query": {"type": "string"}}},
+            )
+        ],
     )
     assert len(resp.tool_calls) == 1
     assert resp.tool_calls[0]["name"] == "web_search"
@@ -83,6 +93,7 @@ async def test_chat_with_tool_call() -> None:
 # ---------------------------------------------------------------------------
 # system message separado
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 @respx.mock
@@ -108,6 +119,7 @@ async def test_system_message_extracted() -> None:
 # uso e custo
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 @respx.mock
 async def test_usage_is_mapped() -> None:
@@ -126,12 +138,11 @@ async def test_usage_is_mapped() -> None:
 # health
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 @respx.mock
 async def test_health_ok() -> None:
-    respx.get("https://api.anthropic.com/v1/models").mock(
-        return_value=httpx.Response(200, json={"data": []})
-    )
+    respx.get("https://api.anthropic.com/v1/models").mock(return_value=httpx.Response(200, json={"data": []}))
     transport = _make_transport()
     status = await transport.health()
     assert status.ok

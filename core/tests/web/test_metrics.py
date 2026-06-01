@@ -1,4 +1,5 @@
 """Testa que métricas agent_web_ aparecem no registry F11."""
+
 from __future__ import annotations
 
 
@@ -27,6 +28,7 @@ def test_web_metrics_registered() -> None:
 def test_web_metrics_incrementable() -> None:
     """Métricas devem ser incrementáveis sem erros."""
     from agent.web import metrics as m
+
     m.http_requests_total.labels(path="/api/v1/test", status="200").inc()
     m.ws_connections_active.inc()
     m.ws_connections_active.dec()
@@ -38,6 +40,7 @@ def test_web_metrics_incrementable() -> None:
 def test_prometheus_text_output() -> None:
     """prometheus_text() deve retornar string não-vazia com linhas de métricas."""
     from agent.web.metrics import prometheus_text
+
     text = prometheus_text()
     assert "agent_web_" in text
     assert len(text) > 0

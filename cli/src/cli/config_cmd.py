@@ -8,6 +8,7 @@ Subcomandos:
   agent config models            Lista modelos disponíveis em todos os providers
   agent config providers         Lista providers configurados
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -26,6 +27,7 @@ console = Console()
 # ---------------------------------------------------------------------------
 # helpers: ler/escrever .env preservando comentários e ordem
 # ---------------------------------------------------------------------------
+
 
 def _env_path() -> Path:
     return Path(os.environ.get("ENV_PATH", ".env")).resolve()
@@ -82,6 +84,7 @@ def _mask(value: str, keep: int = 4) -> str:
 # ---------------------------------------------------------------------------
 # show
 # ---------------------------------------------------------------------------
+
 
 @app.command()
 def show() -> None:
@@ -150,6 +153,7 @@ def show() -> None:
 # use <model>
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def use(
     model: str = typer.Argument(..., help="ex: ollama:gpt-oss:120b, anthropic:claude-haiku-4-5"),
@@ -175,6 +179,7 @@ def use(
 # set <key> <value>
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def set(
     key: str = typer.Argument(..., help="Nome da variável (ex: MODEL_TIMEOUT_S)"),
@@ -196,6 +201,7 @@ def set(
 # ---------------------------------------------------------------------------
 # get <key>
 # ---------------------------------------------------------------------------
+
 
 @app.command()
 def get(
@@ -220,6 +226,7 @@ def get(
 # ---------------------------------------------------------------------------
 # models — lista modelos disponíveis em todos os providers
 # ---------------------------------------------------------------------------
+
 
 @app.command()
 def models() -> None:
@@ -291,6 +298,7 @@ def models() -> None:
 # ---------------------------------------------------------------------------
 # providers
 # ---------------------------------------------------------------------------
+
 
 @app.command()
 def providers() -> None:

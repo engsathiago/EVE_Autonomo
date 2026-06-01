@@ -71,9 +71,7 @@ def status() -> None:
     """Mostra status do Web UI."""
     pid = _read_pid()
     if pid and _is_running(pid):
-        console.print(
-            f"[green]●[/green] Rodando (PID {pid}) em http://{_DEFAULT_HOST}:{_DEFAULT_PORT}"
-        )
+        console.print(f"[green]●[/green] Rodando (PID {pid}) em http://{_DEFAULT_HOST}:{_DEFAULT_PORT}")
     else:
         console.print("[red]●[/red] Parado")
 

@@ -156,9 +156,7 @@ def _chown(path: str, user: str, group: str) -> None:
 
 def _check_root() -> None:
     if os.geteuid() != 0:
-        raise PermissionError(
-            "install/uninstall requerem execução como root (sudo). Use: sudo agent deploy install"
-        )
+        raise PermissionError("install/uninstall requerem execução como root (sudo). Use: sudo agent deploy install")
 
 
 def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:

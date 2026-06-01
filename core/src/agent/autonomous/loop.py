@@ -158,9 +158,7 @@ class AutonomousLoop:
         """Força um tick imediato (debug / CLI)."""
         return await self.tick()
 
-    async def _process_mission(
-        self, mission: Any, budget: int, report: LoopReport
-    ) -> tuple[int, str]:
+    async def _process_mission(self, mission: Any, budget: int, report: LoopReport) -> tuple[int, str]:
         pending = await self._mission_store.get_pending_steps(mission.id)
         if not pending:
             all_steps = await self._mission_store.get_all_steps(mission.id)
@@ -211,9 +209,7 @@ class AutonomousLoop:
                     )
                     # Propaga para gate de aprovação humana (F5 integration point)
                     # Quem chama o loop é responsável por lidar com escalate
-                    await self._mission_store.update_step(
-                        step.id, status="skipped", error="escalated_to_human"
-                    )
+                    await self._mission_store.update_step(step.id, status="skipped", error="escalated_to_human")
                     return False
             except CriticRejected as exc:
                 report.steps_failed += 1
@@ -333,9 +329,7 @@ class AutonomousLoop:
             all_steps = await self._mission_store.get_all_steps(mission.id)
             next_seq = max((s.sequence for s in all_steps), default=-1) + 1
             for i, desc in enumerate(new_plan.steps):
-                await self._mission_store.add_step(
-                    mission.id, description=desc, sequence=next_seq + i
-                )
+                await self._mission_store.add_step(mission.id, description=desc, sequence=next_seq + i)
             report.replans_triggered += 1
             log.info("autonomous_loop.replan.done", mission_id=str(mission.id))
         except Exception as exc:

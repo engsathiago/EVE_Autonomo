@@ -1,6 +1,7 @@
 """
 Testes do OllamaTransport: mock HTTP via respx (não exige Ollama rodando).
 """
+
 from __future__ import annotations
 
 import httpx
@@ -23,10 +24,7 @@ def _make_transport() -> OllamaTransport:
 def _ollama_chat_response(text: str = "pong", tool_calls: list | None = None) -> dict:
     msg: dict = {"role": "assistant", "content": text}
     if tool_calls:
-        msg["tool_calls"] = [
-            {"function": {"name": tc["name"], "arguments": tc["input"]}}
-            for tc in tool_calls
-        ]
+        msg["tool_calls"] = [{"function": {"name": tc["name"], "arguments": tc["input"]}} for tc in tool_calls]
     return {
         "model": "qwen2.5:7b",
         "message": msg,
@@ -40,12 +38,11 @@ def _ollama_chat_response(text: str = "pong", tool_calls: list | None = None) ->
 # chat básico
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 @respx.mock
 async def test_chat_text_response() -> None:
-    respx.post(f"{_BASE}/api/chat").mock(
-        return_value=httpx.Response(200, json=_ollama_chat_response("pong"))
-    )
+    respx.post(f"{_BASE}/api/chat").mock(return_value=httpx.Response(200, json=_ollama_chat_response("pong")))
     transport = _make_transport()
     resp = await transport.chat(
         messages=[Message(role="user", content="ping")],
@@ -77,6 +74,7 @@ async def test_chat_with_tool_call() -> None:
 # Modelo não baixado
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 @respx.mock
 async def test_model_not_pulled_raises() -> None:
@@ -93,14 +91,18 @@ async def test_model_not_pulled_raises() -> None:
 # Capabilities discovery — via /api/show
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 @respx.mock
 async def test_capabilities_from_api_show() -> None:
     respx.post(f"{_BASE}/api/show").mock(
-        return_value=httpx.Response(200, json={
-            "capabilities": ["completion", "tools"],
-            "model_info": {"llama.context_length": 32768},
-        })
+        return_value=httpx.Response(
+            200,
+            json={
+                "capabilities": ["completion", "tools"],
+                "model_info": {"llama.context_length": 32768},
+            },
+        )
     )
     transport = _make_transport()
     caps = await transport.get_model_capabilities("qwen2.5:7b")
@@ -112,9 +114,7 @@ async def test_capabilities_from_api_show() -> None:
 @respx.mock
 async def test_capabilities_fallback_to_family_table() -> None:
     """Quando /api/show não retorna 'capabilities', usa tabela por família."""
-    respx.post(f"{_BASE}/api/show").mock(
-        return_value=httpx.Response(200, json={"model_info": {}})
-    )
+    respx.post(f"{_BASE}/api/show").mock(return_value=httpx.Response(200, json={"model_info": {}}))
     transport = _make_transport()
     caps = await transport.get_model_capabilities("hermes3:8b")
     assert caps.tool_use is True
@@ -123,9 +123,7 @@ async def test_capabilities_fallback_to_family_table() -> None:
 @pytest.mark.asyncio
 @respx.mock
 async def test_capabilities_deepseek_r1_no_tool_use() -> None:
-    respx.post(f"{_BASE}/api/show").mock(
-        return_value=httpx.Response(200, json={"model_info": {}})
-    )
+    respx.post(f"{_BASE}/api/show").mock(return_value=httpx.Response(200, json={"model_info": {}}))
     transport = _make_transport()
     caps = await transport.get_model_capabilities("deepseek-r1:14b")
     assert caps.tool_use is False
@@ -134,6 +132,7 @@ async def test_capabilities_deepseek_r1_no_tool_use() -> None:
 # ---------------------------------------------------------------------------
 # health
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 @respx.mock
@@ -206,9 +205,7 @@ async def test_is_cloud_property() -> None:
 @respx.mock
 async def test_cloud_401_raises_permission_error() -> None:
     """HTTP 401/403 da cloud vira PermissionError claro."""
-    respx.post(f"{_CLOUD_BASE}/api/chat").mock(
-        return_value=httpx.Response(401, json={"error": "invalid api key"})
-    )
+    respx.post(f"{_CLOUD_BASE}/api/chat").mock(return_value=httpx.Response(401, json={"error": "invalid api key"}))
 
     transport = OllamaTransport(base_url=_CLOUD_BASE, api_key="invalid-key")
 
@@ -223,9 +220,7 @@ async def test_cloud_401_raises_permission_error() -> None:
 @respx.mock
 async def test_cloud_403_raises_permission_error() -> None:
     """HTTP 403 (forbidden) também vira PermissionError."""
-    respx.post(f"{_CLOUD_BASE}/api/chat").mock(
-        return_value=httpx.Response(403, json={"error": "forbidden"})
-    )
+    respx.post(f"{_CLOUD_BASE}/api/chat").mock(return_value=httpx.Response(403, json={"error": "forbidden"}))
 
     transport = OllamaTransport(base_url=_CLOUD_BASE, api_key="expired-key")
 

@@ -1,4 +1,5 @@
 """Testes dos health endpoints (F10)."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -17,6 +18,7 @@ from agent.deploy.health import (
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def app_with_health(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     db = tmp_path / "agent.db"
@@ -30,6 +32,7 @@ def app_with_health(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClie
 
 # ── /health/live ───────────────────────────────────────────────────────────────
 
+
 class TestLiveness:
     def test_returns_200(self, app_with_health: TestClient) -> None:
         resp = app_with_health.get("/health/live")
@@ -42,6 +45,7 @@ class TestLiveness:
     def test_fast_response(self, app_with_health: TestClient) -> None:
         """C4: Liveness não deve fazer I/O pesado — <50ms."""
         import time
+
         # Aquecer
         app_with_health.get("/health/live")
         times_ms = []
@@ -56,6 +60,7 @@ class TestLiveness:
         """C4: liveness não abre banco — funciona mesmo sem SQLite válido."""
         monkeypatch.setenv("AGENT_DB_SQLITE", "/nonexistent/path/db.db")
         from fastapi import FastAPI
+
         app = FastAPI()
         app.include_router(make_health_router())
         client = TestClient(app, raise_server_exceptions=False)
@@ -65,10 +70,9 @@ class TestLiveness:
 
 # ── /health/ready ─────────────────────────────────────────────────────────────
 
+
 class TestReadiness:
-    def test_returns_200_when_sqlite_ok(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_returns_200_when_sqlite_ok(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         db = tmp_path / "ok.db"
         conn = sqlite3.connect(str(db))
         conn.execute("SELECT 1")
@@ -81,9 +85,7 @@ class TestReadiness:
         resp = client.get("/health/ready")
         assert resp.status_code == 200
 
-    def test_returns_503_when_sqlite_missing(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_returns_503_when_sqlite_missing(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("AGENT_DB_SQLITE", "/nonexistent/path/agent.db")
         app = FastAPI()
         app.include_router(make_health_router())
@@ -99,6 +101,7 @@ class TestReadiness:
 
 
 # ── _check_scheduler ──────────────────────────────────────────────────────────
+
 
 class TestCheckScheduler:
     def test_skipped_when_none(self) -> None:
@@ -121,6 +124,7 @@ class TestCheckScheduler:
 
 # ── _check_subagent_pool ──────────────────────────────────────────────────────
 
+
 class TestCheckSubagentPool:
     def test_skipped_when_none(self) -> None:
         result = _check_subagent_pool(None)
@@ -142,10 +146,9 @@ class TestCheckSubagentPool:
 
 # ── /health/deep ─────────────────────────────────────────────────────────────
 
+
 class TestDeepHealth:
-    def test_structure_on_success(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_structure_on_success(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         db = tmp_path / "deep.db"
         sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
         monkeypatch.setenv("AGENT_DB_SQLITE", str(db))
@@ -165,9 +168,7 @@ class TestDeepHealth:
         assert "noop_skill" in body["checks"]
         assert "total_duration_ms" in body
 
-    def test_503_when_noop_fails(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_503_when_noop_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         db = tmp_path / "deep2.db"
         sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
         monkeypatch.setenv("AGENT_DB_SQLITE", str(db))
@@ -184,9 +185,7 @@ class TestDeepHealth:
 
         assert resp.status_code == 503
 
-    def test_deep_has_total_duration_ms(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_deep_has_total_duration_ms(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """C6: resposta deep inclui total_duration_ms com latências."""
         db = tmp_path / "deep3.db"
         sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
@@ -205,9 +204,7 @@ class TestDeepHealth:
         assert "total_duration_ms" in data
         assert data["total_duration_ms"] >= 0
 
-    def test_deep_noop_duration_ms_present(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_deep_noop_duration_ms_present(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """C6: noop_skill check inclui duration_ms."""
         db = tmp_path / "deep4.db"
         sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
@@ -228,19 +225,16 @@ class TestDeepHealth:
 
 # ── C5: Postgres up/down ──────────────────────────────────────────────────────
 
+
 class TestPostgresC5:
-    def test_503_when_postgres_pool_fails(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_503_when_postgres_pool_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """C5: pool Postgres que falha → 503."""
         db = tmp_path / "c5.db"
         sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
         monkeypatch.setenv("AGENT_DB_SQLITE", str(db))
 
         mock_pool = AsyncMock()
-        mock_pool.acquire.return_value.__aenter__ = AsyncMock(
-            side_effect=ConnectionRefusedError("pg down")
-        )
+        mock_pool.acquire.return_value.__aenter__ = AsyncMock(side_effect=ConnectionRefusedError("pg down"))
         mock_pool.acquire.return_value.__aexit__ = AsyncMock(return_value=False)
 
         app = FastAPI()
@@ -250,9 +244,7 @@ class TestPostgresC5:
         assert resp.status_code == 503
         assert resp.json()["checks"]["postgres"]["ok"] is False
 
-    def test_200_after_postgres_recovers(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_200_after_postgres_recovers(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """C5: depois que Postgres volta (None=skipped), /ready retorna 200."""
         db = tmp_path / "c5b.db"
         sqlite3.connect(str(db)).execute("SELECT 1").fetchone()

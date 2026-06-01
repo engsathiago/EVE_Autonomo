@@ -46,8 +46,7 @@ class MissingRequiredTool(Exception):
         self.step_id = step_id
         tools_str = ", ".join(missing)
         super().__init__(
-            f"Tools declaradas ausentes no registry: [{tools_str}]"
-            + (f" (step_id={step_id})" if step_id else "")
+            f"Tools declaradas ausentes no registry: [{tools_str}]" + (f" (step_id={step_id})" if step_id else "")
         )
 
 
@@ -201,7 +200,7 @@ class SubagentPool:
         await self._task_store.record_subagent_run(
             task_id=child_task.id,
             parent_task=parent_task.id,
-            tools_used=tools_called,          # tools EFETIVAMENTE chamadas
+            tools_used=tools_called,  # tools EFETIVAMENTE chamadas
             duration_ms=duration_ms,
             success=(task_status == TaskStatus.DONE and executed),
             summary=result.final_text[:500] if result.final_text else "",
@@ -210,7 +209,7 @@ class SubagentPool:
                 "cost_usd": result.estimated_cost_usd,
                 "tool_call_count": analysis.tool_call_count,
             },
-            verdict=analysis.verdict.value,   # "executed", "prose_only", etc.
+            verdict=analysis.verdict.value,  # "executed", "prose_only", etc.
         )
 
         log.info(

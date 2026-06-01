@@ -32,9 +32,7 @@ def test_settings_default_config_exists() -> None:
     assert _DEFAULT_CONFIG.exists(), f"config.yaml não encontrado em {_DEFAULT_CONFIG}"
 
 
-def test_env_fallback_when_yaml_has_no_api_key(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_env_fallback_when_yaml_has_no_api_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Garante que os.environ é consultado quando o YAML não contém a api_key."""
     cfg = tmp_path / "config.yaml"
     cfg.write_text(

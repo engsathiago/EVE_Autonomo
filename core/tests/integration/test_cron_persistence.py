@@ -3,6 +3,7 @@ Integração: job cron sobrevive a restart do scheduler.
 
 Precisa de Postgres real. Marcado com @pytest.mark.integration.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

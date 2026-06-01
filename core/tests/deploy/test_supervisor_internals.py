@@ -5,6 +5,7 @@ Cobre os helpers que não são testados via state machine:
   _fork_worker, Supervisor.__init__, _write_pid, _remove_pid,
   _setup_signals, _graceful_shutdown, _handle_worker_died (lógica)
 """
+
 from __future__ import annotations
 
 import os
@@ -28,8 +29,10 @@ from agent.deploy.workers.base import Worker
 
 # ── Workers para testes ───────────────────────────────────────────────────────
 
+
 class _ImmediateWorker(Worker):
     """Worker que retorna imediatamente."""
+
     name = "immediate"
 
     async def run(self) -> None:
@@ -38,6 +41,7 @@ class _ImmediateWorker(Worker):
 
 class _FailingWorker(Worker):
     """Worker que lança exceção."""
+
     name = "failing"
 
     async def run(self) -> None:
@@ -45,6 +49,7 @@ class _FailingWorker(Worker):
 
 
 # ── _log ─────────────────────────────────────────────────────────────────────
+
 
 class TestLog:
     def test_outputs_to_stdout(self, capsys: pytest.CaptureFixture) -> None:
@@ -60,6 +65,7 @@ class TestLog:
 
 
 # ── _reset_signals_child ──────────────────────────────────────────────────────
+
 
 class TestResetSignalsChild:
     def test_restores_sigterm_to_default(self) -> None:
@@ -85,6 +91,7 @@ class TestResetSignalsChild:
 
 # ── _run_worker_sync ──────────────────────────────────────────────────────────
 
+
 class TestRunWorkerSync:
     def test_runs_immediate_worker(self) -> None:
         """Worker que termina imediatamente não causa erro."""
@@ -98,6 +105,7 @@ class TestRunWorkerSync:
 
 
 # ── _reap_child ───────────────────────────────────────────────────────────────
+
 
 class TestReapChild:
     def test_reap_normal_exit(self) -> None:
@@ -136,6 +144,7 @@ class TestReapChild:
 
 # ── _fork_worker ─────────────────────────────────────────────────────────────
 
+
 class TestForkWorker:
     def test_returns_child_pid(self) -> None:
         """_fork_worker retorna PID positivo do filho."""
@@ -173,6 +182,7 @@ class TestForkWorker:
 
 # ── Supervisor.__init__ ───────────────────────────────────────────────────────
 
+
 class TestSupervisorInit:
     def test_creates_states_for_each_worker(self) -> None:
         workers = [_ImmediateWorker(), _FailingWorker()]
@@ -193,6 +203,7 @@ class TestSupervisorInit:
 
 
 # ── _write_pid / _remove_pid ──────────────────────────────────────────────────
+
 
 class TestPidFile:
     def test_write_pid_creates_file(self, tmp_path: Path) -> None:
@@ -224,6 +235,7 @@ class TestPidFile:
 
 # ── _setup_signals ────────────────────────────────────────────────────────────
 
+
 class TestSetupSignals:
     def test_sets_shutdown_flag_on_sigterm(self) -> None:
         s = Supervisor([])
@@ -249,6 +261,7 @@ class TestSetupSignals:
 
 # ── _graceful_shutdown ────────────────────────────────────────────────────────
 
+
 class TestGracefulShutdown:
     def test_with_no_workers_completes(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Shutdown sem workers ativos não trava."""
@@ -265,9 +278,7 @@ class TestGracefulShutdown:
         s._states = [state]
         s._graceful_shutdown()  # não deve travar
 
-    def test_kills_alive_workers_with_sigterm(
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-    ) -> None:
+    def test_kills_alive_workers_with_sigterm(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """Shutdown envia SIGTERM para workers vivos."""
         monkeypatch.setenv("AGENT_DB_SQLITE", str(tmp_path / "agent.db"))
 
@@ -295,15 +306,16 @@ class TestGracefulShutdown:
 
 # ── _start_worker (via Supervisor) ───────────────────────────────────────────
 
+
 class TestStartWorker:
-    def test_start_worker_sets_pid(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_start_worker_sets_pid(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """_start_worker faz fork e registra PID no estado."""
         db = tmp_path / "agent.db"
         import sqlite3
+
         conn = sqlite3.connect(str(db))
         from pathlib import Path as P
+
         migration = P(__file__).parents[2] / "migrations" / "011_deploy.sql"
         conn.executescript(migration.read_text())
         conn.close()

@@ -47,8 +47,7 @@ class DiscordAdapter(ChannelAdapter):
     ) -> None:
         if not allowlist:
             raise ConfigError(
-                "DISCORD_USER_ALLOWLIST é obrigatório. "
-                "Sem allowlist o adapter não sobe (regra de segurança)."
+                "DISCORD_USER_ALLOWLIST é obrigatório. Sem allowlist o adapter não sobe (regra de segurança)."
             )
         self._token = token
         self._guild_id = guild_id
@@ -170,9 +169,7 @@ class DiscordAdapter(ChannelAdapter):
         # Verifica se deve processar: mencionado, DM, ou canal autorizado
         is_dm = isinstance(message.channel, discord.DMChannel)
         bot_mentioned = self._client.user in message.mentions if self._client.user else False
-        channel_allowed = (
-            hasattr(message.channel, "name") and message.channel.name in self._channels_allowed
-        )
+        channel_allowed = hasattr(message.channel, "name") and message.channel.name in self._channels_allowed
 
         if not (bot_mentioned or is_dm or channel_allowed):
             return

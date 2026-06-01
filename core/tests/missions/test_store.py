@@ -1,4 +1,5 @@
 """Testa MissionStore — validações de invariantes."""
+
 from __future__ import annotations
 
 import json
@@ -95,9 +96,7 @@ async def test_mission_step_sequence_unique(store: MissionStore) -> None:
             step_row,
         ]
     )
-    store._pool.execute = AsyncMock(
-        side_effect=asyncpg.UniqueViolationError("duplicate key")
-    )
+    store._pool.execute = AsyncMock(side_effect=asyncpg.UniqueViolationError("duplicate key"))
 
     mission_id = uuid4()
     with pytest.raises(asyncpg.UniqueViolationError):
@@ -111,9 +110,7 @@ async def test_child_mission_blocks_parent_status_transition(store: MissionStore
     child_id = uuid4()
 
     parent_row = _make_mission_row(mission_id=parent_id, status="active")
-    child_row = _make_mission_row(
-        mission_id=child_id, status="active", parent_mission_id=parent_id
-    )
+    child_row = _make_mission_row(mission_id=child_id, status="active", parent_mission_id=parent_id)
 
     # get(child_id) → child_row; get(parent_id) → parent_row
     call_count = {"n": 0}

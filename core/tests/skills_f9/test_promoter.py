@@ -1,4 +1,5 @@
 """Testes do SkillPromoter — C4: Crítico decide promoção."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -52,9 +53,7 @@ async def test_promote_force_skips_critic(tmp_path: Path) -> None:
     approved = await promoter.promote(_manifest(), force=True)
     assert approved is True
     critic.evaluate.assert_not_awaited()
-    registry.update_status.assert_awaited_once_with(
-        "test_skill", "active", critic_approval_id="force"
-    )
+    registry.update_status.assert_awaited_once_with("test_skill", "active", critic_approval_id="force")
 
 
 @pytest.mark.asyncio

@@ -151,10 +151,7 @@ def _print_footer(result: AgentResult) -> None:
 
 
 def _print_cost(in_tok: int, out_tok: int, cost: float) -> None:
-    console.print(
-        f"[dim]Sessão: {in_tok:,} in + {out_tok:,} out = "
-        f"{in_tok + out_tok:,} tokens · ${cost:.4f}[/dim]"
-    )
+    console.print(f"[dim]Sessão: {in_tok:,} in + {out_tok:,} out = {in_tok + out_tok:,} tokens · ${cost:.4f}[/dim]")
 
 
 def _print_tools(registry: ToolRegistry) -> None:

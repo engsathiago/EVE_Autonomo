@@ -1,4 +1,5 @@
 """Tests for finetune events in event_registry."""
+
 from __future__ import annotations
 
 import pytest
@@ -7,6 +8,7 @@ import pytest
 class TestFinetuneEvents:
     def test_emit_finetune_event_exists(self):
         from agent.events import emit_finetune_event, register_finetune_handler
+
         assert callable(emit_finetune_event)
         assert callable(register_finetune_handler)
 

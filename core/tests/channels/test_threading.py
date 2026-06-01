@@ -1,4 +1,5 @@
 """Testes de threading por canal (C7): Discord threads, Slack thread_ts, Email In-Reply-To."""
+
 from __future__ import annotations
 
 import pytest
@@ -6,6 +7,7 @@ import pytest
 from agent.channels.base import OutgoingMessage
 
 # ── Email threading ───────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_email_reply_preserves_thread_id():
@@ -17,14 +19,25 @@ async def test_email_reply_preserves_thread_id():
     sent = []
 
     class FakeSMTP:
-        async def __aenter__(self): return self
-        async def __aexit__(self, *a): pass
-        async def login(self, *a): pass
-        async def send_message(self, msg): sent.append(msg)
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            pass
+
+        async def login(self, *a):
+            pass
+
+        async def send_message(self, msg):
+            sent.append(msg)
 
     adapter = EmailAdapter(
-        imap_host="x", imap_port=993, smtp_host="x", smtp_port=587,
-        user="bot@x.com", password="p",
+        imap_host="x",
+        imap_port=993,
+        smtp_host="x",
+        smtp_port=587,
+        user="bot@x.com",
+        password="p",
         allowlist={"user@x.com"},
     )
     with patch("aiosmtplib.SMTP", return_value=FakeSMTP()):
@@ -47,14 +60,25 @@ async def test_email_reply_without_thread_id_has_no_in_reply_to():
     sent = []
 
     class FakeSMTP:
-        async def __aenter__(self): return self
-        async def __aexit__(self, *a): pass
-        async def login(self, *a): pass
-        async def send_message(self, msg): sent.append(msg)
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            pass
+
+        async def login(self, *a):
+            pass
+
+        async def send_message(self, msg):
+            sent.append(msg)
 
     adapter = EmailAdapter(
-        imap_host="x", imap_port=993, smtp_host="x", smtp_port=587,
-        user="bot@x.com", password="p",
+        imap_host="x",
+        imap_port=993,
+        smtp_host="x",
+        smtp_port=587,
+        user="bot@x.com",
+        password="p",
         allowlist={"user@x.com"},
     )
     with patch("aiosmtplib.SMTP", return_value=FakeSMTP()):
@@ -64,6 +88,7 @@ async def test_email_reply_without_thread_id_has_no_in_reply_to():
 
 
 # ── Discord threading ─────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_discord_long_mission_creates_thread(mock_discord_message):
@@ -79,6 +104,7 @@ async def test_discord_long_mission_creates_thread(mock_discord_message):
 
     # Simula envio via mock do channel
     from unittest.mock import AsyncMock
+
     mock_discord_message.channel.send = AsyncMock()
     mock_discord_message.channel.create_thread = AsyncMock(
         return_value=type("T", (), {"send": AsyncMock(), "id": "t1"})()
@@ -92,6 +118,7 @@ async def test_discord_long_mission_creates_thread(mock_discord_message):
 
 
 # ── Slack threading ───────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_slack_reply_uses_thread_ts():

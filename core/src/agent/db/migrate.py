@@ -49,8 +49,7 @@ async def apply_migrations(dsn: str, *, dry_run: bool = False) -> list[str]:
         await conn.execute(_CREATE_TRACKING)
 
         applied: set[str] = {
-            r["version"]
-            for r in await conn.fetch("SELECT version FROM schema_migrations ORDER BY version")
+            r["version"] for r in await conn.fetch("SELECT version FROM schema_migrations ORDER BY version")
         }
 
         files = sorted(MIGRATIONS_DIR.glob("*.sql"), key=lambda f: f.stem)
@@ -96,10 +95,7 @@ async def stamp_all(dsn: str) -> list[str]:
     try:
         await conn.execute(_CREATE_TRACKING)
 
-        already: set[str] = {
-            r["version"]
-            for r in await conn.fetch("SELECT version FROM schema_migrations")
-        }
+        already: set[str] = {r["version"] for r in await conn.fetch("SELECT version FROM schema_migrations")}
 
         files = sorted(MIGRATIONS_DIR.glob("*.sql"), key=lambda f: f.stem)
         stamped: list[str] = []
@@ -111,8 +107,7 @@ async def stamp_all(dsn: str) -> list[str]:
             sql = f.read_text(encoding="utf-8")
             checksum = hashlib.sha256(sql.encode()).hexdigest()
             await conn.execute(
-                "INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2)"
-                " ON CONFLICT (version) DO NOTHING",
+                "INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2) ON CONFLICT (version) DO NOTHING",
                 version,
                 checksum,
             )

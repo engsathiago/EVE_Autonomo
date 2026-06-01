@@ -9,6 +9,7 @@ Verifica que todos os 11 eventos do §8 são emitidos com os campos corretos:
 
 Não sobe Postgres real. Não faz systemctl.
 """
+
 from __future__ import annotations
 
 import sqlite3
@@ -24,6 +25,7 @@ from agent.deploy.supervisor import (
 from agent.deploy.workers.base import Worker
 
 # ── Fake event bus ────────────────────────────────────────────────────────────
+
 
 class _FakeBus:
     def __init__(self) -> None:
@@ -51,15 +53,14 @@ class _FakeWorker(Worker):
 
 # ── worker.started / worker.stopped via _db_record_event ─────────────────────
 
+
 class TestWorkerStartStopEvents:
     def test_start_event_recorded(self, tmp_db: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("AGENT_DB_SQLITE", str(tmp_db))
         _db_record_event("start", "orchestrator", {"pid": 1234}, True)
 
         conn = sqlite3.connect(str(tmp_db))
-        rows = conn.execute(
-            "SELECT kind, worker, success FROM deploy_events WHERE kind='start'"
-        ).fetchall()
+        rows = conn.execute("SELECT kind, worker, success FROM deploy_events WHERE kind='start'").fetchall()
         conn.close()
         assert len(rows) == 1
         assert rows[0][1] == "orchestrator"
@@ -70,29 +71,28 @@ class TestWorkerStartStopEvents:
         _db_record_event("stop", "api", {"graceful": True}, True)
 
         conn = sqlite3.connect(str(tmp_db))
-        rows = conn.execute(
-            "SELECT kind, worker FROM deploy_events WHERE kind='stop'"
-        ).fetchall()
+        rows = conn.execute("SELECT kind, worker FROM deploy_events WHERE kind='stop'").fetchall()
         conn.close()
         assert rows[0][1] == "api"
 
 
 # ── worker.restarted ──────────────────────────────────────────────────────────
 
+
 class TestWorkerRestartedEvent:
     def test_restart_event_recorded(self, tmp_db: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("AGENT_DB_SQLITE", str(tmp_db))
         _db_record_event(
-            "restart", "orchestrator",
+            "restart",
+            "orchestrator",
             {"attempt": 1, "backoff_seconds": 1},
             True,
         )
 
         conn = sqlite3.connect(str(tmp_db))
         import json
-        row = conn.execute(
-            "SELECT detail FROM deploy_events WHERE kind='restart'"
-        ).fetchone()
+
+        row = conn.execute("SELECT detail FROM deploy_events WHERE kind='restart'").fetchone()
         conn.close()
         assert row is not None
         detail = json.loads(row[0])
@@ -103,27 +103,26 @@ class TestWorkerRestartedEvent:
         monkeypatch.setenv("AGENT_DB_SQLITE", str(tmp_db))
         for attempt in range(1, 4):
             _db_record_event(
-                "restart", "orchestrator",
+                "restart",
+                "orchestrator",
                 {"attempt": attempt, "backoff_seconds": attempt},
                 True,
             )
 
         conn = sqlite3.connect(str(tmp_db))
-        rows = conn.execute(
-            "SELECT detail FROM deploy_events WHERE kind='restart' ORDER BY id"
-        ).fetchall()
+        rows = conn.execute("SELECT detail FROM deploy_events WHERE kind='restart' ORDER BY id").fetchall()
         conn.close()
         import json
+
         attempts = [json.loads(r[0])["attempt"] for r in rows]
         assert attempts == [1, 2, 3]
 
 
 # ── worker.flapping ───────────────────────────────────────────────────────────
 
+
 class TestWorkerFlappingEvent:
-    def test_flapping_recorded_after_10_restarts(
-        self, tmp_db: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_flapping_recorded_after_10_restarts(self, tmp_db: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("AGENT_DB_SQLITE", str(tmp_db))
 
         state = _WorkerState(worker=_FakeWorker())
@@ -133,16 +132,16 @@ class TestWorkerFlappingEvent:
         # O supervisor chama _db_record_event ao detectar flapping
         n = state.restarts_in_window()
         _db_record_event(
-            "crash", "orchestrator",
+            "crash",
+            "orchestrator",
             {"event": "worker.flapping", "restarts_in_window": n},
             False,
         )
 
         conn = sqlite3.connect(str(tmp_db))
         import json
-        row = conn.execute(
-            "SELECT detail FROM deploy_events WHERE kind='crash' ORDER BY id DESC LIMIT 1"
-        ).fetchone()
+
+        row = conn.execute("SELECT detail FROM deploy_events WHERE kind='crash' ORDER BY id DESC LIMIT 1").fetchone()
         conn.close()
         detail = json.loads(row[0])
         assert "worker.flapping" in detail.get("event", "")
@@ -163,6 +162,7 @@ class TestWorkerFlappingEvent:
 
 # ── backup.completed / backup.failed ─────────────────────────────────────────
 
+
 class TestBackupEvents:
     @pytest.mark.asyncio
     async def test_backup_completed_event(
@@ -178,6 +178,7 @@ class TestBackupEvents:
 
         bus = _FakeBus()
         from agent.deploy.backup import run_backup
+
         result = await run_backup(event_bus=bus)
 
         assert "backup.completed" in bus.kinds() or "backup.failed" in bus.kinds()
@@ -201,6 +202,7 @@ class TestBackupEvents:
 
         bus = _FakeBus()
         from agent.deploy.backup import run_backup
+
         await run_backup(event_bus=bus)
 
         kind = "backup.completed" if any(k == "backup.completed" for k, _ in bus.events) else "backup.failed"
@@ -211,11 +213,10 @@ class TestBackupEvents:
 
 # ── restore.started / restore.completed ───────────────────────────────────────
 
+
 class TestRestoreEvents:
     @pytest.fixture
-    def backup_with_sqlite(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> tuple[Path, str]:
+    def backup_with_sqlite(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, str]:
         """Cria um backup SQLite real e retorna (db_path, tag)."""
         db = tmp_path / "source.db"
         conn = sqlite3.connect(str(db))
@@ -230,6 +231,7 @@ class TestRestoreEvents:
         monkeypatch.setenv("AGENT_BACKUP_DIR", str(backup_dir))
 
         from agent.deploy.backup import _backup_sqlite
+
         _backup_sqlite("20260601")
         return db, "20260601"
 
@@ -247,6 +249,7 @@ class TestRestoreEvents:
 
         bus = _FakeBus()
         from agent.deploy.restore import run_restore
+
         await run_restore(tag, kinds=["sqlite"], event_bus=bus)
 
         assert "restore.started" in bus.kinds()
@@ -268,6 +271,7 @@ class TestRestoreEvents:
 
         bus = _FakeBus()
         from agent.deploy.restore import run_restore
+
         result = await run_restore(tag, kinds=["sqlite"], event_bus=bus)
 
         assert "restore.completed" in bus.kinds()
@@ -289,6 +293,7 @@ class TestRestoreEvents:
 
         bus = _FakeBus()
         from agent.deploy.restore import run_restore
+
         result = await run_restore(tag, kinds=["sqlite"], event_bus=bus)
 
         assert result["all_ok"] is True
@@ -296,11 +301,10 @@ class TestRestoreEvents:
 
 # ── health.degraded (simulado via check falho) ────────────────────────────────
 
+
 class TestHealthDegradedEvent:
     @pytest.mark.asyncio
-    async def test_ready_returns_503_signals_degraded(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_ready_returns_503_signals_degraded(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Quando /ready retorna 503, o estado é 'degraded' no body."""
         from fastapi import FastAPI
         from fastapi.testclient import TestClient

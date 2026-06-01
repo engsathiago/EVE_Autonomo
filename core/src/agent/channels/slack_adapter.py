@@ -41,8 +41,7 @@ class SlackAdapter(ChannelAdapter):
     ) -> None:
         if not allowlist:
             raise ConfigError(
-                "SLACK_USER_ALLOWLIST é obrigatório. "
-                "Sem allowlist o adapter não sobe (regra de segurança)."
+                "SLACK_USER_ALLOWLIST é obrigatório. Sem allowlist o adapter não sobe (regra de segurança)."
             )
         self._app_token = app_token
         self._bot_token = bot_token

@@ -1,4 +1,5 @@
 """Testes das exceções F9."""
+
 from __future__ import annotations
 
 from agent.skills.exceptions import (

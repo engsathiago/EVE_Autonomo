@@ -48,9 +48,7 @@ class TaskStore:
     ) -> None:
         now = datetime.utcnow()
         started_at = now if status == TaskStatus.RUNNING else None
-        finished_at = (
-            now if status in (TaskStatus.DONE, TaskStatus.FAILED, TaskStatus.TIMEOUT) else None
-        )
+        finished_at = now if status in (TaskStatus.DONE, TaskStatus.FAILED, TaskStatus.TIMEOUT) else None
 
         await self._pool.execute(
             """
@@ -90,9 +88,7 @@ class TaskStore:
                 limit,
             )
         else:
-            rows = await self._pool.fetch(
-                "SELECT * FROM tasks ORDER BY created_at DESC LIMIT $1", limit
-            )
+            rows = await self._pool.fetch("SELECT * FROM tasks ORDER BY created_at DESC LIMIT $1", limit)
         return [_row_to_task(r) for r in rows]
 
     async def get_tree(self, task_id: UUID) -> list[Task]:
@@ -159,9 +155,7 @@ def _row_to_task(row: asyncpg.Record) -> Task:
         id=row["id"],
         parent_id=row["parent_id"],
         cron_job_id=row["cron_job_id"],
-        source=TaskSource(row["source"])
-        if row["source"] in TaskSource._value2member_map_
-        else row["source"],
+        source=TaskSource(row["source"]) if row["source"] in TaskSource._value2member_map_ else row["source"],
         content=row["content"],
         tier=row["tier"],
         status=TaskStatus(row["status"]),

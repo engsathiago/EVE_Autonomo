@@ -1,4 +1,5 @@
 """Tests for trace_collector.py — C2 (mission + skill queries, filters)."""
+
 from __future__ import annotations
 
 import json

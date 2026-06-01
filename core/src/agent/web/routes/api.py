@@ -133,9 +133,7 @@ def make_api_router() -> APIRouter:
 
         if _missions_store is None or _missions_planner is None:
             raise HTTPException(status_code=503, detail="Missões indisponíveis")
-        result = await _with_db_timeout(
-            _create(_missions_store, _missions_planner, body.title, body.prompt, body.tier)
-        )
+        result = await _with_db_timeout(_create(_missions_store, _missions_planner, body.title, body.prompt, body.tier))
         if result is None:
             raise HTTPException(status_code=500, detail="Erro ao criar missão")
         return result
@@ -304,9 +302,7 @@ def make_api_router() -> APIRouter:
             raise HTTPException(status_code=503, detail="Aprovações indisponíveis")
         if body.decision not in ("approve", "reject"):
             raise HTTPException(status_code=400, detail="decision deve ser 'approve' ou 'reject'")
-        ok = await _with_db_timeout(
-            _decide(_approval_manager, approval_id, body.decision, body.note)
-        )
+        ok = await _with_db_timeout(_decide(_approval_manager, approval_id, body.decision, body.note))
         return {"ok": ok}
 
     # ── Métricas de evolução ──────────────────────────────────────────────────
@@ -356,9 +352,7 @@ def make_api_router() -> APIRouter:
                     )
                 )
                 if rows3 and rows3[0]["total"]:
-                    summary["critic_approval_rate"] = round(
-                        float(rows3[0]["approved"]) / float(rows3[0]["total"]), 3
-                    )
+                    summary["critic_approval_rate"] = round(float(rows3[0]["approved"]) / float(rows3[0]["total"]), 3)
         except Exception as exc:
             log.warning("web.metrics_summary.error", error=str(exc))
 

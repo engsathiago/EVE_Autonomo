@@ -72,8 +72,7 @@ class EmailAdapter(ChannelAdapter):
     ) -> None:
         if not allowlist:
             raise ConfigError(
-                "EMAIL_FROM_ALLOWLIST é obrigatório. "
-                "Sem allowlist o adapter não sobe (regra de segurança)."
+                "EMAIL_FROM_ALLOWLIST é obrigatório. Sem allowlist o adapter não sobe (regra de segurança)."
             )
         self._imap_host = imap_host
         self._imap_port = imap_port
@@ -151,9 +150,7 @@ class EmailAdapter(ChannelAdapter):
         body_bytes = body.encode()
         if len(body_bytes) > _MAX_BODY_BYTES:
             out.set_content(f"{_SUBJECT_PREFIX} Resposta em anexo (> 50 KB).")
-            out.add_attachment(
-                body_bytes, maintype="text", subtype="plain", filename="response.txt"
-            )
+            out.add_attachment(body_bytes, maintype="text", subtype="plain", filename="response.txt")
 
         try:
             async with aiosmtplib.SMTP(

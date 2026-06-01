@@ -113,9 +113,7 @@ class LoraTrainer:
 
         if result["exit_code"] != 0:
             stderr = result.get("stderr", "")[:2000]
-            raise FinetuneError(
-                f"Treino falhou com exit_code={result['exit_code']}. Stderr: {stderr}"
-            )
+            raise FinetuneError(f"Treino falhou com exit_code={result['exit_code']}. Stderr: {stderr}")
 
         final_loss = self._extract_final_loss(training_log_path)
 
@@ -155,8 +153,7 @@ class LoraTrainer:
             )
             if out.returncode != 0:
                 raise TrainerNotAvailable(
-                    "nvidia-smi falhou — GPU não disponível. "
-                    "Fine-tuning requer GPU com ao menos 12 GiB VRAM."
+                    "nvidia-smi falhou — GPU não disponível. Fine-tuning requer GPU com ao menos 12 GiB VRAM."
                 )
             vram_mib = int(out.stdout.strip().split("\n")[0])
             vram_gib = vram_mib / 1024
@@ -218,9 +215,7 @@ class LoraTrainer:
             env={"CHECKPOINT_DIR": str(ckpt_path)},
         )
         if result.exit_code != 0:
-            raise FinetuneError(
-                f"Merge/quantize falhou (exit={result.exit_code}): {result.stderr[:1000]}"
-            )
+            raise FinetuneError(f"Merge/quantize falhou (exit={result.exit_code}): {result.stderr[:1000]}")
         log.info("lora_trainer.merge_done", gguf=str(output_gguf))
 
     async def _ollama_create(self, model_name: str, gguf_path: Path) -> None:
@@ -415,11 +410,7 @@ class LoraTrainer:
     ) -> None:
         import hashlib
 
-        dataset_hash = (
-            hashlib.sha256(dataset_path.read_bytes()).hexdigest()[:16]
-            if dataset_path.exists()
-            else ""
-        )
+        dataset_hash = hashlib.sha256(dataset_path.read_bytes()).hexdigest()[:16] if dataset_path.exists() else ""
         manifest = {
             "checkpoint_id": checkpoint_id,
             "run_id": run_id,
@@ -429,6 +420,4 @@ class LoraTrainer:
             "hyperparameters": config.to_dict(),
             "created_at": datetime.now(tz=UTC).isoformat(),
         }
-        (ckpt_path / "manifest.yaml").write_text(
-            "\n".join(f"{k}: {json.dumps(v)}" for k, v in manifest.items())
-        )
+        (ckpt_path / "manifest.yaml").write_text("\n".join(f"{k}: {json.dumps(v)}" for k, v in manifest.items()))

@@ -6,6 +6,7 @@ Verifica que:
 - O schema suporta todos os eventos do §8
 - _db_record_event e _db_update_worker_health funcionam sem Postgres real
 """
+
 from __future__ import annotations
 
 import json
@@ -16,6 +17,7 @@ from pathlib import Path
 import pytest
 
 # ── Localização da migration ───────────────────────────────────────────────────
+
 
 def _migration_path() -> Path:
     # core/tests/deploy/test_persistence.py → parents[2] = core/
@@ -31,9 +33,7 @@ class TestMigrationFile:
         creates = re.findall(r"CREATE\s+(TABLE|INDEX)\s+(\S+)", content, re.IGNORECASE)
         assert creates, "Nenhum CREATE encontrado na migration"
         for kind, name in creates:
-            assert "IF NOT EXISTS" in content, (
-                f"CREATE {kind} {name} deve usar IF NOT EXISTS para idempotência"
-            )
+            assert "IF NOT EXISTS" in content, f"CREATE {kind} {name} deve usar IF NOT EXISTS para idempotência"
 
     def test_deploy_events_table_present(self) -> None:
         content = _migration_path().read_text()
@@ -50,6 +50,7 @@ class TestMigrationFile:
 
 
 # ── Aplicação idempotente da migration ────────────────────────────────────────
+
 
 class TestMigrationApply:
     def test_applies_twice_without_error(self, tmp_path: Path) -> None:
@@ -97,6 +98,7 @@ class TestMigrationApply:
 
 # ── _db_record_event e _db_update_worker_health ───────────────────────────────
 
+
 class TestDbHelpers:
     @pytest.fixture
     def db_with_schema(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -109,6 +111,7 @@ class TestDbHelpers:
 
     def test_record_event_inserts_row(self, db_with_schema: Path) -> None:
         from agent.deploy.supervisor import _db_record_event
+
         _db_record_event("start", "orchestrator", {"pid": 1234}, True)
 
         conn = sqlite3.connect(str(db_with_schema))
@@ -119,6 +122,7 @@ class TestDbHelpers:
 
     def test_record_event_stores_json_detail(self, db_with_schema: Path) -> None:
         from agent.deploy.supervisor import _db_record_event
+
         detail = {"pid": 9999, "exit_code": -9}
         _db_record_event("crash", "api", detail, False)
 
@@ -132,13 +136,12 @@ class TestDbHelpers:
 
     def test_update_worker_health_upsert(self, db_with_schema: Path) -> None:
         from agent.deploy.supervisor import _db_update_worker_health
+
         _db_update_worker_health("orchestrator", 1234, 0.0, 0, "running")
         _db_update_worker_health("orchestrator", 5678, None, 1, "stopped")
 
         conn = sqlite3.connect(str(db_with_schema))
-        row = conn.execute(
-            "SELECT pid, restarts, state FROM worker_health WHERE worker='orchestrator'"
-        ).fetchone()
+        row = conn.execute("SELECT pid, restarts, state FROM worker_health WHERE worker='orchestrator'").fetchone()
         conn.close()
         assert row is not None
         assert row[0] == 5678  # atualizado
@@ -148,9 +151,15 @@ class TestDbHelpers:
     def test_all_valid_event_kinds(self, db_with_schema: Path) -> None:
         """Todos os 11 event kinds do §8 podem ser inseridos."""
         from agent.deploy.supervisor import _db_record_event
+
         kinds = [
-            "start", "stop", "crash", "restart",
-            "backup", "restore", "upgrade",
+            "start",
+            "stop",
+            "crash",
+            "restart",
+            "backup",
+            "restore",
+            "upgrade",
         ]
         for kind in kinds:
             _db_record_event(kind, "orchestrator", {}, True)
@@ -164,16 +173,16 @@ class TestDbHelpers:
         """Falha ao gravar evento não levanta exceção — supervisor não pode morrer por isso."""
         monkeypatch.setenv("AGENT_DB_SQLITE", "/nonexistent/path/agent.db")
         from agent.deploy.supervisor import _db_record_event
+
         _db_record_event("start", "api", {}, True)  # não deve levantar
 
     def test_worker_health_flapping_state(self, db_with_schema: Path) -> None:
         from agent.deploy.supervisor import _db_update_worker_health
+
         _db_update_worker_health("orchestrator", 0, None, 11, "flapping")
 
         conn = sqlite3.connect(str(db_with_schema))
-        row = conn.execute(
-            "SELECT state, restarts FROM worker_health WHERE worker='orchestrator'"
-        ).fetchone()
+        row = conn.execute("SELECT state, restarts FROM worker_health WHERE worker='orchestrator'").fetchone()
         conn.close()
         assert row[0] == "flapping"
         assert row[1] == 11

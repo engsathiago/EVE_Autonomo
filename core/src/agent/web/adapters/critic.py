@@ -12,9 +12,7 @@ if TYPE_CHECKING:
 log = get_logger(__name__)
 
 
-async def get_critic_queue(
-    db_pool: asyncpg.Pool, limit: int = 50, offset: int = 0
-) -> list[dict[str, Any]]:
+async def get_critic_queue(db_pool: asyncpg.Pool, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
     """Retorna avaliações pendentes (sem veredito final ainda)."""
     try:
         rows = await db_pool.fetch(
@@ -69,9 +67,7 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
     return {
         "id": str(row["id"]),
         "tool_name": row["tool_name"],
-        "tool_args": json.loads(row["tool_args"])
-        if isinstance(row["tool_args"], str)
-        else row["tool_args"],
+        "tool_args": json.loads(row["tool_args"]) if isinstance(row["tool_args"], str) else row["tool_args"],
         "context_summary": row["context_summary"],
         "tier": row["tier"],
         "estimated_cost_usd": float(row["estimated_cost_usd"] or 0),

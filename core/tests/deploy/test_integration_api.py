@@ -10,6 +10,7 @@ Cobre:
 
 Não sobe Postgres real. pg_dump/pg_restore são mockados.
 """
+
 from __future__ import annotations
 
 import sqlite3
@@ -22,6 +23,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _make_app(
     tmp_path: Path,
@@ -43,20 +45,24 @@ def _make_app(
 
     if with_deploy:
         from agent.api.deploy import make_deploy_router
+
         app.include_router(make_deploy_router())
 
     if with_health:
         from agent.deploy.health import make_health_router
+
         app.include_router(make_health_router())
 
     if with_metrics:
         from agent.deploy.metrics import make_metrics_router
+
         app.include_router(make_metrics_router())
 
     return TestClient(app, raise_server_exceptions=False)
 
 
 # ── C4: /health/live <50ms ────────────────────────────────────────────────────
+
 
 class TestLivenessC4:
     def test_200_response(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -93,6 +99,7 @@ class TestLivenessC4:
 
 # ── C5: /health/ready com Postgres up/down ────────────────────────────────────
 
+
 class TestReadinessC5:
     def test_200_when_sqlite_ok(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         client = _make_app(tmp_path, monkeypatch, with_deploy=False, with_metrics=False)
@@ -106,6 +113,7 @@ class TestReadinessC5:
         from fastapi import FastAPI
 
         from agent.deploy.health import make_health_router
+
         app = FastAPI()
         app.include_router(make_health_router())
         client = TestClient(app, raise_server_exceptions=False)
@@ -153,6 +161,7 @@ class TestReadinessC5:
 
 
 # ── C6: /health/deep executa noop skill ───────────────────────────────────────
+
 
 class TestDeepHealthC6:
     def test_200_with_mocked_noop(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -209,6 +218,7 @@ class TestDeepHealthC6:
 
 # ── C7: /metrics com 12 séries ───────────────────────────────────────────────
 
+
 class TestMetricsC7:
     _EXPECTED_SERIES = [
         "agent_missions_total",
@@ -232,9 +242,7 @@ class TestMetricsC7:
         for name in self._EXPECTED_SERIES:
             assert name in body, f"série ausente: {name}"
 
-    def test_worker_restarts_initialized_to_zero(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_worker_restarts_initialized_to_zero(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """C7: counters de boot têm valor não-negativo (inicializados com labels)."""
         client = _make_app(tmp_path, monkeypatch, with_deploy=False, with_health=False)
         body = client.get("/metrics").text
@@ -242,9 +250,7 @@ class TestMetricsC7:
         for worker in ("orchestrator", "scheduler", "api", "heartbeat"):
             assert f'worker="{worker}"' in body, f"label worker={worker} ausente"
 
-    def test_missions_labels_initialized(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_missions_labels_initialized(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """C7: missions_total inicializado com labels completed/failed/cancelled."""
         client = _make_app(tmp_path, monkeypatch, with_deploy=False, with_health=False)
         body = client.get("/metrics").text
@@ -272,6 +278,7 @@ class TestMetricsC7:
 
 
 # ── C8: POST /api/v1/deploy/backup ───────────────────────────────────────────
+
 
 class TestBackupApiC8:
     def test_backup_returns_200(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -312,11 +319,10 @@ class TestBackupApiC8:
 
 # ── C9: POST /api/v1/deploy/restore ──────────────────────────────────────────
 
+
 class TestRestoreApiC9:
     @pytest.fixture
-    def client_with_backup(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> tuple[TestClient, str]:
+    def client_with_backup(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[TestClient, str]:
         """Configura app, cria backup, retorna (client, tag)."""
         db = tmp_path / "agent.db"
         conn = sqlite3.connect(str(db))
@@ -333,32 +339,28 @@ class TestRestoreApiC9:
         (tmp_path / "skills" / "_active").mkdir(parents=True, exist_ok=True)
 
         from agent.deploy.backup import _backup_sqlite
+
         result = _backup_sqlite("20260701")
         assert result["ok"]
 
         from agent.api.deploy import make_deploy_router
+
         app = FastAPI()
         app.include_router(make_deploy_router())
         client = TestClient(app, raise_server_exceptions=False)
         return client, "20260701"
 
-    def test_restore_returns_200(
-        self, client_with_backup: tuple[TestClient, str]
-    ) -> None:
+    def test_restore_returns_200(self, client_with_backup: tuple[TestClient, str]) -> None:
         client, tag = client_with_backup
         resp = client.post("/api/v1/deploy/restore", json={"date": tag})
         assert resp.status_code == 200
 
-    def test_restore_has_results(
-        self, client_with_backup: tuple[TestClient, str]
-    ) -> None:
+    def test_restore_has_results(self, client_with_backup: tuple[TestClient, str]) -> None:
         client, tag = client_with_backup
         data = client.post("/api/v1/deploy/restore", json={"date": tag}).json()
         assert "results" in data
 
-    def test_restore_sqlite_ok(
-        self, client_with_backup: tuple[TestClient, str]
-    ) -> None:
+    def test_restore_sqlite_ok(self, client_with_backup: tuple[TestClient, str]) -> None:
         """C9: restore de SQLite é bem-sucedido."""
         client, tag = client_with_backup
         data = client.post(

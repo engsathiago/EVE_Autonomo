@@ -1,4 +1,5 @@
 """Testes de autenticação — C2 (sem token → 401) e C9 (token rotacionado invalida em <5s)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -23,6 +24,7 @@ def test_no_token_returns_401(token_file: Path) -> None:
     app = make_web_app()
     with patch("agent.web.auth._TOKEN_FILE", token_file):
         from agent.web import auth as _auth
+
         _auth._token_hash = None
         _auth._token_loaded_at = 0.0
         with TestClient(app, raise_server_exceptions=False) as client:
@@ -35,6 +37,7 @@ def test_wrong_token_returns_401(token_file: Path) -> None:
     app = make_web_app()
     with patch("agent.web.auth._TOKEN_FILE", token_file):
         from agent.web import auth as _auth
+
         _auth._token_hash = None
         _auth._token_loaded_at = 0.0
         with TestClient(app, raise_server_exceptions=False) as client:
@@ -47,6 +50,7 @@ def test_valid_token_returns_200(token_file: Path) -> None:
     app = make_web_app()
     with patch("agent.web.auth._TOKEN_FILE", token_file):
         from agent.web import auth as _auth
+
         _auth._token_hash = None
         _auth._token_loaded_at = 0.0
         with TestClient(app, raise_server_exceptions=False) as client:
@@ -78,6 +82,7 @@ def test_token_rotation_invalidates_in_5s(tmp_path: Path) -> None:
 def test_missing_token_file_returns_false(tmp_path: Path) -> None:
     """Arquivo de token inexistente deve retornar False."""
     from agent.web import auth
+
     missing = tmp_path / "nonexistent"
     with patch("agent.web.auth._TOKEN_FILE", missing):
         auth._token_hash = None
@@ -88,7 +93,9 @@ def test_missing_token_file_returns_false(tmp_path: Path) -> None:
 def test_generate_token_is_32_bytes_b64() -> None:
     """Token gerado deve ter 32 bytes base64url (43 chars sem padding)."""
     from agent.web.auth import generate_token
+
     tok = generate_token()
     assert len(tok) >= 40
     import re
-    assert re.match(r'^[A-Za-z0-9_-]+$', tok)
+
+    assert re.match(r"^[A-Za-z0-9_-]+$", tok)

@@ -110,9 +110,7 @@ class ChannelRouter:
 
         # 3. Rate limit por canal
         if not self._channel_rl.allow(msg.channel):
-            log.info(
-                "router.rate_limited", channel=msg.channel, user_id=msg.user_id, reason="channel"
-            )
+            log.info("router.rate_limited", channel=msg.channel, user_id=msg.user_id, reason="channel")
             ch_metrics.rate_limited_total.labels(channel=msg.channel, reason="channel").inc()
             return
 
@@ -135,9 +133,7 @@ class ChannelRouter:
         t0 = time.monotonic()
         response_text = await self._dispatch(msg, session_id, adapter)
         latency = time.monotonic() - t0
-        ch_metrics.message_latency_seconds.labels(channel=msg.channel, direction="out").observe(
-            latency
-        )
+        ch_metrics.message_latency_seconds.labels(channel=msg.channel, direction="out").observe(latency)
 
         if response_text is None:
             return
@@ -147,9 +143,7 @@ class ChannelRouter:
         await adapter.send(msg.user_id, out_msg)
 
         # 7. Persistir direction=out
-        await self._persist(
-            msg.channel, "out", msg.user_id, None, response_text, msg.thread_id, None, session_id
-        )
+        await self._persist(msg.channel, "out", msg.user_id, None, response_text, msg.thread_id, None, session_id)
         ch_metrics.messages_total.labels(channel=msg.channel, direction="out").inc()
 
     async def _dispatch(

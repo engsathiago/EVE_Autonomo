@@ -1,4 +1,5 @@
 """Testa CronStore — CRUD básico com pool mockado."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

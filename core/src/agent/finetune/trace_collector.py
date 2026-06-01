@@ -135,9 +135,7 @@ class TraceCollector:
 
             # Skip if input or output is trivially small
             input_str = json.dumps(input_data) if not isinstance(input_data, str) else input_data
-            output_str = (
-                json.dumps(output_data) if not isinstance(output_data, str) else output_data
-            )
+            output_str = json.dumps(output_data) if not isinstance(output_data, str) else output_data
             if len(input_str) < 10 or len(output_str) < 10:
                 continue
 

@@ -10,6 +10,7 @@ Cenários:
 
 Custo estimado: ~$0.01-0.05 (Haiku 4.5: $0.80/1M in, $4/1M out)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -32,6 +33,7 @@ sys.path.insert(0, "/Users/fate/Desktop/agent/core/src")
 # Carrega .env antes de qualquer import que leia vars de ambiente
 try:
     from dotenv import load_dotenv
+
     load_dotenv("/Users/fate/Desktop/agent/.env", override=False)
 except ImportError:
     pass  # python-dotenv não instalado — variáveis devem estar no env
@@ -69,7 +71,7 @@ async def build_orchestrator(pool):
         task_store=task_store,
         subagent_pool=subagent_pool,
         classifier=classifier,
-        memory_store=None,   # sem memória persistente no smoke test
+        memory_store=None,  # sem memória persistente no smoke test
         curator=None,
         compressor=compressor,
         skill_manager=None,
@@ -129,21 +131,17 @@ async def run_scenario(
             missions_completed=0,
         )
         with patch("agent.autonomous.loop.needs_critic", return_value=False):
-            dispatched, result = await loop._process_mission(
-                mission, budget=MAX_STEPS_PER_TICK, report=report
-            )
+            dispatched, result = await loop._process_mission(mission, budget=MAX_STEPS_PER_TICK, report=report)
 
-        print(f"    tick {attempt+1}: dispatched={dispatched} result={result} "
-              f"steps_failed={report.steps_failed}")
+        print(f"    tick {attempt + 1}: dispatched={dispatched} result={result} steps_failed={report.steps_failed}")
 
         # Para quando não há mais pending
         pending = await mission_store._pool.fetchval(
-            "SELECT COUNT(*) FROM mission_steps "
-            "WHERE mission_id = $1 AND status IN ('pending', 'running')",
+            "SELECT COUNT(*) FROM mission_steps WHERE mission_id = $1 AND status IN ('pending', 'running')",
             mission.id,
         )
         if pending == 0:
-            print(f"    → zero pendentes após tick {attempt+1}")
+            print(f"    → zero pendentes após tick {attempt + 1}")
             break
         await asyncio.sleep(1)  # pequena pausa entre ticks
 
@@ -209,8 +207,7 @@ async def main() -> int:
             "Use a tool list_dir para listar os arquivos em "
             "/Users/fate/Desktop/agent/core/src/agent/api/ "
             "e retorne a lista de arquivos .py encontrados.",
-            "Use a tool write_file para gravar o texto 'smoke_b6_ok' "
-            "no arquivo /tmp/smoke_b6.txt",
+            "Use a tool write_file para gravar o texto 'smoke_b6_ok' no arquivo /tmp/smoke_b6.txt",
         ],
         mission_store=mission_store,
         task_store=task_store,
@@ -222,10 +219,7 @@ async def main() -> int:
     c2 = await run_scenario(
         name="ambiguo",
         objective="Descobrir quantidade de arquivos Python em core/src/agent/api/",
-        steps=[
-            "Quero saber quantos arquivos Python existem em "
-            "/Users/fate/Desktop/agent/core/src/agent/api/"
-        ],
+        steps=["Quero saber quantos arquivos Python existem em /Users/fate/Desktop/agent/core/src/agent/api/"],
         mission_store=mission_store,
         task_store=task_store,
         orchestrator=orchestrator,
@@ -242,8 +236,7 @@ async def main() -> int:
             tools = s["tools_invoked"]
             count = s["tool_count"]
             raw = (s.get("raw_text") or s.get("text") or "")[:120]
-            print(f"  seq={s['sequence']} status={status!r} verdict={verdict!r} "
-                  f"tools={tools} count={count}")
+            print(f"  seq={s['sequence']} status={status!r} verdict={verdict!r} tools={tools} count={count}")
             if raw:
                 print(f"    texto: {raw!r}")
 
@@ -276,7 +269,8 @@ async def main() -> int:
 
     # Classificação
     c1_executed = all(
-        s.get("verdict") == "executed" for s in c1["steps"]
+        s.get("verdict") == "executed"
+        for s in c1["steps"]
         if s.get("status") in ("done", "failed_no_execution", "failed")
     )
     c1_any_prose = any(s.get("verdict") == "prose_only" for s in c1["steps"])
@@ -301,8 +295,7 @@ async def main() -> int:
             for step in s["steps"]
         ]
         await pool.execute(
-            "DELETE FROM tasks WHERE source='cron' "
-            "AND created_at > NOW() - INTERVAL '30 minutes'",
+            "DELETE FROM tasks WHERE source='cron' AND created_at > NOW() - INTERVAL '30 minutes'",
         )
         await pool.execute("DELETE FROM mission_steps WHERE mission_id=$1::uuid", mid)
         await pool.execute("DELETE FROM missions WHERE id=$1::uuid", mid)

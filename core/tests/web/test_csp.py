@@ -1,4 +1,5 @@
 """Testa CSP via HTTP response header (movido de meta tag para header HTTP)."""
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -105,8 +106,6 @@ def test_non_html_asset_has_no_csp_header(client: TestClient) -> None:
     """Arquivos não-HTML (CSS, JS) NÃO recebem o header CSP."""
     resp = client.get("/css/term.css")
     if resp.status_code == 200:
-        assert "content-security-policy" not in resp.headers, (
-            "CSS não deve receber header CSP"
-        )
+        assert "content-security-policy" not in resp.headers, "CSS não deve receber header CSP"
     else:
         pytest.skip("term.css não encontrado — ok em ambiente de teste sem assets")

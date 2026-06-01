@@ -210,21 +210,13 @@ class Phase7Metrics:
             "missions_failed_24h": self._missions_failed.value(),
             "missions_abandoned_24h": self._missions_abandoned.value(),
             "steps_per_tick_avg": (
-                sum(c for c, _ in self._steps_per_tick) / len(self._steps_per_tick)
-                if self._steps_per_tick
-                else 0.0
+                sum(c for c, _ in self._steps_per_tick) / len(self._steps_per_tick) if self._steps_per_tick else 0.0
             ),
             "step_success_rate_7d": steps_done / steps_total if steps_total > 0 else 1.0,
             "critic_evaluations_total_24h": total_critic,
-            "critic_approve_rate": (
-                self._critic_approve.value() / total_critic if total_critic else 0.0
-            ),
-            "critic_reject_rate": (
-                self._critic_reject.value() / total_critic if total_critic else 0.0
-            ),
-            "critic_escalate_rate": (
-                self._critic_escalate.value() / total_critic if total_critic else 0.0
-            ),
+            "critic_approve_rate": (self._critic_approve.value() / total_critic if total_critic else 0.0),
+            "critic_reject_rate": (self._critic_reject.value() / total_critic if total_critic else 0.0),
+            "critic_escalate_rate": (self._critic_escalate.value() / total_critic if total_critic else 0.0),
             "critic_latency_p50_ms": self._critic_latency.p50(),
             "critic_latency_p95_ms": self._critic_latency.p95(),
             "critic_cost_usd_avg": (

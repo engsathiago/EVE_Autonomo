@@ -110,8 +110,7 @@ def skill_show(name: str) -> None:
 
     if skill.arguments:
         args_str = "\n".join(
-            f"  {a.name}: {a.type}{'*' if a.required else ''}"
-            + (f" = {a.default}" if a.default is not None else "")
+            f"  {a.name}: {a.type}{'*' if a.required else ''}" + (f" = {a.default}" if a.default is not None else "")
             for a in skill.arguments
         )
         table.add_row("Argumentos", args_str)
@@ -171,12 +170,8 @@ def skill_validate(path: str) -> None:
 
 @app.command("review")
 def skill_review(
-    promote: Annotated[
-        str | None, typer.Option("--promote", help="Promover draft pelo nome")
-    ] = None,
-    discard: Annotated[
-        str | None, typer.Option("--discard", help="Descartar draft pelo nome")
-    ] = None,
+    promote: Annotated[str | None, typer.Option("--promote", help="Promover draft pelo nome")] = None,
+    discard: Annotated[str | None, typer.Option("--discard", help="Descartar draft pelo nome")] = None,
 ) -> None:
     """Lista, promove ou descarta drafts de skills auto-criadas."""
     from agent.skills.creator import SkillCreator
@@ -270,9 +265,7 @@ def skill_create_from_session(
             path = await creator.extract_from_session(sid, description)
             if path:
                 console.print(f"[green]✓[/green] Draft criado: {path}")
-                console.print(
-                    f"[dim]Revisar com:[/dim] [bold]agent skill review --promote {path.stem}[/bold]"
-                )
+                console.print(f"[dim]Revisar com:[/dim] [bold]agent skill review --promote {path.stem}[/bold]")
             else:
                 console.print("[yellow]Nenhuma skill extraível nesta sessão.[/yellow]")
         finally:

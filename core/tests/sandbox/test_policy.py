@@ -5,6 +5,7 @@ Cobre §8 critérios 5, 8:
 - NetworkPolicy.OPEN sem allow_open_network=True bloqueado.
 - get_policy com nome inválido lança KeyError.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -22,6 +23,7 @@ from agent.sandbox.policy import (
 # POLICY_DEFAULT
 # ---------------------------------------------------------------------------
 
+
 def test_policy_default_limits():
     p = POLICY_DEFAULT
     assert p.name == "default"
@@ -37,6 +39,7 @@ def test_policy_default_limits():
 # POLICY_SKILL_DEV
 # ---------------------------------------------------------------------------
 
+
 def test_policy_skill_dev_uses_allowlist():
     p = POLICY_SKILL_DEV
     assert p.name == "skill_dev"
@@ -50,6 +53,7 @@ def test_policy_skill_dev_uses_allowlist():
 # ---------------------------------------------------------------------------
 # POLICY_UNTRUSTED
 # ---------------------------------------------------------------------------
+
 
 def test_policy_untrusted_requires_critic():
     """POLICY_UNTRUSTED deve exigir aprovação do Crítico (§8 critério 5)."""
@@ -65,6 +69,7 @@ def test_policy_untrusted_requires_critic():
 # ---------------------------------------------------------------------------
 # get_policy
 # ---------------------------------------------------------------------------
+
 
 def test_get_policy_default():
     p = get_policy("default")
@@ -85,6 +90,7 @@ def test_get_policy_nonexistent_raises():
 # ---------------------------------------------------------------------------
 # NetworkPolicy.OPEN gate
 # ---------------------------------------------------------------------------
+
 
 async def test_open_network_requires_explicit_gate():
     """
@@ -112,6 +118,7 @@ async def test_open_network_requires_explicit_gate():
             )
     finally:
         from agent.sandbox.policy import _POLICY_REGISTRY
+
         _POLICY_REGISTRY.pop("_test_open_no_gate", None)
 
 
@@ -129,6 +136,7 @@ def test_open_network_with_gate_allowed():
 # ---------------------------------------------------------------------------
 # SandboxPolicy dataclass
 # ---------------------------------------------------------------------------
+
 
 def test_sandbox_policy_defaults():
     p = SandboxPolicy(name="test", config=SandboxConfig())

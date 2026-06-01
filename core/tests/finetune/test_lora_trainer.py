@@ -1,4 +1,5 @@
 """Tests for lora_trainer.py — C6 (GPU check, exec_tool via sandbox, manifest)."""
+
 from __future__ import annotations
 
 import json
@@ -36,6 +37,7 @@ def _make_exec_result(exit_code: int = 0, stdout: str = "", stderr: str = "") ->
 
 # ── GPU Check ────────────────────────────────────────────────────────────────
 
+
 class TestCheckGpu:
     def test_raises_when_nvidia_smi_not_found(self):
         """C6: TrainerNotAvailable when nvidia-smi absent."""
@@ -72,6 +74,7 @@ class TestCheckGpu:
 
 # ── Checkpoint ID Format ──────────────────────────────────────────────────────
 
+
 class TestCheckpointId:
     def test_checkpoint_id_format(self):
         """Checkpoint ID = {short_model}-lora-{YYYYMMDD}-{run_id[:8]}."""
@@ -91,6 +94,7 @@ class TestCheckpointId:
 
 
 # ── Manifest ─────────────────────────────────────────────────────────────────
+
 
 class TestWriteManifest:
     def test_manifest_written_to_checkpoint_dir(self, tmp_path: Path):
@@ -127,6 +131,7 @@ class TestWriteManifest:
 
 # ── Extract Final Loss ────────────────────────────────────────────────────────
 
+
 class TestExtractFinalLoss:
     def test_returns_none_when_log_missing(self, tmp_path: Path):
         result = LoraTrainer._extract_final_loss(tmp_path / "nonexistent.jsonl")
@@ -135,8 +140,7 @@ class TestExtractFinalLoss:
     def test_returns_loss_from_last_line(self, tmp_path: Path):
         log = tmp_path / "train_log.jsonl"
         log.write_text(
-            json.dumps({"final_loss": 2.1, "steps": 10}) + "\n"
-            + json.dumps({"final_loss": 1.5, "steps": 20}) + "\n"
+            json.dumps({"final_loss": 2.1, "steps": 10}) + "\n" + json.dumps({"final_loss": 1.5, "steps": 20}) + "\n"
         )
         result = LoraTrainer._extract_final_loss(log)
         assert abs(result - 1.5) < 1e-6
@@ -149,6 +153,7 @@ class TestExtractFinalLoss:
 
 
 # ── Full Train Flow (all subprocesses mocked) ────────────────────────────────
+
 
 class TestTrainFlow:
     @pytest.mark.asyncio
@@ -209,9 +214,7 @@ class TestTrainFlow:
         with patch("subprocess.run", side_effect=[gpu_proc, ollama_proc]):
             with patch.object(trainer, "_run_training", new=fake_run_training):
                 with patch.object(trainer, "_merge_and_quantize", new=fake_merge):
-                    result = await trainer.train(
-                        dataset_path=dataset, run_id="run-ok12345", config=config
-                    )
+                    result = await trainer.train(dataset_path=dataset, run_id="run-ok12345", config=config)
 
         assert isinstance(result, TrainResult)
         assert result.checkpoint_dir.is_dir()
@@ -233,6 +236,7 @@ class TestTrainFlow:
 
 
 # ── Build Script Sanity ───────────────────────────────────────────────────────
+
 
 class TestBuildScript:
     def test_train_script_references_dataset_path(self, tmp_path: Path):

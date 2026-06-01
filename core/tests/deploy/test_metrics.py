@@ -1,4 +1,5 @@
 """Testes das métricas Prometheus (F10)."""
+
 from __future__ import annotations
 
 import prometheus_client as prom
@@ -10,6 +11,7 @@ from agent.deploy.metrics import _REGISTRY, METRICS, make_metrics_router
 
 # ── Fixture ───────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def metrics_client() -> TestClient:
     app = FastAPI()
@@ -18,6 +20,7 @@ def metrics_client() -> TestClient:
 
 
 # ── Existência das 12 séries ──────────────────────────────────────────────────
+
 
 class TestMetricsDefinition:
     def test_missions_total_is_counter(self) -> None:
@@ -58,6 +61,7 @@ class TestMetricsDefinition:
 
 
 # ── Endpoint /metrics ─────────────────────────────────────────────────────────
+
 
 class TestMetricsEndpoint:
     def test_returns_200(self, metrics_client: TestClient) -> None:
@@ -111,6 +115,7 @@ class TestMetricsEndpoint:
 
 # ── Incremento de counters ────────────────────────────────────────────────────
 
+
 class TestMetricsIncrement:
     def test_mission_counter_increment(self, metrics_client: TestClient) -> None:
         before_text = metrics_client.get("/metrics").text
@@ -134,6 +139,7 @@ class TestMetricsIncrement:
 
 
 # ── C7: métricas não-zero logo após boot ──────────────────────────────────────
+
 
 class TestMetricsBootC7:
     def test_worker_restarts_initialized_for_all_workers(self) -> None:
@@ -172,6 +178,7 @@ class TestMetricsBootC7:
     def test_update_dynamic_metrics_sets_uptime(self) -> None:
         """_update_dynamic_metrics define uptime > 0."""
         from agent.deploy.metrics import _update_dynamic_metrics
+
         _update_dynamic_metrics()
         text = prom.generate_latest(_REGISTRY).decode()
         for line in text.splitlines():

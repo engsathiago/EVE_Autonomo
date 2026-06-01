@@ -3,6 +3,7 @@ Integração: tarefa EPIC cria N subagentes em paralelo.
 
 Usa mocks — não precisa de Postgres nem LLM real.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -69,15 +70,22 @@ async def test_epic_creates_parallel_subagents() -> None:
 
     async def _timed_run(*args, **kwargs) -> AgentResult:  # type: ignore[no-untyped-def]
         import time
+
         start_times.append(time.monotonic())
         await asyncio.sleep(0.1)
         return _success_result()
 
-    with patch.object(orchestrator, "_plan_epic", AsyncMock(return_value=[
-        "site A: extrair título",
-        "site B: extrair título",
-        "site C: extrair título",
-    ])):
+    with patch.object(
+        orchestrator,
+        "_plan_epic",
+        AsyncMock(
+            return_value=[
+                "site A: extrair título",
+                "site B: extrair título",
+                "site C: extrair título",
+            ]
+        ),
+    ):
         with patch("agent.subagents.pool.build_subagent") as mock_build:
             mock_agent = MagicMock()
             mock_agent.run = _timed_run

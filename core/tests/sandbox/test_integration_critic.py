@@ -5,6 +5,7 @@ Cobre §8 critério 5: POLICY_UNTRUSTED integra com Crítico.
 - Sem critic, execução prossegue (graceful degradation).
 - request_approval é chamado exatamente uma vez por exec_tool.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -14,6 +15,7 @@ from tests.sandbox.conftest import make_subprocess_sandbox
 # ---------------------------------------------------------------------------
 # Aprovação do Crítico → executa
 # ---------------------------------------------------------------------------
+
 
 async def test_untrusted_critic_approved_executes():
     from agent.tools.exec_tool import exec_tool
@@ -36,6 +38,7 @@ async def test_untrusted_critic_approved_executes():
 # ---------------------------------------------------------------------------
 # Rejeição do Crítico → exit_code=-1 com razão
 # ---------------------------------------------------------------------------
+
 
 async def test_untrusted_critic_rejected_returns_minus_one():
     from agent.tools.exec_tool import exec_tool
@@ -75,6 +78,7 @@ async def test_critic_rejection_stderr_contains_policy_name():
 # Sem critic → execução prossegue (graceful)
 # ---------------------------------------------------------------------------
 
+
 async def test_untrusted_without_critic_runs():
     from agent.tools.exec_tool import exec_tool
 
@@ -92,6 +96,7 @@ async def test_untrusted_without_critic_runs():
 # ---------------------------------------------------------------------------
 # Política default → critic nunca é chamado
 # ---------------------------------------------------------------------------
+
 
 async def test_default_policy_critic_not_called():
     from agent.tools.exec_tool import exec_tool
@@ -114,6 +119,7 @@ async def test_default_policy_critic_not_called():
 # Métricas: rejeitado tem duration_ms=0 (não executou)
 # ---------------------------------------------------------------------------
 
+
 async def test_critic_rejected_result_has_zero_duration():
     from agent.tools.exec_tool import exec_tool
 
@@ -135,6 +141,7 @@ async def test_critic_rejected_result_has_zero_duration():
 # ---------------------------------------------------------------------------
 # request_approval recebe command e policy_name corretos
 # ---------------------------------------------------------------------------
+
 
 async def test_critic_receives_correct_args():
     from agent.tools.exec_tool import exec_tool

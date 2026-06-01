@@ -19,8 +19,8 @@ StepStatus = Literal[
     "done",
     "failed",
     "skipped",
-    "failed_no_execution",   # LLM respondeu prosa sem invocar nenhuma tool (Fase B)
-    "failed_missing_tool",   # tool declarada em tools_required não existe no registry (D.1)
+    "failed_no_execution",  # LLM respondeu prosa sem invocar nenhuma tool (Fase B)
+    "failed_missing_tool",  # tool declarada em tools_required não existe no registry (D.1)
 ]
 # failed_no_execution: LLM respondeu prosa — problema de execução/prompt.
 # failed_missing_tool: ferramenta declarada ausente — problema de configuração.
@@ -96,10 +96,7 @@ class MissionStore:
         metadata: dict | None = None,
     ) -> Mission:
         if not success_criteria:
-            raise ValueError(
-                "success_criteria não pode ser vazio"
-                " — missão requer pelo menos um critério verificável"
-            )
+            raise ValueError("success_criteria não pode ser vazio — missão requer pelo menos um critério verificável")
 
         mission_id = uuid4()
         now = datetime.now(tz=UTC)
@@ -132,20 +129,14 @@ class MissionStore:
         return _row_to_mission(row)
 
     async def list_active(self) -> list[Mission]:
-        rows = await self._pool.fetch(
-            "SELECT * FROM missions WHERE status = 'active' ORDER BY created_at"
-        )
+        rows = await self._pool.fetch("SELECT * FROM missions WHERE status = 'active' ORDER BY created_at")
         return [_row_to_mission(r) for r in rows]
 
     async def list_by_status(self, status: MissionStatus | None = None) -> list[Mission]:
         if status:
-            rows = await self._pool.fetch(
-                "SELECT * FROM missions WHERE status = $1 ORDER BY created_at", status
-            )
+            rows = await self._pool.fetch("SELECT * FROM missions WHERE status = $1 ORDER BY created_at", status)
         else:
-            rows = await self._pool.fetch(
-                "SELECT * FROM missions ORDER BY created_at DESC LIMIT 100"
-            )
+            rows = await self._pool.fetch("SELECT * FROM missions ORDER BY created_at DESC LIMIT 100")
         return [_row_to_mission(r) for r in rows]
 
     async def list_by_deadline(self, before: datetime) -> list[Mission]:
@@ -197,8 +188,7 @@ class MissionStore:
     ) -> MissionStep:
         if sequence is None:
             row = await self._pool.fetchrow(
-                "SELECT COALESCE(MAX(sequence), -1) + 1 AS next"
-                " FROM mission_steps WHERE mission_id = $1",
+                "SELECT COALESCE(MAX(sequence), -1) + 1 AS next FROM mission_steps WHERE mission_id = $1",
                 mission_id,
             )
             sequence = row["next"]
@@ -249,9 +239,7 @@ class MissionStore:
         now = datetime.now(tz=UTC)
         started_at = now if status == "running" else None
         completed_at = (
-            now
-            if status in ("done", "failed", "skipped", "failed_no_execution", "failed_missing_tool")
-            else None
+            now if status in ("done", "failed", "skipped", "failed_no_execution", "failed_missing_tool") else None
         )
 
         await self._pool.execute(

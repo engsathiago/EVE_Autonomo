@@ -73,9 +73,7 @@ def reflexive_search(
 
     async def _run() -> None:
         async with _http() as client:
-            resp = await client.post(
-                "/v1/memory/reflexive/search", json={"query": query, "top_k": top_k}
-            )
+            resp = await client.post("/v1/memory/reflexive/search", json={"query": query, "top_k": top_k})
             resp.raise_for_status()
             results = resp.json()
 
@@ -85,9 +83,7 @@ def reflexive_search(
 
         for i, r in enumerate(results, 1):
             console.print(f"\n[bold]{i}.[/bold] {r['insight']}")
-            console.print(
-                f"   [dim]relevância={r['relevance_score']:.2f}  recalls={r['times_recalled']}[/dim]"
-            )
+            console.print(f"   [dim]relevância={r['relevance_score']:.2f}  recalls={r['times_recalled']}[/dim]")
 
     asyncio.run(_run())
 

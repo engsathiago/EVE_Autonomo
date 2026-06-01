@@ -82,9 +82,7 @@ def make_approvals_router(get_approval_manager: Any) -> APIRouter:
         sm = get_skill_manager_fn()
         if sm is None:
             log.warning("approval.approved_but_no_skill_manager", approval_id=approval_id)
-            return DecisionResponse(
-                status="approved", result={"warning": "skill_manager unavailable"}
-            )
+            return DecisionResponse(status="approved", result={"warning": "skill_manager unavailable"})
 
         try:
             manifest = sm.get(state.skill_name)
@@ -154,9 +152,7 @@ def make_approvals_router_full(
             return DecisionResponse(status="rejected")
 
         if sm is None:
-            return DecisionResponse(
-                status="approved", result={"warning": "skill_manager unavailable"}
-            )
+            return DecisionResponse(status="approved", result={"warning": "skill_manager unavailable"})
 
         try:
             from agent.config import get_settings

@@ -107,15 +107,11 @@ class TemplateSkillRunner:
 
         state = await self._approval_manager.get(approval_id)
         if state.status != "approved":
-            raise SkillError(
-                f"Approval {approval_id!r} não está aprovado (status={state.status!r})."
-            )
+            raise SkillError(f"Approval {approval_id!r} não está aprovado (status={state.status!r}).")
 
         return await self._run_skill(manifest, state.skill_args)
 
-    async def _run_skill(
-        self, manifest: SkillManifest, raw_arguments: dict[str, Any]
-    ) -> SkillResult:
+    async def _run_skill(self, manifest: SkillManifest, raw_arguments: dict[str, Any]) -> SkillResult:
         """Núcleo de execução (sem verificação de approval)."""
         arguments = _fill_defaults(manifest, raw_arguments)
         system_prompt = _render_prompt(manifest.prompt, arguments)
@@ -158,9 +154,7 @@ class TemplateSkillRunner:
                     model=manifest.model,
                 )
             except Exception as exc:
-                raise SkillError(
-                    f"LLM falhou na segunda chamada da skill '{manifest.name}': {exc}"
-                ) from exc
+                raise SkillError(f"LLM falhou na segunda chamada da skill '{manifest.name}': {exc}") from exc
 
         return SkillResult(
             skill_name=manifest.name,
@@ -192,9 +186,7 @@ class TemplateSkillRunner:
             max_tokens=max_tokens,
         )
 
-    async def _execute_tool_calls(
-        self, tool_calls: list[dict[str, Any]], skill_name: str
-    ) -> list[dict[str, Any]]:
+    async def _execute_tool_calls(self, tool_calls: list[dict[str, Any]], skill_name: str) -> list[dict[str, Any]]:
         if not self._tool_registry:
             return []
 

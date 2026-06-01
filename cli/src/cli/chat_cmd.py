@@ -5,6 +5,7 @@ Comando dedicado para abrir o REPL rico da EVE. Pode ser invocado como:
   agent chat
   eve              (se o entry-point estiver instalado)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -49,6 +50,7 @@ _SLASH_COMMANDS = {
 # Estado da sessão
 # ---------------------------------------------------------------------------
 
+
 class ChatState:
     def __init__(self, model: str):
         self.model = model
@@ -57,7 +59,7 @@ class ChatState:
         self.total_output_tokens = 0
         self.total_cost_usd = 0.0
         self.started_at = time.time()
-        self.transcript: list[tuple[str, str]] = []   # (role, content)
+        self.transcript: list[tuple[str, str]] = []  # (role, content)
 
     def add_turn(self, user: str, assistant: str, in_tok: int, out_tok: int, cost: float):
         self.transcript.append(("user", user))
@@ -78,6 +80,7 @@ class ChatState:
 # ---------------------------------------------------------------------------
 # Entrada principal
 # ---------------------------------------------------------------------------
+
 
 @app.callback(invoke_without_command=True)
 def chat(
@@ -101,15 +104,18 @@ async def _run_chat(model_override: Optional[str] = None) -> None:
 
     # Inicializa registry de tools
     from agent.tools.registry import ToolRegistry, register_builtin
+
     registry = ToolRegistry()
     register_builtin(registry)
 
     # Prompt session com histórico e completion de slash commands
-    style = Style.from_dict({
-        "prompt": "ansigreen bold",
-        "model": "ansicyan",
-        "cost": "ansiyellow",
-    })
+    style = Style.from_dict(
+        {
+            "prompt": "ansigreen bold",
+            "model": "ansicyan",
+            "cost": "ansiyellow",
+        }
+    )
 
     session: PromptSession[str] = PromptSession(
         history=FileHistory(str(_HISTORY_FILE)),
@@ -122,7 +128,7 @@ async def _run_chat(model_override: Optional[str] = None) -> None:
     while True:
         try:
             raw = await session.prompt_async(
-                HTML('<prompt>›</prompt> '),
+                HTML("<prompt>›</prompt> "),
             )
         except (EOFError, KeyboardInterrupt):
             console.print()
@@ -148,17 +154,20 @@ async def _run_chat(model_override: Optional[str] = None) -> None:
 # UI helpers
 # ---------------------------------------------------------------------------
 
+
 def _show_banner(state: ChatState) -> None:
     console.clear()
-    console.print(Panel.fit(
-        Text.from_markup(
-            "[bold cyan]EVE[/bold cyan] — Agente Autônomo  "
-            f"[dim]| modelo:[/dim] [cyan]{state.model}[/cyan]\n"
-            "[dim]Digite[/dim] [yellow]/help[/yellow] [dim]para comandos · "
-            "[yellow]/exit[/yellow] ou Ctrl+D para sair[/dim]"
-        ),
-        border_style="cyan",
-    ))
+    console.print(
+        Panel.fit(
+            Text.from_markup(
+                "[bold cyan]EVE[/bold cyan] — Agente Autônomo  "
+                f"[dim]| modelo:[/dim] [cyan]{state.model}[/cyan]\n"
+                "[dim]Digite[/dim] [yellow]/help[/yellow] [dim]para comandos · "
+                "[yellow]/exit[/yellow] ou Ctrl+D para sair[/dim]"
+            ),
+            border_style="cyan",
+        )
+    )
     console.print()
 
 
@@ -166,17 +175,18 @@ def _bottom_toolbar(state: ChatState) -> HTML:
     elapsed = int(time.time() - state.started_at)
     mins, secs = divmod(elapsed, 60)
     return HTML(
-        f' <model>{state.model}</model>  '
-        f'│ msgs: {state.messages}  '
-        f'│ tokens: {state.total_input_tokens + state.total_output_tokens:,}  '
-        f'│ <cost>${state.total_cost_usd:.4f}</cost>  '
-        f'│ ⏱ {mins:02d}:{secs:02d}'
+        f" <model>{state.model}</model>  "
+        f"│ msgs: {state.messages}  "
+        f"│ tokens: {state.total_input_tokens + state.total_output_tokens:,}  "
+        f"│ <cost>${state.total_cost_usd:.4f}</cost>  "
+        f"│ ⏱ {mins:02d}:{secs:02d}"
     )
 
 
 # ---------------------------------------------------------------------------
 # Slash commands
 # ---------------------------------------------------------------------------
+
 
 async def _handle_slash(line: str, state: ChatState, registry, settings) -> bool:
     """Retorna True se devemos sair do chat."""
@@ -282,6 +292,7 @@ def _cmd_tools(registry) -> None:
 async def _cmd_skills(settings) -> None:
     try:
         from agent.skills.manager import SkillManager
+
         manager = await SkillManager.create_for_session(settings.skills)
         skills = manager.list_skills()
         if not skills:
@@ -308,6 +319,7 @@ async def _cmd_missions(settings) -> None:
         import os
 
         import asyncpg
+
         conn = await asyncpg.connect(os.environ.get("POSTGRES_URL", ""), timeout=3)
         try:
             rows = await conn.fetch(
@@ -335,6 +347,7 @@ async def _cmd_missions(settings) -> None:
 async def _cmd_approvals(settings) -> None:
     try:
         import httpx
+
         async with httpx.AsyncClient(timeout=5) as c:
             r = await c.get("http://localhost:8000/v1/approvals")
             if r.status_code != 200:
@@ -387,6 +400,7 @@ def _cmd_save(state: ChatState, arg: str) -> None:
 # Execução de um turno
 # ---------------------------------------------------------------------------
 
+
 async def _execute_turn(user_input: str, state: ChatState, registry, settings) -> None:
     """Executa uma mensagem do usuário e mostra a resposta da EVE."""
     from agent.core import AIAgent
@@ -395,8 +409,7 @@ async def _execute_turn(user_input: str, state: ChatState, registry, settings) -
 
     # Provider/model dinâmico — respeita troca via /model
     planner = _build_transport_for_model(state.model, settings)
-    reflector = AnthropicTransport(model=settings.anthropic.reflector_model) \
-        if settings.anthropic.api_key else planner
+    reflector = AnthropicTransport(model=settings.anthropic.reflector_model) if settings.anthropic.api_key else planner
 
     agent = AIAgent(
         transport=planner,
@@ -415,12 +428,14 @@ async def _execute_turn(user_input: str, state: ChatState, registry, settings) -
                 if text:
                     # Renderiza como Markdown se parece conter formatação
                     if any(m in text for m in ("```", "**", "##", "- ")):
-                        console.print(Panel(
-                            Markdown(text),
-                            title="[bold cyan]EVE[/bold cyan]",
-                            border_style="cyan",
-                            padding=(0, 1),
-                        ))
+                        console.print(
+                            Panel(
+                                Markdown(text),
+                                title="[bold cyan]EVE[/bold cyan]",
+                                border_style="cyan",
+                                padding=(0, 1),
+                            )
+                        )
                     else:
                         console.print(f"[bold cyan]EVE[/bold cyan]  {text}")
                     response_text += text
@@ -479,6 +494,7 @@ def _build_transport_for_model(model: str, settings):
 
     if provider == "ollama":
         from agent.models.transports.ollama import OllamaTransport
+
         # Para Ollama, o "modelo" inclui o provider; passamos só o nome do modelo
         # mas o AIAgent vai usar o model_override
         return OllamaTransport(

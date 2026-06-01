@@ -1,4 +1,5 @@
 """Tests for dataset_builder.py — C3 (dedupe, PII filter, DatasetTooSmall)."""
+
 from __future__ import annotations
 
 import json
@@ -20,7 +21,10 @@ def _make_record(input_text: str, output_text: str, i: int = 0) -> dict:
 
 
 def _make_records(n: int, prefix: str = "Record") -> list[dict]:
-    return [_make_record(f"{prefix} input {i}: explain how this works", f"Output {i}: here is the explanation", i) for i in range(n)]
+    return [
+        _make_record(f"{prefix} input {i}: explain how this works", f"Output {i}: here is the explanation", i)
+        for i in range(n)
+    ]
 
 
 class TestDatasetBuilder:
@@ -74,6 +78,7 @@ class TestDatasetBuilder:
         records = _make_records(5)
         path, stats = builder.build(records)
         import stat
+
         mode = path.stat().st_mode
         # File should not be writable by anyone
         assert not (mode & stat.S_IWUSR)

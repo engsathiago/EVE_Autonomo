@@ -122,9 +122,7 @@ def skills_run(
 
         console.print("[green]OK[/green]")
         console.print_json(json.dumps(result["output"]))
-        console.print(
-            f"execution_id={result['execution_id']} duration={result['duration_seconds']:.2f}s"
-        )
+        console.print(f"execution_id={result['execution_id']} duration={result['duration_seconds']:.2f}s")
 
     asyncio.run(_run())
 

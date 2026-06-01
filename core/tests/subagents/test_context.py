@@ -4,6 +4,7 @@ Testa SubAgentContext — isolamento de contexto por construção.
 A prova de isolamento é estrutural: verifica que build_subagent() instancia
 AIAgent com memory_store=None, skill_manager=None e conversation_id novo.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch

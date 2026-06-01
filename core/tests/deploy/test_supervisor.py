@@ -3,6 +3,7 @@
 Cobre flapping detection, backoff, _WorkerState e helpers.
 Não usa os.fork() — testa a lógica de state machine diretamente.
 """
+
 from __future__ import annotations
 
 import os
@@ -31,6 +32,7 @@ class _FakeWorker(Worker):
 
 # ── WorkerState ───────────────────────────────────────────────────────────────
 
+
 class TestWorkerState:
     def test_backoff_initial(self) -> None:
         state = _WorkerState(worker=_FakeWorker())
@@ -41,7 +43,7 @@ class TestWorkerState:
         expected = [1, 2, 4, 8, 16, 32, 60, 60]
         for i, exp in enumerate(expected):
             state.record_restart()
-            assert state.backoff_seconds() == exp, f"step {i+1}: expected {exp}"
+            assert state.backoff_seconds() == exp, f"step {i + 1}: expected {exp}"
 
     def test_restarts_in_window_sliding(self) -> None:
         state = _WorkerState(worker=_FakeWorker())
@@ -84,9 +86,11 @@ class TestWorkerState:
 
 # ── _is_pid_alive ─────────────────────────────────────────────────────────────
 
+
 class TestIsPidAlive:
     def test_current_process_alive(self) -> None:
         import os
+
         assert _is_pid_alive(os.getpid()) is True
 
     def test_nonexistent_pid(self) -> None:
@@ -100,6 +104,7 @@ class TestIsPidAlive:
 
 
 # ── sd_notify ─────────────────────────────────────────────────────────────────
+
 
 class TestSdNotify:
     def test_no_op_without_socket(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -115,6 +120,7 @@ class TestSdNotify:
 
 # ── Backoff máximo ─────────────────────────────────────────────────────────────
 
+
 def test_backoff_caps_at_60() -> None:
     state = _WorkerState(worker=_FakeWorker())
     for _ in range(20):
@@ -123,6 +129,7 @@ def test_backoff_caps_at_60() -> None:
 
 
 # ── C2: restart com attempt=1 e backoff=1s ───────────────────────────────────
+
 
 class TestFirstRestartC2:
     def test_first_restart_has_attempt_1(self) -> None:
@@ -152,6 +159,7 @@ class TestFirstRestartC2:
 
 # ── C3: flapping detection ────────────────────────────────────────────────────
 
+
 class TestFlappingDetectionC3:
     def test_exactly_10_restarts_triggers_flapping_threshold(self) -> None:
         """C3: ao atingir FLAPPING_MAX_RESTARTS o threshold é cumprido."""
@@ -180,6 +188,7 @@ class TestFlappingDetectionC3:
 
 
 # ── _is_pid_alive com fork real ────────────────────────────────────────────────
+
 
 class TestIsPidAliveWithFork:
     def test_forked_child_is_alive(self) -> None:

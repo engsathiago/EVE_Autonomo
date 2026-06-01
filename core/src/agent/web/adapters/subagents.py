@@ -58,9 +58,7 @@ async def get_subagents_health(
                         "task_id": str(r["task_id"]),
                         "worker_id": r["worker_id"],
                         "started_at": r["started_at"].isoformat() if r["started_at"] else None,
-                        "completed_at": r["completed_at"].isoformat()
-                        if r["completed_at"]
-                        else None,
+                        "completed_at": r["completed_at"].isoformat() if r["completed_at"] else None,
                         "error": r["error"],
                         "tier": r["tier"],
                         "status": r["status"],

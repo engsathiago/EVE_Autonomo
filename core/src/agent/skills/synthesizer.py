@@ -274,9 +274,7 @@ class SkillSynthesizer:
 
             return skill_py, manifest_yaml
         except (ValueError, IndexError) as exc:
-            raise SkillSynthesisFailed(
-                f"LLM não retornou formato esperado: {exc}. Raw: {raw[:200]}"
-            ) from exc
+            raise SkillSynthesisFailed(f"LLM não retornou formato esperado: {exc}. Raw: {raw[:200]}") from exc
 
     def write_candidate(self, result: SynthesisResult) -> Path:
         """Escreve skill.py + manifest.yaml em skills/_pending/<slug>/."""

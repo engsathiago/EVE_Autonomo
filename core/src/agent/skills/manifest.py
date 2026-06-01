@@ -21,8 +21,7 @@ class NetworkPolicy(BaseModel):
         # Abre a rede de forma irrestrita é anti-padrão proibido no spec §14
         if "*" in self.allow_domains or "0.0.0.0" in self.allow_domains:
             raise ValueError(
-                "network_policy não pode ter '*' ou '0.0.0.0' — "
-                "skills auto-geradas não podem ter network_policy OPEN"
+                "network_policy não pode ter '*' ou '0.0.0.0' — skills auto-geradas não podem ter network_policy OPEN"
             )
         return self
 

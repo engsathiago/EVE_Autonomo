@@ -59,9 +59,7 @@ class ContextCompressor:
         total = sum(len(str(m.get("content", ""))) for m in messages)
         return total // 4
 
-    async def maybe_compress(
-        self, messages: list[dict[str, Any]]
-    ) -> tuple[list[dict[str, Any]], str | None]:
+    async def maybe_compress(self, messages: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
         """
         Retorna (mensagens_compactadas, texto_do_resumo_ou_None).
         Se não houver compressão necessária, retorna (mensagens_originais, None).
@@ -101,9 +99,7 @@ class ContextCompressor:
         return compacted, summary
 
     async def _summarize(self, messages: list[dict[str, Any]]) -> str:
-        joined = "\n".join(
-            f"[{m.get('role')}]: {str(m.get('content', ''))[:2000]}" for m in messages
-        )
+        joined = "\n".join(f"[{m.get('role')}]: {str(m.get('content', ''))[:2000]}" for m in messages)
         resp = await self._client.messages.create(
             model=self._model,
             max_tokens=800,

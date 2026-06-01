@@ -106,6 +106,7 @@ async def test_timeout_treated_as_escalate():
         raise TimeoutError
 
     import unittest.mock as mock_module
+
     with mock_module.patch("asyncio.wait_for", side_effect=fast_timeout):
         result = await agent._maybe_gate_tool("send_email", {"to": "x@y.com"})
 

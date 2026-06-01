@@ -1,4 +1,5 @@
 """Testes do módulo de embeddings F9."""
+
 from __future__ import annotations
 
 from agent.skills.embeddings import cosine, pack_embedding, unpack_embedding

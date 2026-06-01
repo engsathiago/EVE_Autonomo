@@ -157,8 +157,7 @@ def load_all_from_dir(skills_dir: Path) -> list[SkillManifest]:
 
         if skill.name in seen_names:
             raise ValueError(
-                f"Nome de skill duplicado: '{skill.name}' "
-                f"('{seen_names[skill.name]}' e '{skill.source_path}')."
+                f"Nome de skill duplicado: '{skill.name}' ('{seen_names[skill.name]}' e '{skill.source_path}')."
             )
         seen_names[skill.name] = skill.source_path
         skills.append(skill)

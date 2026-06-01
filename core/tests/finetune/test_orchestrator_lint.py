@@ -8,6 +8,7 @@ Rules:
   - Exception: _ollama_create uses subprocess.run (Ollama registration = infrastructure,
     not sandboxed code execution). This documented exception is validated below.
 """
+
 from __future__ import annotations
 
 import inspect
@@ -24,6 +25,7 @@ def _source_of_method(cls, method_name: str) -> str:
 
 
 # ── Exec-tool enforcement ─────────────────────────────────────────────────────
+
 
 class TestOrchestratorLint:
     def test_run_training_calls_exec_tool(self):
@@ -44,12 +46,9 @@ class TestOrchestratorLint:
         """_ollama_create uses subprocess.run (documented infrastructure exception)."""
         src = _source_of_method(lora_trainer_module.LoraTrainer, "_ollama_create")
         assert "subprocess.run" in src, (
-            "_ollama_create should use subprocess.run — "
-            "Ollama registration is infrastructure, not sandboxed execution"
+            "_ollama_create should use subprocess.run — Ollama registration is infrastructure, not sandboxed execution"
         )
-        assert "exec_tool" not in src, (
-            "_ollama_create should NOT use exec_tool — Ollama CLI is host infrastructure"
-        )
+        assert "exec_tool" not in src, "_ollama_create should NOT use exec_tool — Ollama CLI is host infrastructure"
 
     def test_train_method_does_not_call_subprocess_directly(self):
         """The main train() method must not spawn subprocesses directly."""
@@ -68,6 +67,7 @@ class TestOrchestratorLint:
 
 # ── Policy profile name ───────────────────────────────────────────────────────
 
+
 class TestPolicyProfileName:
     def test_run_training_uses_finetune_policy(self):
         """exec_tool in _run_training must specify policy_name='finetune'."""
@@ -81,6 +81,7 @@ class TestPolicyProfileName:
 
 
 # ── Module-level forbidden patterns ──────────────────────────────────────────
+
 
 class TestModuleForbiddenPatterns:
     def test_no_os_system_in_module(self):

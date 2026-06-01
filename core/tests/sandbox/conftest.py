@@ -1,6 +1,7 @@
 """
 Fixtures compartilhados para testes da Fase 8 (Sandboxes).
 """
+
 from __future__ import annotations
 
 import os
@@ -21,9 +22,11 @@ configure_logging("WARNING")
 # Factory injetável — __module__ controlado para não confundir registry
 # ---------------------------------------------------------------------------
 
+
 def make_subprocess_sandbox(config: SandboxConfig) -> SubprocessSandbox:
     """Factory de SubprocessSandbox para injeção em exec_tool nos testes."""
     return SubprocessSandbox(config)
+
 
 # O módulo desta função é "tests.sandbox.conftest"; o backend_name gravado
 # no DB será "conftest" — aceitável pois é só informativo.
@@ -32,6 +35,7 @@ def make_subprocess_sandbox(config: SandboxConfig) -> SubprocessSandbox:
 # ---------------------------------------------------------------------------
 # Configs de base
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def deny_all_config() -> SandboxConfig:
@@ -66,6 +70,7 @@ def sandbox_factory():
 # Log dir temporário
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def tmp_log_dir(tmp_path: Path) -> Path:
     log_dir = tmp_path / "logs" / "sandbox"
@@ -76,6 +81,7 @@ def tmp_log_dir(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Event collector — registra handler, remove após o teste
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def event_collector() -> list[dict[str, Any]]:
@@ -103,6 +109,7 @@ def event_collector() -> list[dict[str, Any]]:
 # tmpdb — Postgres de teste, aplica migration 009
 # ---------------------------------------------------------------------------
 
+
 @pytest_asyncio.fixture
 async def tmpdb():
     """
@@ -121,9 +128,7 @@ async def tmpdb():
         pytest.skip(f"Postgres não disponível ({exc}) — pule com -m 'not integration'")
         return
 
-    migration_path = (
-        Path(__file__).parents[2] / "migrations" / "009_sandbox_executions.sql"
-    )
+    migration_path = Path(__file__).parents[2] / "migrations" / "009_sandbox_executions.sql"
     migration_sql = migration_path.read_text()
 
     async with pool.acquire() as conn:
@@ -132,8 +137,6 @@ async def tmpdb():
     yield pool
 
     async with pool.acquire() as conn:
-        await conn.execute(
-            "DROP TABLE IF EXISTS sandbox_executions CASCADE"
-        )
+        await conn.execute("DROP TABLE IF EXISTS sandbox_executions CASCADE")
 
     await pool.close()

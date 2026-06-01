@@ -61,9 +61,7 @@ def generate_report(
         delta = (cand_s - base_s) * 100
         arrow = "▲" if delta > 0 else ("▼" if delta < 0 else "—")
         status = "✅" if delta >= 0 else "❌"
-        lines.append(
-            f"| {axis_name} | {base_s:.3f} | {cand_s:.3f} | {arrow} {abs(delta):.2f}% | {status} |"
-        )
+        lines.append(f"| {axis_name} | {base_s:.3f} | {cand_s:.3f} | {arrow} {abs(delta):.2f}% | {status} |")
 
     # Overall delta
     details = gate_decision.details
@@ -128,12 +126,7 @@ async def notify_telegram(
         log.info("reports.telegram_skip", reason="telegram_chat_id ou token ausente")
         return
 
-    text = (
-        f"🤖 *F13 fine-tuning run concluído*\n\n"
-        f"Run: `{run_id}`\n"
-        f"Decisão: *{decision}*\n\n"
-        f"{report_summary[:500]}"
-    )
+    text = f"🤖 *F13 fine-tuning run concluído*\n\nRun: `{run_id}`\nDecisão: *{decision}*\n\n{report_summary[:500]}"
 
     try:
         import httpx

@@ -12,10 +12,15 @@ async def db_pool():
     """Pool asyncpg para o postgres do Docker Compose."""
     try:
         import asyncpg
+
         pool = await asyncpg.create_pool(
-            host="localhost", port=5432,
-            user="agent", password="qualquercoisa123", database="agent",
-            min_size=1, max_size=2,
+            host="localhost",
+            port=5432,
+            user="agent",
+            password="qualquercoisa123",
+            database="agent",
+            min_size=1,
+            max_size=2,
         )
         yield pool
         await pool.close()

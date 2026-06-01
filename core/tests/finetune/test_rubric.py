@@ -1,4 +1,5 @@
 """Tests for rubric.py — C1 (BenchmarkError on missing/malformed rubric.yaml)."""
+
 from __future__ import annotations
 
 import json
@@ -36,48 +37,60 @@ class TestRubricLoad:
             Rubric.load(p)
 
     def test_raises_benchmark_error_when_weights_dont_sum_to_one(self, tmp_path: Path):
-        p = _write_rubric(tmp_path, {
-            "version": 1,
-            "axes": [
-                {"name": "a", "weight": 0.5, "tasks_dir": "t", "judge": "exact_match"},
-                {"name": "b", "weight": 0.3, "tasks_dir": "t", "judge": "exact_match"},
-            ],
-        })
+        p = _write_rubric(
+            tmp_path,
+            {
+                "version": 1,
+                "axes": [
+                    {"name": "a", "weight": 0.5, "tasks_dir": "t", "judge": "exact_match"},
+                    {"name": "b", "weight": 0.3, "tasks_dir": "t", "judge": "exact_match"},
+                ],
+            },
+        )
         with pytest.raises(BenchmarkError, match="Pesos"):
             Rubric.load(p)
 
     def test_raises_benchmark_error_when_invalid_judge(self, tmp_path: Path):
-        p = _write_rubric(tmp_path, {
-            "version": 1,
-            "axes": [
-                {"name": "a", "weight": 1.0, "tasks_dir": "t", "judge": "invalid_judge"},
-            ],
-        })
+        p = _write_rubric(
+            tmp_path,
+            {
+                "version": 1,
+                "axes": [
+                    {"name": "a", "weight": 1.0, "tasks_dir": "t", "judge": "invalid_judge"},
+                ],
+            },
+        )
         with pytest.raises(BenchmarkError, match="judge"):
             Rubric.load(p)
 
     def test_loads_valid_rubric(self, tmp_path: Path):
-        p = _write_rubric(tmp_path, {
-            "version": 1,
-            "axes": [
-                {"name": "base", "weight": 0.6, "tasks_dir": "tasks/base", "judge": "exact_match"},
-                {"name": "safety", "weight": 0.4, "tasks_dir": "tasks/safety", "judge": "refusal_check"},
-            ],
-            "thresholds": {"min_improvement_pct": 3.0, "max_regression_pct": 5.0},
-        })
+        p = _write_rubric(
+            tmp_path,
+            {
+                "version": 1,
+                "axes": [
+                    {"name": "base", "weight": 0.6, "tasks_dir": "tasks/base", "judge": "exact_match"},
+                    {"name": "safety", "weight": 0.4, "tasks_dir": "tasks/safety", "judge": "refusal_check"},
+                ],
+                "thresholds": {"min_improvement_pct": 3.0, "max_regression_pct": 5.0},
+            },
+        )
         rubric = Rubric.load(p)
         assert rubric.version == 1
         assert len(rubric.axes) == 2
         assert rubric.thresholds.min_improvement_pct == 3.0
 
     def test_weighted_score_calculation(self, tmp_path: Path):
-        p = _write_rubric(tmp_path, {
-            "version": 1,
-            "axes": [
-                {"name": "a", "weight": 0.7, "tasks_dir": "t", "judge": "exact_match"},
-                {"name": "b", "weight": 0.3, "tasks_dir": "t", "judge": "exact_match"},
-            ],
-        })
+        p = _write_rubric(
+            tmp_path,
+            {
+                "version": 1,
+                "axes": [
+                    {"name": "a", "weight": 0.7, "tasks_dir": "t", "judge": "exact_match"},
+                    {"name": "b", "weight": 0.3, "tasks_dir": "t", "judge": "exact_match"},
+                ],
+            },
+        )
         rubric = Rubric.load(p)
         score = rubric.weighted_score({"a": 1.0, "b": 0.0})
         assert abs(score - 0.7) < 1e-6

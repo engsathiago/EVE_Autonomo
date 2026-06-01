@@ -2,6 +2,7 @@
 Cobre §8 critério 2: Orchestrator.check_step_safety rejeita padrões proibidos
 (subprocess, os.system, eval, exec builtin) e aceita exec_tool.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -9,6 +10,7 @@ import pytest
 # ---------------------------------------------------------------------------
 # Fixture mínima do Orchestrator sem dependências de Postgres/Redis
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def orchestrator():
@@ -34,6 +36,7 @@ def orchestrator():
 # ---------------------------------------------------------------------------
 # Padrões proibidos
 # ---------------------------------------------------------------------------
+
 
 def test_check_step_safety_rejects_subprocess_run(orchestrator):
     code = "import subprocess; subprocess.run(['ls'])"
@@ -86,6 +89,7 @@ def test_check_step_safety_rejects_exec_builtin(orchestrator):
 # Código legítimo — sem violações
 # ---------------------------------------------------------------------------
 
+
 def test_check_step_safety_accepts_exec_tool(orchestrator):
     code = "from agent.tools.exec_tool import exec_tool\nresult = await exec_tool('echo ok')"
     violations = orchestrator.check_step_safety(code)
@@ -116,6 +120,7 @@ def test_check_step_safety_violation_message_mentions_exec_tool(orchestrator):
 # ---------------------------------------------------------------------------
 # Múltiplas violações no mesmo código
 # ---------------------------------------------------------------------------
+
 
 def test_check_step_safety_multiple_violations(orchestrator):
     code = """

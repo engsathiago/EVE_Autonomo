@@ -157,8 +157,7 @@ class CapabilityMismatchError(Exception):
 
     def __init__(self, model: str, required: str) -> None:
         super().__init__(
-            f"Modelo '{model}' não suporta '{required}'. "
-            "Escolha um modelo compatível ou remova o requisito."
+            f"Modelo '{model}' não suporta '{required}'. Escolha um modelo compatível ou remova o requisito."
         )
         self.model = model
         self.required = required

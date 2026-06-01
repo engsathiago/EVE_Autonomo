@@ -125,11 +125,7 @@ def _rows_to_messages(rows: list[dict]) -> list[dict]:
         if role in ("user", "assistant", "system"):
             tool_calls_raw = row.get("tool_calls")
             if role == "assistant" and tool_calls_raw:
-                tool_calls = (
-                    json.loads(tool_calls_raw)
-                    if isinstance(tool_calls_raw, str)
-                    else tool_calls_raw
-                )
+                tool_calls = json.loads(tool_calls_raw) if isinstance(tool_calls_raw, str) else tool_calls_raw
                 messages.append({"role": role, "content": content, "tool_calls": tool_calls})
             else:
                 messages.append({"role": role, "content": content})

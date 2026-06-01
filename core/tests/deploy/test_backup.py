@@ -1,4 +1,5 @@
 """Testes do sistema de backup (F10)."""
+
 from __future__ import annotations
 
 import gzip
@@ -38,6 +39,7 @@ def _set_backup_env(
 
 # ── _sha256 ───────────────────────────────────────────────────────────────────
 
+
 class TestSha256:
     def test_hash_is_hex(self, tmp_path: Path) -> None:
         f = tmp_path / "file.txt"
@@ -60,6 +62,7 @@ class TestSha256:
 
 
 # ── _backup_sqlite ────────────────────────────────────────────────────────────
+
 
 class TestBackupSqlite:
     def test_creates_gz_file(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -90,9 +93,7 @@ class TestBackupSqlite:
         result = _backup_sqlite("20260103")
         assert len(result["sha256"]) == 64
 
-    def test_error_when_backup_dir_not_writable(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_error_when_backup_dir_not_writable(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Backup falha quando o diretório de destino não existe e não pode ser criado."""
         db = tmp_path / "agent4.db"
         sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
@@ -106,27 +107,22 @@ class TestBackupSqlite:
 
 # ── _backup_skills ────────────────────────────────────────────────────────────
 
+
 class TestBackupSkills:
-    def test_creates_tarball(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tmp_skills_dir: Path
-    ) -> None:
+    def test_creates_tarball(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tmp_skills_dir: Path) -> None:
         _set_backup_env(monkeypatch, tmp_path, skills_dir=tmp_skills_dir)
         result = _backup_skills("20260201")
         assert result["ok"] is True, result
         assert Path(result["path"]).exists()
 
-    def test_tarball_is_valid(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tmp_skills_dir: Path
-    ) -> None:
+    def test_tarball_is_valid(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tmp_skills_dir: Path) -> None:
         _set_backup_env(monkeypatch, tmp_path, skills_dir=tmp_skills_dir)
         result = _backup_skills("20260202")
         with tarfile.open(result["path"], "r:gz") as tar:
             names = tar.getnames()
         assert any("example.yaml" in n for n in names)
 
-    def test_skipped_when_skills_dir_missing(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_skipped_when_skills_dir_missing(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         _set_backup_env(monkeypatch, tmp_path, skills_dir=tmp_path / "nonexistent_skills")
         result = _backup_skills("20260203")
         assert result.get("skipped") is True
@@ -134,9 +130,11 @@ class TestBackupSkills:
 
 # ── _purge_old_backups ─────────────────────────────────────────────────────────
 
+
 class TestPurgeOldBackups:
     def test_removes_old_files(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         import os
+
         backup_dir = _set_backup_env(monkeypatch, tmp_path)
         monkeypatch.setenv("AGENT_BACKUP_RETAIN_DAYS", "14")
 
@@ -163,11 +161,10 @@ class TestPurgeOldBackups:
 
 # ── run_backup integration ────────────────────────────────────────────────────
 
+
 class TestRunBackup:
     @pytest.mark.asyncio
-    async def test_returns_summary(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tmp_skills_dir: Path
-    ) -> None:
+    async def test_returns_summary(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tmp_skills_dir: Path) -> None:
         db = tmp_path / "agent.db"
         sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
         _set_backup_env(monkeypatch, tmp_path, db_path=db, skills_dir=tmp_skills_dir)
@@ -214,6 +211,7 @@ class TestRunBackup:
     ) -> None:
         """C8: run_backup chama _purge_old_backups — arquivo de 15 dias é apagado."""
         import os
+
         db = tmp_path / "agent.db"
         sqlite3.connect(str(db)).execute("SELECT 1").fetchone()
         _set_backup_env(monkeypatch, tmp_path, db_path=db, skills_dir=tmp_skills_dir)

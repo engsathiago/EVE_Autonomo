@@ -43,6 +43,7 @@ def _make_agent(responses: list[ChatResponse], registry: ToolRegistry | None = N
 
 # ── Loop básico ──────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_agent_returns_text_without_tool_calls():
     agent = _make_agent([_resp("Olá, sou a Eve.")])
@@ -67,6 +68,7 @@ async def test_agent_calculates_duration():
 
 
 # ── Tool calls ───────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_agent_executes_tool_and_continues():
@@ -143,6 +145,7 @@ async def test_agent_emits_tool_events():
 
 # ── Limite de iterações ──────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_agent_respects_max_iterations(monkeypatch):
     from agent.config import AgentSettings
@@ -173,6 +176,7 @@ async def test_agent_respects_max_iterations(monkeypatch):
 
 # ── Reflexão ─────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_agent_reflection_done_exits_early():
     from agent.tools.base import BaseTool, ToolResult
@@ -190,16 +194,19 @@ async def test_agent_reflection_done_exits_early():
 
     tool_call = {"id": "tc_r", "name": "nop", "input": {}}
     planner = MockTransport([_resp("executando", [tool_call])] * 10)
-    reflector = MockTransport([
-        ChatResponse(
-            text=json.dumps({"progresso": "concluido", "problema": None, "ajuste_estrategia": None}),
-            tool_calls=[],
-            raw={},
-            usage={"input_tokens": 5, "output_tokens": 5},
-        )
-    ])
+    reflector = MockTransport(
+        [
+            ChatResponse(
+                text=json.dumps({"progresso": "concluido", "problema": None, "ajuste_estrategia": None}),
+                tool_calls=[],
+                raw={},
+                usage={"input_tokens": 5, "output_tokens": 5},
+            )
+        ]
+    )
 
     from agent.config import AgentSettings
+
     settings = AgentSettings(max_iterations=10, reflection_every=1)
     agent = AIAgent(
         transport=planner,

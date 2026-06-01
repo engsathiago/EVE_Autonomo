@@ -1,4 +1,5 @@
 """Testes do ApprovalManager (sem Postgres real — usa mocks asyncpg)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -22,10 +23,12 @@ def _make_pool(fetchrow_return=None, fetch_return=None, execute_return="UPDATE 1
     conn.execute = AsyncMock(return_value=execute_return)
 
     pool = MagicMock()
-    pool.acquire = MagicMock(return_value=AsyncMock(
-        __aenter__=AsyncMock(return_value=conn),
-        __aexit__=AsyncMock(return_value=None),
-    ))
+    pool.acquire = MagicMock(
+        return_value=AsyncMock(
+            __aenter__=AsyncMock(return_value=conn),
+            __aexit__=AsyncMock(return_value=None),
+        )
+    )
     return pool, conn
 
 
@@ -81,10 +84,17 @@ async def test_get_not_found():
 async def test_decide_approve_updates_status():
     now = datetime.now(tz=UTC)
     row = {
-        "id": "abc", "session_id": "tg:1", "skill_name": "x",
-        "skill_args": {}, "summary": "s", "channel": "telegram",
-        "channel_ref": {}, "status": "pending", "decided_by": None,
-        "decided_at": None, "expires_at": now + timedelta(hours=1),
+        "id": "abc",
+        "session_id": "tg:1",
+        "skill_name": "x",
+        "skill_args": {},
+        "summary": "s",
+        "channel": "telegram",
+        "channel_ref": {},
+        "status": "pending",
+        "decided_by": None,
+        "decided_at": None,
+        "expires_at": now + timedelta(hours=1),
         "created_at": now,
     }
     updated_row = {**row, "status": "approved", "decided_by": "user42", "decided_at": now}
@@ -104,10 +114,17 @@ async def test_decide_approve_updates_status():
 async def test_decide_is_idempotent():
     now = datetime.now(tz=UTC)
     row = {
-        "id": "abc", "session_id": "tg:1", "skill_name": "x",
-        "skill_args": {}, "summary": "s", "channel": "telegram",
-        "channel_ref": {}, "status": "approved", "decided_by": "user1",
-        "decided_at": now, "expires_at": now + timedelta(hours=1),
+        "id": "abc",
+        "session_id": "tg:1",
+        "skill_name": "x",
+        "skill_args": {},
+        "summary": "s",
+        "channel": "telegram",
+        "channel_ref": {},
+        "status": "approved",
+        "decided_by": "user1",
+        "decided_at": now,
+        "expires_at": now + timedelta(hours=1),
         "created_at": now,
     }
     pool, conn = _make_pool(fetchrow_return=row)
@@ -123,10 +140,17 @@ async def test_decide_is_idempotent():
 async def test_decide_expired_approval():
     now = datetime.now(tz=UTC)
     row = {
-        "id": "abc", "session_id": "tg:1", "skill_name": "x",
-        "skill_args": {}, "summary": "s", "channel": "telegram",
-        "channel_ref": {}, "status": "pending", "decided_by": None,
-        "decided_at": None, "expires_at": now - timedelta(minutes=1),
+        "id": "abc",
+        "session_id": "tg:1",
+        "skill_name": "x",
+        "skill_args": {},
+        "summary": "s",
+        "channel": "telegram",
+        "channel_ref": {},
+        "status": "pending",
+        "decided_by": None,
+        "decided_at": None,
+        "expires_at": now - timedelta(minutes=1),
         "created_at": now - timedelta(hours=1),
     }
     pool, conn = _make_pool(fetchrow_return=row)

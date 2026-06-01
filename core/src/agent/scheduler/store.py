@@ -105,9 +105,7 @@ class CronStore:
 
     async def list(self, enabled_only: bool = False) -> list[CronJob]:
         if enabled_only:
-            rows = await self._pool.fetch(
-                "SELECT * FROM cron_jobs WHERE enabled = TRUE ORDER BY created_at DESC"
-            )
+            rows = await self._pool.fetch("SELECT * FROM cron_jobs WHERE enabled = TRUE ORDER BY created_at DESC")
         else:
             rows = await self._pool.fetch("SELECT * FROM cron_jobs ORDER BY created_at DESC")
         return [_row_to_job(r) for r in rows]

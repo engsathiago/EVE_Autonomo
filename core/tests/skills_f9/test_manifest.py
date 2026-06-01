@@ -1,4 +1,5 @@
 """Testes do SkillManifestF9 — C2: manifesto obrigatório."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

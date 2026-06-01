@@ -74,7 +74,7 @@ class OllamaSettings(BaseSettings):
 
 class ModelSettings(BaseSettings):
     default_model: str = "anthropic:claude-sonnet-4-7"
-    fallback_chain: str = ""        # CSV: "ollama:qwen2.5:7b,anthropic:claude-haiku-4-5"
+    fallback_chain: str = ""  # CSV: "ollama:qwen2.5:7b,anthropic:claude-haiku-4-5"
     timeout_s: int = 60
 
     def fallback_list(self) -> list[str]:
@@ -197,12 +197,8 @@ class Settings(BaseSettings):
                 default_model=agent_data.get("default_model", "claude-haiku-4-5"),
                 max_iterations=agent_data.get("max_iterations", 15),
                 reflection_every=agent_data.get("reflection_every", 3),
-                context_compression_threshold=agent_data.get(
-                    "context_compression_threshold", 0.5
-                ),
-                workspace_paths=agent_data.get(
-                    "workspace_paths", ["/workspace", "/tmp/agent", "."]
-                ),
+                context_compression_threshold=agent_data.get("context_compression_threshold", 0.5),
+                workspace_paths=agent_data.get("workspace_paths", ["/workspace", "/tmp/agent", "."]),
                 shell_blacklist=agent_data.get("shell_blacklist", []),
             ),
             anthropic=AnthropicSettings(
@@ -216,7 +212,8 @@ class Settings(BaseSettings):
             ),
             openrouter=OpenRouterSettings(
                 api_key=openrouter_data.get("api_key") or os.environ.get("OPENROUTER_API_KEY", ""),
-                http_referer=openrouter_data.get("http_referer") or os.environ.get("OPENROUTER_HTTP_REFERER", "https://github.com/agent"),
+                http_referer=openrouter_data.get("http_referer")
+                or os.environ.get("OPENROUTER_HTTP_REFERER", "https://github.com/agent"),
                 x_title=openrouter_data.get("x_title") or os.environ.get("OPENROUTER_X_TITLE", "agent"),
                 timeout=openrouter_data.get("timeout", 120),
             ),
@@ -226,7 +223,8 @@ class Settings(BaseSettings):
                 timeout=ollama_data.get("timeout", 120),
             ),
             models=ModelSettings(
-                default_model=models_data.get("default_model") or os.environ.get("DEFAULT_MODEL", "anthropic:claude-sonnet-4-7"),
+                default_model=models_data.get("default_model")
+                or os.environ.get("DEFAULT_MODEL", "anthropic:claude-sonnet-4-7"),
                 fallback_chain=models_data.get("fallback_chain") or os.environ.get("MODEL_FALLBACK_CHAIN", ""),
                 timeout_s=int(models_data.get("timeout_s") or os.environ.get("MODEL_TIMEOUT_S", 60)),
             ),
@@ -240,8 +238,7 @@ class Settings(BaseSettings):
                 # Necessário porque docker-config.yaml é gerado no Dockerfile com path
                 # que pode ser read-only em produção.
                 skills_dir=(
-                    os.environ.get("SKILLS__SKILLS_DIR")
-                    or skills_data.get("skills_dir", "/var/lib/agent/skills")
+                    os.environ.get("SKILLS__SKILLS_DIR") or skills_data.get("skills_dir", "/var/lib/agent/skills")
                 ),
                 skills_drafts_dir=(
                     os.environ.get("SKILLS__SKILLS_DRAFTS_DIR")
@@ -262,7 +259,8 @@ class Settings(BaseSettings):
                 ),
             ),
             orchestrator=OrchestratorSettings(
-                classifier_model=orchestrator_data.get("classifier_model") or os.environ.get("ORCHESTRATOR_CLASSIFIER_MODEL", "anthropic:claude-haiku-4-5"),
+                classifier_model=orchestrator_data.get("classifier_model")
+                or os.environ.get("ORCHESTRATOR_CLASSIFIER_MODEL", "anthropic:claude-haiku-4-5"),
                 classifier_max_tokens=int(orchestrator_data.get("classifier_max_tokens", 200)),
                 fast_max_iterations=int(orchestrator_data.get("fast_max_iterations", 3)),
                 strategic_max_iterations=int(orchestrator_data.get("strategic_max_iterations", 8)),
@@ -315,6 +313,7 @@ def build_model_router(
     # Anthropic — sempre registrado se tiver API key
     if cfg.anthropic.api_key:
         from agent.models.transports.anthropic import AnthropicTransport
+
         registry.register(
             "anthropic",
             lambda: AnthropicTransport(
@@ -327,6 +326,7 @@ def build_model_router(
     # OpenAI — registrado se tiver API key
     if cfg.openai.api_key:
         from agent.models.transports.openai import OpenAITransport
+
         registry.register(
             "openai",
             lambda: OpenAITransport(
@@ -338,6 +338,7 @@ def build_model_router(
     # OpenRouter — registrado se tiver API key
     if cfg.openrouter.api_key:
         from agent.models.transports.openrouter import OpenRouterTransport
+
         registry.register(
             "openrouter",
             lambda: OpenRouterTransport(
@@ -350,6 +351,7 @@ def build_model_router(
 
     # Ollama — sempre registrado (health check detecta se está rodando)
     from agent.models.transports.ollama import OllamaTransport
+
     registry.register(
         "ollama",
         lambda: OllamaTransport(

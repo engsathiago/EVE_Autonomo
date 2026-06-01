@@ -1,4 +1,5 @@
 """Tests for checkpoint_gate.py — C8, C9 (gate decision logic)."""
+
 from __future__ import annotations
 
 from agent.finetune.checkpoint_gate import CheckpointGate
@@ -8,10 +9,16 @@ from agent.finetune.safety_check import SafetyResult
 
 def _make_rubric(regression_intolerant_axes: list[str] | None = None) -> Rubric:
     axes = [
-        RubricAxis("base_capabilities", 0.25, "t", "exact_match",
-                   regression_intolerant=("base_capabilities" in (regression_intolerant_axes or []))),
-        RubricAxis("safety", 0.10, "t", "refusal_check",
-                   regression_intolerant=("safety" in (regression_intolerant_axes or []))),
+        RubricAxis(
+            "base_capabilities",
+            0.25,
+            "t",
+            "exact_match",
+            regression_intolerant=("base_capabilities" in (regression_intolerant_axes or [])),
+        ),
+        RubricAxis(
+            "safety", 0.10, "t", "refusal_check", regression_intolerant=("safety" in (regression_intolerant_axes or []))
+        ),
         RubricAxis("summarization", 0.20, "t", "rouge_l_plus_llm"),
         RubricAxis("classification", 0.15, "t", "exact_match"),
         RubricAxis("tier_selection", 0.15, "t", "exact_match"),
@@ -25,20 +32,64 @@ def _safety_ok() -> SafetyResult:
 
 
 def _safety_fail() -> SafetyResult:
-    return SafetyResult(passed=False, regressions=[{"task_id": "safe_001", "prompt_preview": "bad", "base_refused": True, "candidate_refused": False, "candidate_output_preview": "sure"}], total_tasks=10, base_refusals=10, candidate_refusals=9)
+    return SafetyResult(
+        passed=False,
+        regressions=[
+            {
+                "task_id": "safe_001",
+                "prompt_preview": "bad",
+                "base_refused": True,
+                "candidate_refused": False,
+                "candidate_output_preview": "sure",
+            }
+        ],
+        total_tasks=10,
+        base_refusals=10,
+        candidate_refusals=9,
+    )
 
 
 class TestCheckpointGate:
     def _base_scores(self) -> dict[str, float]:
-        return {ax: 0.80 for ax in ["base_capabilities", "safety", "summarization", "classification", "tier_selection", "instruction"]}
+        return {
+            ax: 0.80
+            for ax in [
+                "base_capabilities",
+                "safety",
+                "summarization",
+                "classification",
+                "tier_selection",
+                "instruction",
+            ]
+        }
 
     def _candidate_above(self) -> dict[str, float]:
         """Candidate +5% above base — should pass all gates."""
-        return {ax: 0.85 for ax in ["base_capabilities", "safety", "summarization", "classification", "tier_selection", "instruction"]}
+        return {
+            ax: 0.85
+            for ax in [
+                "base_capabilities",
+                "safety",
+                "summarization",
+                "classification",
+                "tier_selection",
+                "instruction",
+            ]
+        }
 
     def _candidate_below(self) -> dict[str, float]:
         """Candidate slightly below base — should fail improvement gate."""
-        return {ax: 0.79 for ax in ["base_capabilities", "safety", "summarization", "classification", "tier_selection", "instruction"]}
+        return {
+            ax: 0.79
+            for ax in [
+                "base_capabilities",
+                "safety",
+                "summarization",
+                "classification",
+                "tier_selection",
+                "instruction",
+            ]
+        }
 
     def test_accepts_when_all_gates_pass(self):
         """C8: accepted when score > base+3% and no regression and safety ok."""

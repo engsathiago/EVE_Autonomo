@@ -8,6 +8,7 @@ Mostra de uma só vez:
   - Health dos providers configurados
   - Estatísticas: missões, custos, aprovações pendentes
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -36,6 +37,7 @@ async def _show_status(detailed: bool) -> None:
     # ─── 1. Carrega settings ────────────────────────────────────────
     try:
         from agent.config import get_settings
+
         settings = get_settings()
     except Exception as exc:
         console.print(f"[red]✗ Erro carregando config: {exc}[/red]")
@@ -44,11 +46,12 @@ async def _show_status(detailed: bool) -> None:
 
     # ─── 2. Header ───────────────────────────────────────────────────
     console.print()
-    console.print(Panel.fit(
-        f"[bold cyan]EVE[/bold cyan] — Agente Autônomo  "
-        f"[dim]| {settings.agent.name}[/dim]",
-        border_style="cyan",
-    ))
+    console.print(
+        Panel.fit(
+            f"[bold cyan]EVE[/bold cyan] — Agente Autônomo  [dim]| {settings.agent.name}[/dim]",
+            border_style="cyan",
+        )
+    )
 
     # ─── 3. Configuração ativa ───────────────────────────────────────
     config_table = Table(show_header=False, border_style="cyan")
@@ -116,10 +119,13 @@ async def _show_status(detailed: bool) -> None:
 # checks
 # ---------------------------------------------------------------------------
 
+
 async def _check_postgres(settings) -> tuple[str, str]:
     import time
+
     try:
         import asyncpg
+
         t0 = time.monotonic()
         conn = await asyncpg.connect(
             os.environ.get("POSTGRES_URL", settings.redis.url.replace("redis", "postgres")),
@@ -135,8 +141,10 @@ async def _check_postgres(settings) -> tuple[str, str]:
 
 async def _check_redis(settings) -> tuple[str, str]:
     import time
+
     try:
         import redis.asyncio as aioredis
+
         t0 = time.monotonic()
         client = aioredis.from_url(settings.redis.url, socket_timeout=3)
         await client.ping()
@@ -151,6 +159,7 @@ async def _check_core_http() -> tuple[str, str]:
     import time
 
     import httpx
+
     try:
         t0 = time.monotonic()
         async with httpx.AsyncClient(timeout=3) as c:
@@ -167,6 +176,7 @@ async def _check_gateway_http() -> tuple[str, str]:
     import time
 
     import httpx
+
     try:
         t0 = time.monotonic()
         async with httpx.AsyncClient(timeout=3) as c:
@@ -185,6 +195,7 @@ async def _check_providers(settings) -> list[tuple[str, str, str]]:
 
     # Ollama
     from agent.models.transports.ollama import OllamaTransport
+
     is_cloud = bool(settings.ollama.api_key)
     label = "Ollama Cloud" if is_cloud else "Ollama Local"
     try:
@@ -203,6 +214,7 @@ async def _check_providers(settings) -> list[tuple[str, str, str]]:
     # Anthropic
     if settings.anthropic.api_key:
         import httpx
+
         try:
             async with httpx.AsyncClient(timeout=5) as c:
                 r = await c.get(
@@ -221,6 +233,7 @@ async def _check_providers(settings) -> list[tuple[str, str, str]]:
     # OpenAI
     if settings.openai.api_key:
         import httpx
+
         try:
             async with httpx.AsyncClient(timeout=5) as c:
                 r = await c.get(
@@ -249,6 +262,7 @@ async def _gather_stats(settings) -> dict[str, str]:
     """Coleta estatísticas do banco (últimas 24h)."""
     try:
         import asyncpg
+
         conn = await asyncpg.connect(
             os.environ.get("POSTGRES_URL", ""),
             timeout=3,
@@ -259,9 +273,7 @@ async def _gather_stats(settings) -> dict[str, str]:
 
             # Mensagens
             try:
-                count = await conn.fetchval(
-                    "SELECT COUNT(*) FROM messages WHERE created_at >= $1", since
-                )
+                count = await conn.fetchval("SELECT COUNT(*) FROM messages WHERE created_at >= $1", since)
                 stats["Mensagens"] = f"{count or 0}"
             except Exception:
                 pass
@@ -285,18 +297,14 @@ async def _gather_stats(settings) -> dict[str, str]:
 
             # Missões ativas
             try:
-                active = await conn.fetchval(
-                    "SELECT COUNT(*) FROM missions WHERE status = 'active'"
-                )
+                active = await conn.fetchval("SELECT COUNT(*) FROM missions WHERE status = 'active'")
                 stats["Missões ativas"] = f"{active or 0}"
             except Exception:
                 pass
 
             # Aprovações pendentes
             try:
-                pending = await conn.fetchval(
-                    "SELECT COUNT(*) FROM pending_approvals WHERE status = 'pending'"
-                )
+                pending = await conn.fetchval("SELECT COUNT(*) FROM pending_approvals WHERE status = 'pending'")
                 stats["Aprovações pendentes"] = f"{pending or 0}"
             except Exception:
                 pass
@@ -312,6 +320,7 @@ async def _show_recent(settings) -> None:
     """Mostra últimas atividades quando --detailed."""
     try:
         import asyncpg
+
         conn = await asyncpg.connect(
             os.environ.get("POSTGRES_URL", ""),
             timeout=3,

@@ -34,10 +34,10 @@ class ExecutionVerdict(Enum):
 @dataclass(frozen=True)
 class ExecutionAnalysis:
     verdict: ExecutionVerdict
-    tools_invoked: list[str]       # nomes das tools REALMENTE chamadas (de tool_calls_made)
-    tool_call_count: int           # len(tools_invoked)
-    has_structured_output: bool    # alguma call retornou output com campos além de "text"?
-    reason: str                    # explicação humana
+    tools_invoked: list[str]  # nomes das tools REALMENTE chamadas (de tool_calls_made)
+    tool_call_count: int  # len(tools_invoked)
+    has_structured_output: bool  # alguma call retornou output com campos além de "text"?
+    reason: str  # explicação humana
 
 
 def analyze_turn(result: AgentResult, *, allow_planning: bool = False) -> ExecutionAnalysis:

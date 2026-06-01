@@ -2,6 +2,7 @@
 Teste de integração end-to-end com transport mockado.
 Verifica que o agente completa uma tarefa simples usando filesystem tool.
 """
+
 import pytest
 
 from agent.core import AIAgent
@@ -16,9 +17,7 @@ async def test_agent_reads_file_and_reports(tmp_path, monkeypatch):
     # Configura workspace para apontar para tmp_path
     monkeypatch.setattr(
         "agent.tools.builtin.filesystem.get_settings",
-        lambda: type("S", (), {
-            "agent": type("A", (), {"workspace_paths": [str(tmp_path)]})()
-        })(),
+        lambda: type("S", (), {"agent": type("A", (), {"workspace_paths": [str(tmp_path)]})()})(),
     )
 
     target = tmp_path / "info.txt"
@@ -70,9 +69,7 @@ async def test_agent_handles_tool_error_gracefully(tmp_path, monkeypatch):
     """Agente deve continuar operando quando uma tool falha."""
     monkeypatch.setattr(
         "agent.tools.builtin.filesystem.get_settings",
-        lambda: type("S", (), {
-            "agent": type("A", (), {"workspace_paths": [str(tmp_path)]})()
-        })(),
+        lambda: type("S", (), {"agent": type("A", (), {"workspace_paths": [str(tmp_path)]})()})(),
     )
 
     from agent.tools.builtin.filesystem import ReadFileTool

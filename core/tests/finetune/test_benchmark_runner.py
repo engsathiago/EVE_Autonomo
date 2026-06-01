@@ -1,4 +1,5 @@
 """Tests for benchmark_runner.py — C4, C5 (caching, scoring, persistence)."""
+
 from __future__ import annotations
 
 import json
@@ -15,9 +16,7 @@ def _make_rubric(tmp_path: Path) -> tuple[Rubric, Path]:
     tasks_dir = tmp_path / "tasks" / "base"
     tasks_dir.mkdir(parents=True)
     task_file = tasks_dir / "test.jsonl"
-    task_file.write_text(
-        json.dumps({"id": "t1", "prompt": "What is 2+2?", "expected": "4", "keywords": ["4"]}) + "\n"
-    )
+    task_file.write_text(json.dumps({"id": "t1", "prompt": "What is 2+2?", "expected": "4", "keywords": ["4"]}) + "\n")
 
     rubric = Rubric(
         version=1,
@@ -162,6 +161,7 @@ class TestLlmJudgeUsesAnthropicTransport:
         import inspect
 
         import agent.finetune.benchmark_runner as bm_module
+
         source = inspect.getsource(bm_module)
         assert "AnthropicTransport" in source, "BenchmarkRunner must use AnthropicTransport as LLM judge"
 
@@ -191,9 +191,9 @@ class TestLlmJudgeDirect:
     async def test_llm_judge_returns_zero_on_value_error(self, tmp_path: Path):
         """_llm_judge returns 0.0 when Claude response is not parseable."""
         runner = BenchmarkRunner(
-            rubric=Rubric(version=1, axes=[RubricAxis("b", 1.0, "t", "exact_match")],
-                         thresholds=RubricThresholds()),
-            benchmarks_dir=tmp_path, pool=AsyncMock()
+            rubric=Rubric(version=1, axes=[RubricAxis("b", 1.0, "t", "exact_match")], thresholds=RubricThresholds()),
+            benchmarks_dir=tmp_path,
+            pool=AsyncMock(),
         )
         mock_transport = AsyncMock()
         mock_response = MagicMock()
@@ -208,9 +208,9 @@ class TestLlmJudgeDirect:
     async def test_llm_judge_returns_zero_on_transport_exception(self, tmp_path: Path):
         """_llm_judge returns 0.0 and logs when AnthropicTransport raises."""
         runner = BenchmarkRunner(
-            rubric=Rubric(version=1, axes=[RubricAxis("b", 1.0, "t", "exact_match")],
-                         thresholds=RubricThresholds()),
-            benchmarks_dir=tmp_path, pool=AsyncMock()
+            rubric=Rubric(version=1, axes=[RubricAxis("b", 1.0, "t", "exact_match")], thresholds=RubricThresholds()),
+            benchmarks_dir=tmp_path,
+            pool=AsyncMock(),
         )
         mock_transport = AsyncMock()
         mock_transport.chat = AsyncMock(side_effect=Exception("API unavailable"))
@@ -223,9 +223,9 @@ class TestLlmJudgeDirect:
     async def test_llm_judge_clamps_score_to_0_1(self, tmp_path: Path):
         """_llm_judge clamps scores to [0.0, 1.0]."""
         runner = BenchmarkRunner(
-            rubric=Rubric(version=1, axes=[RubricAxis("b", 1.0, "t", "exact_match")],
-                         thresholds=RubricThresholds()),
-            benchmarks_dir=tmp_path, pool=AsyncMock()
+            rubric=Rubric(version=1, axes=[RubricAxis("b", 1.0, "t", "exact_match")], thresholds=RubricThresholds()),
+            benchmarks_dir=tmp_path,
+            pool=AsyncMock(),
         )
         mock_transport = AsyncMock()
         mock_response = MagicMock()
@@ -242,9 +242,7 @@ class TestExactMatchScoring:
     async def test_exact_match_scores_1_on_perfect_match(self, tmp_path: Path):
         tasks_dir = tmp_path / "tasks" / "base"
         tasks_dir.mkdir(parents=True)
-        (tasks_dir / "t.jsonl").write_text(
-            json.dumps({"id": "e1", "prompt": "What is 2+2?", "expected": "4"}) + "\n"
-        )
+        (tasks_dir / "t.jsonl").write_text(json.dumps({"id": "e1", "prompt": "What is 2+2?", "expected": "4"}) + "\n")
         rubric = Rubric(
             version=1,
             axes=[RubricAxis("base", 1.0, "tasks/base", "exact_match")],
@@ -263,9 +261,7 @@ class TestExactMatchScoring:
     async def test_exact_match_scores_0_on_wrong_answer(self, tmp_path: Path):
         tasks_dir = tmp_path / "tasks" / "base"
         tasks_dir.mkdir(parents=True)
-        (tasks_dir / "t.jsonl").write_text(
-            json.dumps({"id": "e1", "prompt": "What is 2+2?", "expected": "4"}) + "\n"
-        )
+        (tasks_dir / "t.jsonl").write_text(json.dumps({"id": "e1", "prompt": "What is 2+2?", "expected": "4"}) + "\n")
         rubric = Rubric(
             version=1,
             axes=[RubricAxis("base", 1.0, "tasks/base", "exact_match")],

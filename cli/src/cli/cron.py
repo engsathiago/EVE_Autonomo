@@ -25,13 +25,9 @@ def _http() -> Any:
 
 @app.command("add")
 def cron_add(
-    schedule: str = typer.Argument(
-        ..., help="Cron expression ou linguagem natural (ex: 'toda segunda às 9h')"
-    ),
+    schedule: str = typer.Argument(..., help="Cron expression ou linguagem natural (ex: 'toda segunda às 9h')"),
     task: str = typer.Option(..., "--task", "-t", help="Prompt da tarefa a executar"),
-    name: str = typer.Option(
-        "", "--name", "-n", help="Nome do job (default: primeiras palavras do schedule)"
-    ),
+    name: str = typer.Option("", "--name", "-n", help="Nome do job (default: primeiras palavras do schedule)"),
     source: str = typer.Option("telegram", "--source", "-s", help="Canal de saída"),
     target: str | None = typer.Option(None, "--target", help="chat_id ou user_id do destino"),
 ) -> None:

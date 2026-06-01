@@ -1,4 +1,5 @@
 """Testes de rotas de missões — C1, C4."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch

@@ -1,4 +1,5 @@
 """Shared fixtures for the finetune test suite (F13)."""
+
 from __future__ import annotations
 
 import sys
@@ -50,18 +51,20 @@ def fake_traces() -> list[dict]:
     """Ten valid trace records with origin metadata."""
     records = []
     for i in range(10):
-        records.append({
-            "origin": {
-                "trace_id": f"skill:exec_{i:04d}",
-                "skill_id": "summarize_text",
-                "mission_id": None,
-                "type": "skill_execution",
-            },
-            "input": f"Summarize the following document carefully (record {i}): lorem ipsum dolor sit amet",
-            "output": f"Summary of document {i}: brief synopsis of the content discussed",
-            "context": {"skill_slug": "summarize_text", "duration_s": 1.2},
-            "created_at": "2026-05-16T00:00:00Z",
-        })
+        records.append(
+            {
+                "origin": {
+                    "trace_id": f"skill:exec_{i:04d}",
+                    "skill_id": "summarize_text",
+                    "mission_id": None,
+                    "type": "skill_execution",
+                },
+                "input": f"Summarize the following document carefully (record {i}): lorem ipsum dolor sit amet",
+                "output": f"Summary of document {i}: brief synopsis of the content discussed",
+                "context": {"skill_slug": "summarize_text", "duration_s": 1.2},
+                "created_at": "2026-05-16T00:00:00Z",
+            }
+        )
     return records
 
 

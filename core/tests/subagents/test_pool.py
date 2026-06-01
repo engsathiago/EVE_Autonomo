@@ -1,4 +1,5 @@
 """Testa SubagentPool — spawn, timeout, cancel e paralelismo."""
+
 from __future__ import annotations
 
 import asyncio
@@ -92,10 +93,7 @@ async def test_spawn_timeout_returns_error_result() -> None:
 async def test_spawn_parallel_creates_multiple_subagents() -> None:
     """spawn_parallel cria N subagentes e retorna N resultados."""
     pool = _make_pool()
-    contexts = [
-        SubAgentContext(task=f"subtarefa {i}", tools_allowed=[])
-        for i in range(3)
-    ]
+    contexts = [SubAgentContext(task=f"subtarefa {i}", tools_allowed=[]) for i in range(3)]
 
     with patch("agent.subagents.pool.build_subagent") as mock_build:
         mock_agent = MagicMock()

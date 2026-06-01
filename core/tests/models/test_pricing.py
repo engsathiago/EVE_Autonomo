@@ -1,6 +1,7 @@
 """
 Testes de cálculo de custo por invocação.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -58,4 +59,5 @@ def test_small_call_precision() -> None:
     c = cost_usd("anthropic:claude-haiku-4-5", input_tokens=82, output_tokens=341)
     # 82 * 0.80/1M + 341 * 4.00/1M = 0.0000656 + 0.001364 = 0.0014296 → 0.001430 (6 casas)
     from decimal import Decimal
+
     assert c == Decimal("0.001430")

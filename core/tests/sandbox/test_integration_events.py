@@ -5,6 +5,7 @@ Cobre §8 critério 7: eventos sandbox.* emitidos no event_registry.
 - Nenhum evento extra em execução limpa sem registry.
 - Payload dos eventos válido.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -14,12 +15,14 @@ from tests.sandbox.conftest import make_subprocess_sandbox
 
 def _make_registry(tmp_log_dir):
     from agent.sandbox.registry import SandboxRegistry
+
     return SandboxRegistry(db_pool=None, log_dir=tmp_log_dir)
 
 
 # ---------------------------------------------------------------------------
 # Happy path: started + finished emitidos
 # ---------------------------------------------------------------------------
+
 
 async def test_happy_path_emits_started_and_finished(event_collector, tmp_path):
     from agent.tools.exec_tool import exec_tool
@@ -73,6 +76,7 @@ async def test_happy_path_no_network_denied_event(event_collector, tmp_path):
 # Timeout → sandbox.limit.exceeded emitido
 # ---------------------------------------------------------------------------
 
+
 async def test_timeout_emits_limit_exceeded(event_collector, tmp_path):
     """Timeout deve emitir sandbox.limit.exceeded com limit_type=wall_time."""
     from agent.sandbox.base import NetworkPolicy, SandboxConfig
@@ -80,10 +84,12 @@ async def test_timeout_emits_limit_exceeded(event_collector, tmp_path):
     from agent.tools.exec_tool import exec_tool
 
     def _timeout_factory(cfg: SandboxConfig) -> SubprocessSandbox:
-        return SubprocessSandbox(SandboxConfig(
-            wall_time_seconds=1,
-            network=NetworkPolicy.DENY_ALL,
-        ))
+        return SubprocessSandbox(
+            SandboxConfig(
+                wall_time_seconds=1,
+                network=NetworkPolicy.DENY_ALL,
+            )
+        )
 
     reg = _make_registry(tmp_path)
     result = await exec_tool(
@@ -104,6 +110,7 @@ async def test_timeout_emits_limit_exceeded(event_collector, tmp_path):
 # Sem registry → nenhum evento emitido
 # ---------------------------------------------------------------------------
 
+
 async def test_no_registry_no_events(event_collector):
     """Sem registry, exec_tool não emite eventos (registry=None = sem ID)."""
     from agent.tools.exec_tool import exec_tool
@@ -121,6 +128,7 @@ async def test_no_registry_no_events(event_collector):
 # ---------------------------------------------------------------------------
 # Ordem dos eventos
 # ---------------------------------------------------------------------------
+
 
 async def test_started_event_precedes_finished(event_collector, tmp_path):
     from agent.tools.exec_tool import exec_tool
@@ -142,6 +150,7 @@ async def test_started_event_precedes_finished(event_collector, tmp_path):
 # ---------------------------------------------------------------------------
 # Payload de sandbox.execution.started
 # ---------------------------------------------------------------------------
+
 
 async def test_started_event_payload(event_collector, tmp_path):
     from agent.tools.exec_tool import exec_tool
@@ -168,6 +177,7 @@ async def test_started_event_payload(event_collector, tmp_path):
 # Payload de sandbox.execution.finished
 # ---------------------------------------------------------------------------
 
+
 async def test_finished_event_payload(event_collector, tmp_path):
     from agent.tools.exec_tool import exec_tool
 
@@ -190,6 +200,7 @@ async def test_finished_event_payload(event_collector, tmp_path):
 # ---------------------------------------------------------------------------
 # AgentEvent.type aceita tipos sandbox.*
 # ---------------------------------------------------------------------------
+
 
 def test_agent_event_accepts_sandbox_types():
     from agent.events import AgentEvent

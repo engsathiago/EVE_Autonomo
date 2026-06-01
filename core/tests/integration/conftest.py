@@ -1,4 +1,5 @@
 """Fixtures compartilhados para testes de integração (requerem Postgres real)."""
+
 from __future__ import annotations
 
 import os

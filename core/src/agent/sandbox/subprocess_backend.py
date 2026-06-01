@@ -71,8 +71,7 @@ class SubprocessSandbox(Sandbox):
     def __init__(self, config: SandboxConfig) -> None:
         if config.network not in (NetworkPolicy.DENY_ALL,):
             raise SandboxBackendUnsupported(
-                "SubprocessSandbox só suporta NetworkPolicy.DENY_ALL. "
-                "Para ALLOWLIST ou OPEN use DockerSandbox."
+                "SubprocessSandbox só suporta NetworkPolicy.DENY_ALL. Para ALLOWLIST ou OPEN use DockerSandbox."
             )
         self._config = config
         self._tmpdir: tempfile.TemporaryDirectory[str] | None = None

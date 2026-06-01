@@ -1,4 +1,5 @@
 """Testa rate limit (429 acima de 60 req/s por endpoint)."""
+
 from __future__ import annotations
 
 import time
@@ -70,6 +71,7 @@ def test_endpoint_returns_429_when_rate_exceeded(token_file: Path) -> None:
     """Middleware deve retornar 429 quando rate limit excedido."""
     with patch("agent.web.auth._TOKEN_FILE", token_file):
         from agent.web import auth as _auth
+
         _auth._token_hash = None
         _auth._token_loaded_at = 0.0
         _rate_counters.clear()

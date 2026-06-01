@@ -78,10 +78,7 @@ class SkillInvocationRecord(BaseModel):
 
 class SkillRequiresApproval(Exception):
     def __init__(self, skill_name: str) -> None:
-        super().__init__(
-            f"Skill '{skill_name}' requires_approval=true. "
-            "Approve via CLI: agent skill approve <name>"
-        )
+        super().__init__(f"Skill '{skill_name}' requires_approval=true. Approve via CLI: agent skill approve <name>")
         self.skill_name = skill_name
 
 

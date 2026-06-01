@@ -73,9 +73,7 @@ async def test_tracking_table_exists():
     await apply_migrations(_DSN, dry_run=True)
     conn = await asyncpg.connect(_DSN)
     try:
-        row = await conn.fetchrow(
-            "SELECT to_regclass('public.schema_migrations') AS t"
-        )
+        row = await conn.fetchrow("SELECT to_regclass('public.schema_migrations') AS t")
         assert row["t"] is not None, "tabela schema_migrations deve existir"
     finally:
         await conn.close()

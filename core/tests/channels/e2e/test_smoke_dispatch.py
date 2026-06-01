@@ -1,4 +1,5 @@
 """E2E smoke: cria missão via cada canal mockado, verifica resposta e persistência (C4, C5, C11)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -22,9 +23,7 @@ def _make_router(orchestrator=None, db_pool=None, adapters=None, approval_channe
 
 def _make_orchestrator(response_text: str = "missão iniciada") -> AsyncMock:
     orc = AsyncMock()
-    orc.route = AsyncMock(
-        return_value=MagicMock(final_text=response_text, approval_request=None)
-    )
+    orc.route = AsyncMock(return_value=MagicMock(final_text=response_text, approval_request=None))
     return orc
 
 
@@ -51,6 +50,7 @@ def _make_db_pool():
 
 # ── Discord ───────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_discord_mission_dispatched_and_replied():
     """C4+C5: missão via discord → orchestrator.route() chamado, send() chamado de volta."""
@@ -58,9 +58,7 @@ async def test_discord_mission_dispatched_and_replied():
     orc = _make_orchestrator("relatório pronto")
     router = _make_router(orchestrator=orc, adapters=[adapter])
 
-    msg = IncomingMessage(
-        channel="discord", user_id="U111", user_display="Alice", text="construir um relatório"
-    )
+    msg = IncomingMessage(channel="discord", user_id="U111", user_display="Alice", text="construir um relatório")
     await router.handle(msg)
 
     orc.route.assert_called_once()
@@ -79,9 +77,7 @@ async def test_discord_mission_persisted_in_and_out(tmp_path):
     pool, conn = _make_db_pool()
     router = _make_router(adapters=[adapter], db_pool=pool)
 
-    msg = IncomingMessage(
-        channel="discord", user_id="U111", user_display="Alice", text="nova missão"
-    )
+    msg = IncomingMessage(channel="discord", user_id="U111", user_display="Alice", text="nova missão")
     await router.handle(msg)
 
     calls = conn.execute.call_args_list
@@ -93,6 +89,7 @@ async def test_discord_mission_persisted_in_and_out(tmp_path):
 
 # ── Slack ─────────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_slack_mission_dispatched_and_replied():
     """C4+C5: missão via slack → orchestrator.route() chamado, resposta enviada."""
@@ -100,9 +97,7 @@ async def test_slack_mission_dispatched_and_replied():
     orc = _make_orchestrator("tarefa slack ok")
     router = _make_router(orchestrator=orc, adapters=[adapter])
 
-    msg = IncomingMessage(
-        channel="slack", user_id="U222", user_display="Bob", text="analisar dados"
-    )
+    msg = IncomingMessage(channel="slack", user_id="U222", user_display="Bob", text="analisar dados")
     await router.handle(msg)
 
     orc.route.assert_called_once()
@@ -118,9 +113,7 @@ async def test_slack_mission_persisted(tmp_path):
     pool, conn = _make_db_pool()
     router = _make_router(adapters=[adapter], db_pool=pool)
 
-    msg = IncomingMessage(
-        channel="slack", user_id="U222", user_display="Bob", text="missão slack"
-    )
+    msg = IncomingMessage(channel="slack", user_id="U222", user_display="Bob", text="missão slack")
     await router.handle(msg)
 
     calls = conn.execute.call_args_list
@@ -130,6 +123,7 @@ async def test_slack_mission_persisted(tmp_path):
 
 
 # ── Email ─────────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_email_mission_dispatched_and_replied():
@@ -176,6 +170,7 @@ async def test_email_mission_persisted():
 
 # ── Thread_id propagado ───────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_thread_id_propagated_in_reply():
     """C7: thread_id da IncomingMessage é propagado para OutgoingMessage.thread_id."""
@@ -197,6 +192,7 @@ async def test_thread_id_propagated_in_reply():
 
 # ── Session ID ────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_session_id_format_is_channel_colon_user():
     """C2 helper: session_id gravado como {channel}:{user_id}."""
@@ -204,9 +200,7 @@ async def test_session_id_format_is_channel_colon_user():
     pool, conn = _make_db_pool()
     router = _make_router(adapters=[adapter], db_pool=pool)
 
-    msg = IncomingMessage(
-        channel="discord", user_id="U444", user_display="Eve", text="olá"
-    )
+    msg = IncomingMessage(channel="discord", user_id="U444", user_display="Eve", text="olá")
     await router.handle(msg)
 
     all_args = [call[0] for call in conn.execute.call_args_list]
@@ -218,6 +212,7 @@ async def test_session_id_format_is_channel_colon_user():
 
 # ── Unauthorized user bloqueado ───────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_unauthorized_user_not_dispatched():
     """C2: usuário não autorizado não chega ao orchestrator."""
@@ -226,9 +221,7 @@ async def test_unauthorized_user_not_dispatched():
     orc = _make_orchestrator()
     router = _make_router(orchestrator=orc, adapters=[adapter])
 
-    msg = IncomingMessage(
-        channel="discord", user_id="EVIL", user_display="Hacker", text="missão maliciosa"
-    )
+    msg = IncomingMessage(channel="discord", user_id="EVIL", user_display="Hacker", text="missão maliciosa")
     await router.handle(msg)
 
     orc.route.assert_not_called()

@@ -2,6 +2,7 @@
 
 C6: Aprovação via UI dispara mesmo handler do Telegram.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -63,9 +64,7 @@ def test_approve_calls_same_handler(
         json={"decision": "approve"},
     )
     assert resp.status_code == 200
-    mock_approval_manager.decide.assert_called_once_with(
-        "ap-001", decision="approve", decided_by="web"
-    )
+    mock_approval_manager.decide.assert_called_once_with("ap-001", decision="approve", decided_by="web")
 
 
 def test_reject_calls_same_handler(
@@ -79,9 +78,7 @@ def test_reject_calls_same_handler(
         json={"decision": "reject", "note": "Não autorizado"},
     )
     assert resp.status_code == 200
-    mock_approval_manager.decide.assert_called_once_with(
-        "ap-001", decision="reject", decided_by="web:Não autorizado"
-    )
+    mock_approval_manager.decide.assert_called_once_with("ap-001", decision="reject", decided_by="web:Não autorizado")
 
 
 def test_invalid_decision_returns_400(client: TestClient) -> None:

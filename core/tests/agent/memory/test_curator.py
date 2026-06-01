@@ -1,4 +1,5 @@
 """Testes do Curator — sem chamadas reais à API Anthropic."""
+
 from __future__ import annotations
 
 import json

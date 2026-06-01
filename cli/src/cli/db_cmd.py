@@ -28,7 +28,8 @@ def _build_dsn() -> str:
 def migrate(
     dry_run: bool = typer.Option(False, "--dry-run", help="Lista pendentes sem aplicar"),
     stamp: bool = typer.Option(
-        False, "--stamp",
+        False,
+        "--stamp",
         help="Registra todas as migrations como aplicadas SEM executar SQL (bootstrap)",
     ),
 ) -> None:

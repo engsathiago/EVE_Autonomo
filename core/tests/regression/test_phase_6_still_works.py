@@ -1,6 +1,7 @@
 """
 Testes de não-regressão: verifica que componentes da F6 não foram quebrados.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -23,6 +24,7 @@ def test_orchestrator_tier_classification_unchanged() -> None:
 def test_subagent_isolation_unchanged() -> None:
     """SubAgentContext cria contexto isolado — só expõe tools_allowed."""
     from agent.subagents.context import SubAgentContext
+
     ctx = SubAgentContext(
         task="pesquisar concorrentes",
         tools_allowed=["web_search"],

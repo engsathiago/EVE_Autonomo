@@ -43,8 +43,7 @@ ALWAYS_TOOLS: list[str] = ["salvar_memoria", "ler_memoria"]
 # Todos os nomes de tools presentes no ToolRegistry builtin.
 # Usado para validar tools declaradas e para o fallback STRATEGIC/EPIC.
 KNOWN_BUILTIN_TOOLS: frozenset[str] = frozenset(
-    ["read_file", "write_file", "list_dir", "shell", "web_search",
-     "salvar_memoria", "ler_memoria", "delegate"]
+    ["read_file", "write_file", "list_dir", "shell", "web_search", "salvar_memoria", "ler_memoria", "delegate"]
 )
 
 # Map de padrões regex → tools inferidas.
@@ -72,6 +71,7 @@ KEYWORD_TOOL_MAP: dict[str, list[str]] = {
 
 # ─── Tipos ──────────────────────────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class StepSpec:
     """Snapshot mínimo de um step — não importa MissionStep para evitar acoplamento."""
@@ -87,17 +87,18 @@ class StepSpec:
 class ToolResolution:
     """Resultado da resolução de tools para um step."""
 
-    tools: list[str]              # set final que o subagente receberá (inclui ALWAYS_TOOLS)
-    source: str                   # declared | inferred_keyword | inferred_llm | fallback_default
-    audit: dict                   # campos para gravar em step_tool_routing
+    tools: list[str]  # set final que o subagente receberá (inclui ALWAYS_TOOLS)
+    source: str  # declared | inferred_keyword | inferred_llm | fallback_default
+    audit: dict  # campos para gravar em step_tool_routing
     # Campos de rastreabilidade (espelham audit, para acesso direto nos testes)
-    tools_declared: list[str] = field(default_factory=list)   # tools vindas de tools_required
-    tools_inferred: list[str] = field(default_factory=list)   # tools vindas de keyword/LLM
+    tools_declared: list[str] = field(default_factory=list)  # tools vindas de tools_required
+    tools_inferred: list[str] = field(default_factory=list)  # tools vindas de keyword/LLM
 
 
 # ─── Cache de inferência LLM ─────────────────────────────────────────────────
 
-_LLM_CACHE_TTL_S: int = 7 * 24 * 3600   # 7 dias
+_LLM_CACHE_TTL_S: int = 7 * 24 * 3600  # 7 dias
+
 
 @dataclass
 class _CacheEntry:
@@ -128,6 +129,7 @@ def _cache_set(key: str, tools: list[str]) -> None:
 
 
 # ─── Estratégias ─────────────────────────────────────────────────────────────
+
 
 def _resolve_declared(step_spec: StepSpec) -> ToolResolution | None:
     """Estratégia 1: tools declaradas explicitamente."""
@@ -196,8 +198,8 @@ async def _resolve_llm(
             f"Available tools: {json.dumps(available)}\n"
             f"Step description: {step_spec.description[:400]}\n\n"
             "Which tools are needed to complete this step? "
-            'Reply ONLY with a JSON array of tool names from the available list. '
-            "Example: [\"web_search\", \"write_file\"]"
+            "Reply ONLY with a JSON array of tool names from the available list. "
+            'Example: ["web_search", "write_file"]'
         )
         try:
             response = await model_router.chat(
@@ -264,6 +266,7 @@ def _resolve_fallback(tier: ExecutionTier) -> ToolResolution:
 
 
 # ─── Entrada pública ─────────────────────────────────────────────────────────
+
 
 async def resolve_tools_for_step(
     step_spec: StepSpec,
@@ -374,6 +377,7 @@ def validate_declared_tools(tools_required: list[str]) -> list[str]:
 
 # ─── Helpers privados ────────────────────────────────────────────────────────
 
+
 def _merge_with_always(tools: list[str]) -> list[str]:
     """Garante que ALWAYS_TOOLS estejam presentes no set final, sem duplicatas."""
     result = list(tools)
@@ -381,4 +385,3 @@ def _merge_with_always(tools: list[str]) -> list[str]:
         if t not in result:
             result.append(t)
     return result
-

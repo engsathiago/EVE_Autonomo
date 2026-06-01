@@ -7,6 +7,7 @@ Cobre §8 critérios 1, 2, 6, 7 (exec_tool E2E):
 - Crítico integrado: aprovação destrava, rejeição retorna exit_code=-1.
 - preview de comando truncado em 200 chars.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -20,6 +21,7 @@ from tests.sandbox.conftest import make_subprocess_sandbox
 # ---------------------------------------------------------------------------
 # Execução básica via exec_tool
 # ---------------------------------------------------------------------------
+
 
 async def test_exec_tool_runs_command():
     from agent.tools.exec_tool import exec_tool
@@ -59,6 +61,7 @@ async def test_exec_tool_unknown_policy_raises():
 # ---------------------------------------------------------------------------
 # Persistência no banco (requer Postgres)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.integration
 async def test_exec_tool_writes_db_row(tmpdb, tmp_log_dir):
@@ -104,6 +107,7 @@ async def test_exec_tool_stores_mission_and_subagent_ids(tmpdb, tmp_log_dir):
 # Logs em arquivo
 # ---------------------------------------------------------------------------
 
+
 async def test_exec_tool_writes_log_files(tmp_log_dir):
     from agent.sandbox.registry import SandboxRegistry
     from agent.tools.exec_tool import exec_tool
@@ -127,10 +131,11 @@ async def test_exec_tool_writes_log_files(tmp_log_dir):
 # Preview de comando truncado em 200 chars
 # ---------------------------------------------------------------------------
 
+
 async def test_exec_tool_command_preview_truncated(tmp_log_dir):
     from agent.sandbox.registry import SandboxRegistry
 
-    long_cmd = "echo " + "x" * 500   # 505 chars
+    long_cmd = "echo " + "x" * 500  # 505 chars
     reg = SandboxRegistry(db_pool=None, log_dir=tmp_log_dir)
 
     sid = reg.new_id()
@@ -142,6 +147,7 @@ async def test_exec_tool_command_preview_truncated(tmp_log_dir):
 # ---------------------------------------------------------------------------
 # Eventos emitidos
 # ---------------------------------------------------------------------------
+
 
 async def test_exec_tool_emits_started_and_finished(event_collector):
     import tempfile
@@ -214,6 +220,7 @@ async def test_exec_tool_finished_event_has_required_fields(event_collector):
 # Crítico integrado
 # ---------------------------------------------------------------------------
 
+
 async def test_exec_tool_critic_approved_runs_command():
     """Com critic aprovando, exec_tool executa o comando normalmente."""
     from unittest.mock import AsyncMock
@@ -272,6 +279,7 @@ async def test_exec_tool_untrusted_without_critic_runs():
 # Timeout via exec_tool
 # ---------------------------------------------------------------------------
 
+
 async def test_exec_tool_timeout_propagates():
     """Timeout interno da sandbox chega ao chamador via SandboxResult.timed_out."""
     from agent.sandbox.base import SandboxConfig
@@ -279,10 +287,12 @@ async def test_exec_tool_timeout_propagates():
     from agent.tools.exec_tool import exec_tool
 
     def _fast_sandbox(cfg: SandboxConfig) -> SubprocessSandbox:
-        return SubprocessSandbox(SandboxConfig(
-            wall_time_seconds=1,
-            network=NetworkPolicy.DENY_ALL,
-        ))
+        return SubprocessSandbox(
+            SandboxConfig(
+                wall_time_seconds=1,
+                network=NetworkPolicy.DENY_ALL,
+            )
+        )
 
     result = await exec_tool(
         "sleep 10",
@@ -295,6 +305,7 @@ async def test_exec_tool_timeout_propagates():
 # ---------------------------------------------------------------------------
 # Bug fix: CancelledError não vira NameError no finally
 # ---------------------------------------------------------------------------
+
 
 async def test_exec_tool_handles_cancelled_error_in_finally(tmp_log_dir):
     """
@@ -315,6 +326,7 @@ async def test_exec_tool_handles_cancelled_error_in_finally(tmp_log_dir):
 
     class CancelledSandbox(Sandbox):
         """Sandbox que sempre levanta CancelledError ao rodar."""
+
         def __init__(self, config: SandboxConfig) -> None:
             pass
 

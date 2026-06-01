@@ -1,4 +1,5 @@
 """Testes do SlackAdapter — allowlist, app_mention, DMs, thread_ts, Blocks (C7-Slack)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -27,6 +28,7 @@ def _make_client(post_return=None, upload_return=None):
 
 # ── Construção ────────────────────────────────────────────────────────────────
 
+
 def test_no_allowlist_raises_config_error():
     with pytest.raises(ConfigError):
         SlackAdapter(app_token="xapp", bot_token="xoxb", allowlist=set())
@@ -54,6 +56,7 @@ def test_adapter_name():
 
 # ── Autorização ───────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_is_authorized_true():
     assert await _make_adapter(allowlist={"U111"}).is_authorized("U111") is True
@@ -66,13 +69,15 @@ async def test_is_authorized_false():
 
 # ── app_mention handler ───────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_mention_reaches_router():
     """app_mention de user autorizado chega ao router."""
     received = []
 
     class FakeRouter:
-        async def handle(self, msg: IncomingMessage): received.append(msg)
+        async def handle(self, msg: IncomingMessage):
+            received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
     event = {
@@ -95,7 +100,8 @@ async def test_mention_from_unlisted_user_is_ignored():
     received = []
 
     class FakeRouter:
-        async def handle(self, msg): received.append(msg)
+        async def handle(self, msg):
+            received.append(msg)
 
     adapter = _make_adapter(allowlist={"U111"}, router=FakeRouter())
     event = {
@@ -131,7 +137,8 @@ async def test_mention_with_files_gets_warning():
     received = []
 
     class FakeRouter:
-        async def handle(self, msg): received.append(msg)
+        async def handle(self, msg):
+            received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
     client = _make_client()
@@ -150,13 +157,15 @@ async def test_mention_with_files_gets_warning():
 
 # ── DM handler ────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_dm_reaches_router():
     """DM de user autorizado chega ao router."""
     received = []
 
     class FakeRouter:
-        async def handle(self, msg: IncomingMessage): received.append(msg)
+        async def handle(self, msg: IncomingMessage):
+            received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
     event = {
@@ -179,7 +188,8 @@ async def test_bot_message_is_ignored():
     received = []
 
     class FakeRouter:
-        async def handle(self, msg): received.append(msg)
+        async def handle(self, msg):
+            received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
     event = {
@@ -200,7 +210,8 @@ async def test_non_dm_channel_is_ignored():
     received = []
 
     class FakeRouter:
-        async def handle(self, msg): received.append(msg)
+        async def handle(self, msg):
+            received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
     event = {
@@ -215,6 +226,7 @@ async def test_non_dm_channel_is_ignored():
 
 
 # ── send(): thread e arquivo para textos longos ───────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_send_uses_thread_ts():
@@ -269,6 +281,7 @@ async def test_send_to_unknown_user_is_noop():
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def test_strip_bot_mention_removes_prefix():
     assert _strip_bot_mention("<@U12345> status") == "status"

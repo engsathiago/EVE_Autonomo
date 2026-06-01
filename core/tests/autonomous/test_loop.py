@@ -1,4 +1,5 @@
 """Testa AutonomousLoop — sem chamar LLM diretamente."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone

@@ -2,6 +2,7 @@
 
 Escrito antes da implementação de _process_email.
 """
+
 from __future__ import annotations
 
 import email
@@ -38,6 +39,7 @@ def _make_msg(headers: dict[str, str], body: str = "corpo do email") -> email.me
 
 
 # ── C8: Anti-loop ─────────────────────────────────────────────────────────────
+
 
 def test_auto_submitted_auto_replied_is_detected():
     """Header Auto-Submitted: auto-replied deve ser detectado como auto-resposta."""
@@ -87,19 +89,22 @@ async def test_auto_reply_email_is_discarded_silently():
     adapter = _make_adapter()
     adapter.set_router(FakeRouter())
 
-    msg = _make_msg({
-        "From": "user@example.com",
-        "To": "bot@example.com",
-        "Subject": "[agent] status",
-        "Auto-Submitted": "auto-replied",
-        "Message-ID": "<id@example.com>",
-    })
+    msg = _make_msg(
+        {
+            "From": "user@example.com",
+            "To": "bot@example.com",
+            "Subject": "[agent] status",
+            "Auto-Submitted": "auto-replied",
+            "Message-ID": "<id@example.com>",
+        }
+    )
     await adapter._process_email(msg)
 
     assert router_called == [], "email auto-reply não deve chegar ao router"
 
 
 # ── C9: Anti-spoof SPF/DKIM ───────────────────────────────────────────────────
+
 
 def test_spf_fail_with_dkim_fail_is_rejected():
     """Authentication-Results com spf=fail e dkim=fail rejeita o email."""
@@ -143,13 +148,15 @@ async def test_spf_dkim_fail_email_is_discarded():
     adapter = _make_adapter()
     adapter.set_router(FakeRouter())
 
-    msg = _make_msg({
-        "From": "user@example.com",
-        "To": "bot@example.com",
-        "Subject": "[agent] status",
-        "Authentication-Results": "mx.example.com; spf=fail; dkim=fail",
-        "Message-ID": "<id@example.com>",
-    })
+    msg = _make_msg(
+        {
+            "From": "user@example.com",
+            "To": "bot@example.com",
+            "Subject": "[agent] status",
+            "Authentication-Results": "mx.example.com; spf=fail; dkim=fail",
+            "Message-ID": "<id@example.com>",
+        }
+    )
     await adapter._process_email(msg)
 
     assert router_called == [], "email com spf/dkim fail não deve chegar ao router"
@@ -157,14 +164,19 @@ async def test_spf_dkim_fail_email_is_discarded():
 
 # ── Allowlist ─────────────────────────────────────────────────────────────────
 
+
 def test_email_adapter_no_allowlist_raises_config_error():
     """Sem allowlist, EmailAdapter levanta ConfigError."""
     from agent.channels.base import ConfigError
+
     with pytest.raises(ConfigError):
         EmailAdapter(
-            imap_host="x", imap_port=993,
-            smtp_host="x", smtp_port=587,
-            user="bot@x.com", password="pass",
+            imap_host="x",
+            imap_port=993,
+            smtp_host="x",
+            smtp_port=587,
+            user="bot@x.com",
+            password="pass",
             allowlist=set(),
         )
 
@@ -181,12 +193,14 @@ async def test_unauthorized_sender_is_discarded():
     adapter = _make_adapter(allowlist={"allowed@example.com"})
     adapter.set_router(FakeRouter())
 
-    msg = _make_msg({
-        "From": "hacker@evil.com",
-        "To": "bot@example.com",
-        "Subject": "[agent] injeção de prompt",
-        "Message-ID": "<hack@evil.com>",
-    })
+    msg = _make_msg(
+        {
+            "From": "hacker@evil.com",
+            "To": "bot@example.com",
+            "Subject": "[agent] injeção de prompt",
+            "Message-ID": "<hack@evil.com>",
+        }
+    )
     await adapter._process_email(msg)
 
     assert router_called == []
@@ -194,9 +208,11 @@ async def test_unauthorized_sender_is_discarded():
 
 def test_clean_email_passes_all_checks():
     """Email limpo (sem flags problemáticos) não é bloqueado pelas funções de check."""
-    msg = _make_msg({
-        "From": "user@example.com",
-        "Authentication-Results": "mx.example.com; spf=pass; dkim=pass",
-    })
+    msg = _make_msg(
+        {
+            "From": "user@example.com",
+            "Authentication-Results": "mx.example.com; spf=pass; dkim=pass",
+        }
+    )
     assert _is_auto_reply(msg) is False
     assert _spf_dkim_failed(msg) is False

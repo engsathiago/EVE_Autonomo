@@ -2,6 +2,7 @@
 Cobre §8 critério 1: Sandbox ABC e backends implementados.
 Testa dataclasses, defaults, exceptions e factory de backend.
 """
+
 from __future__ import annotations
 
 from agent.sandbox.base import NetworkPolicy, Sandbox, SandboxConfig, SandboxResult
@@ -16,6 +17,7 @@ from agent.sandbox.exceptions import (
 # ---------------------------------------------------------------------------
 # SandboxConfig defaults
 # ---------------------------------------------------------------------------
+
 
 def test_sandbox_config_defaults():
     cfg = SandboxConfig()
@@ -50,6 +52,7 @@ def test_sandbox_config_custom():
 # SandboxResult defaults
 # ---------------------------------------------------------------------------
 
+
 def test_sandbox_result_fields():
     r = SandboxResult(
         exit_code=0,
@@ -63,7 +66,7 @@ def test_sandbox_result_fields():
         network_denied_attempts=[],
     )
     assert r.exit_code == 0
-    assert r.files_out == {}   # default vazio
+    assert r.files_out == {}  # default vazio
 
 
 def test_sandbox_result_files_out():
@@ -86,6 +89,7 @@ def test_sandbox_result_files_out():
 # NetworkPolicy enum
 # ---------------------------------------------------------------------------
 
+
 def test_network_policy_values():
     assert NetworkPolicy.DENY_ALL.value == "deny_all"
     assert NetworkPolicy.ALLOWLIST.value == "allowlist"
@@ -95,6 +99,7 @@ def test_network_policy_values():
 # ---------------------------------------------------------------------------
 # Exceptions
 # ---------------------------------------------------------------------------
+
 
 def test_sandbox_timeout_message():
     exc = SandboxTimeout(30)
@@ -130,8 +135,10 @@ def test_sandbox_critic_rejected():
 # Factory de backend (get_default_backend / make_sandbox)
 # ---------------------------------------------------------------------------
 
+
 def test_get_default_backend_returns_class():
     from agent.sandbox.docker_backend import get_default_backend
+
     backend_cls = get_default_backend()
     assert issubclass(backend_cls, Sandbox)
 
@@ -142,8 +149,10 @@ def test_sandbox_backend_env_override_subprocess(monkeypatch):
     import importlib
 
     from agent.sandbox import docker_backend as db
+
     importlib.reload(db)
     from agent.sandbox.subprocess_backend import SubprocessSandbox
+
     cls = db.get_default_backend()
     assert cls is SubprocessSandbox
 
@@ -153,14 +162,17 @@ def test_sandbox_backend_env_override_docker(monkeypatch):
     import importlib
 
     from agent.sandbox import docker_backend as db
+
     importlib.reload(db)
     from agent.sandbox.docker_backend import DockerSandbox
+
     cls = db.get_default_backend()
     assert cls is DockerSandbox
 
 
 def test_make_sandbox_returns_sandbox_instance():
     from agent.sandbox.docker_backend import make_sandbox
+
     cfg = SandboxConfig()
     sandbox = make_sandbox(cfg)
     assert isinstance(sandbox, Sandbox)

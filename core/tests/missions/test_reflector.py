@@ -1,4 +1,5 @@
 """Testa MissionReflector — parse estrito e escrita em memória reflexiva."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock

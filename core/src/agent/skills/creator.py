@@ -123,9 +123,7 @@ class SkillCreator:
         # Não deixa sobrescrever builtins
         builtin_dir = skills_dir / "builtin"
         if (builtin_dir / f"{name}.md").exists():
-            raise PermissionError(
-                f"Skill '{name}' é builtin e não pode ser sobrescrita via promote."
-            )
+            raise PermissionError(f"Skill '{name}' é builtin e não pode ser sobrescrita via promote.")
 
         draft_path.rename(target)
         log.info("skill.creator.promoted", name=name, target=str(target))

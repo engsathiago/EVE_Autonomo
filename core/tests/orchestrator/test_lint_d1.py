@@ -13,6 +13,7 @@ Regras verificadas:
   L5: F8 regressão — check_step_safety ainda rejeita padrões proibidos.
       Suite completa F8 em tests/sandbox/test_integration_orchestrator.py.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -50,6 +51,7 @@ def _grep(pattern: str, root: Path, exclude_files: list[str] | None = None) -> l
 
 # ─── L1: TIER_TOOLS fora de tiers.py ─────────────────────────────────────────
 
+
 def test_tier_tools_nao_usado_fora_de_tiers_e_init():
     """
     TIER_TOOLS só pode aparecer em tiers.py (definição shim deprecated)
@@ -60,13 +62,13 @@ def test_tier_tools_nao_usado_fora_de_tiers_e_init():
         root=SRC,
         exclude_files=["tiers.py", "__init__.py"],
     )
-    assert not hits, (
-        "TIER_TOOLS encontrado fora de tiers.py/__init__.py — viola D.1:\n"
-        + "\n".join(f"  {h}" for h in hits)
+    assert not hits, "TIER_TOOLS encontrado fora de tiers.py/__init__.py — viola D.1:\n" + "\n".join(
+        f"  {h}" for h in hits
     )
 
 
 # ─── L2: KEYWORD_TOOL_MAP fora de tool_router.py ─────────────────────────────
+
 
 def test_keyword_tool_map_nao_usado_fora_de_tool_router_e_init():
     """
@@ -79,13 +81,13 @@ def test_keyword_tool_map_nao_usado_fora_de_tool_router_e_init():
         root=SRC,
         exclude_files=["tool_router.py", "__init__.py"],
     )
-    assert not hits, (
-        "KEYWORD_TOOL_MAP encontrado fora de tool_router.py/__init__.py:\n"
-        + "\n".join(f"  {h}" for h in hits)
+    assert not hits, "KEYWORD_TOOL_MAP encontrado fora de tool_router.py/__init__.py:\n" + "\n".join(
+        f"  {h}" for h in hits
     )
 
 
 # ─── L3: context.py não tem lista hardcoded ───────────────────────────────────
+
 
 def test_context_nao_tem_lista_hardcoded_de_tools():
     """
@@ -110,13 +112,13 @@ def test_context_nao_tem_lista_hardcoded_de_tools():
         if pattern in content:
             violations.append(f"Padrão proibido encontrado: {pattern!r}")
 
-    assert not violations, (
-        "context.py contém lista hardcoded de tools — use tool_router:\n"
-        + "\n".join(f"  {v}" for v in violations)
+    assert not violations, "context.py contém lista hardcoded de tools — use tool_router:\n" + "\n".join(
+        f"  {v}" for v in violations
     )
 
 
 # ─── L4: router.py importa resolve_tools_for_step ────────────────────────────
+
 
 def test_router_importa_resolve_tools_for_step():
     """
@@ -154,6 +156,7 @@ def test_router_nao_tem_lista_hardcoded_de_tools_strategic():
 # A função Orchestrator.check_step_safety() faz esse check. D.1 não deve ter
 # regredido essa função. Testamos os padrões mais críticos diretamente.
 # A suite completa do F8 está em tests/sandbox/test_integration_orchestrator.py.
+
 
 def _make_orchestrator():
     """Orchestrator mínimo para testar check_step_safety sem Postgres/Redis."""
@@ -197,6 +200,5 @@ def test_f8_check_step_safety_aceita_exec_tool():
 def test_f8_check_step_safety_existe_no_orchestrator():
     """D.1 não removeu check_step_safety do Orchestrator."""
     from agent.orchestrator.router import Orchestrator
-    assert hasattr(Orchestrator, "check_step_safety"), (
-        "Orchestrator.check_step_safety removido — regressão F8"
-    )
+
+    assert hasattr(Orchestrator, "check_step_safety"), "Orchestrator.check_step_safety removido — regressão F8"

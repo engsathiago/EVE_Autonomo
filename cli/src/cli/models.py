@@ -37,9 +37,7 @@ def model_list() -> None:
         router = _get_router()
         models = await router.list_all_models()
         if not models:
-            console.print(
-                "[yellow]Nenhum modelo disponível. Verifique as API keys e o Ollama.[/yellow]"
-            )
+            console.print("[yellow]Nenhum modelo disponível. Verifique as API keys e o Ollama.[/yellow]")
             return
 
         table = Table(show_header=True, header_style="bold cyan")
@@ -119,15 +117,11 @@ def model_show(model_alias: str = typer.Argument(..., help="ex: ollama:qwen2.5:7
         router = _get_router()
         all_models = await router.list_all_models()
         matches = [
-            m
-            for m in all_models
-            if m.alias == model_alias or (m.provider == provider and m.model_id == model_id)
+            m for m in all_models if m.alias == model_alias or (m.provider == provider and m.model_id == model_id)
         ]
 
         if not matches:
-            console.print(
-                f"[yellow]Modelo '{model_alias}' não encontrado nos providers ativos.[/yellow]"
-            )
+            console.print(f"[yellow]Modelo '{model_alias}' não encontrado nos providers ativos.[/yellow]")
             raise typer.Exit(1)
 
         m = matches[0]
@@ -193,9 +187,7 @@ def model_test(
         latency_ms = int((time.monotonic() - t0) * 1000)
         from agent.models.pricing import cost_usd
 
-        c = cost_usd(
-            model_alias, resp.usage.input_tokens, resp.usage.output_tokens, resp.openrouter_cost_usd
-        )
+        c = cost_usd(model_alias, resp.usage.input_tokens, resp.usage.output_tokens, resp.openrouter_cost_usd)
 
         console.print(f"  Resposta:  [green]{resp.text.strip()!r}[/green]")
         console.print(f"  Latência:  {latency_ms}ms")
@@ -234,9 +226,7 @@ def model_costs(
             try:
                 since_dt = datetime.fromisoformat(since)
             except ValueError:
-                console.print(
-                    f"[red]Data inválida: {since!r}. Use 'today', 'week' ou 'YYYY-MM-DD'.[/red]"
-                )
+                console.print(f"[red]Data inválida: {since!r}. Use 'today', 'week' ou 'YYYY-MM-DD'.[/red]")
                 raise typer.Exit(1)
 
         dsn = os.environ.get("POSTGRES_DSN") or os.environ.get("POSTGRES_URL")

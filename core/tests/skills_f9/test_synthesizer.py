@@ -1,4 +1,5 @@
 """Testes do SkillSynthesizer — C1: detecção de cluster."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -77,8 +78,7 @@ def test_parse_llm_output_valid() -> None:
     synth = SkillSynthesizer(db_pool=pool, output_dir=Path("/tmp"))
     cluster = _make_cluster()
     raw = (
-        "===SKILL_PY===\nasync def run(input: dict) -> dict:\n    return {}\n"
-        "===MANIFEST_YAML===\nslug: test\n===END==="
+        "===SKILL_PY===\nasync def run(input: dict) -> dict:\n    return {}\n===MANIFEST_YAML===\nslug: test\n===END==="
     )
     skill_py, manifest_yaml = synth._parse_llm_output(raw, "test", cluster)
     assert "async def run" in skill_py
@@ -87,6 +87,7 @@ def test_parse_llm_output_valid() -> None:
 
 def test_parse_llm_output_invalid_raises() -> None:
     from agent.skills.exceptions import SkillSynthesisFailed
+
     pool = _make_pool()
     synth = SkillSynthesizer(db_pool=pool, output_dir=Path("/tmp"))
     cluster = _make_cluster()

@@ -177,10 +177,7 @@ def make_health_router(
         scheduler_result = _check_scheduler(_cron())
         pool_result = _check_subagent_pool(_pool_inst())
 
-        all_ok = all(
-            c.get("ok", False)
-            for c in [sqlite_result, postgres_result, scheduler_result, pool_result]
-        )
+        all_ok = all(c.get("ok", False) for c in [sqlite_result, postgres_result, scheduler_result, pool_result])
         status_code = 200 if all_ok else 503
         return JSONResponse(
             {
@@ -224,9 +221,7 @@ def make_health_router(
     return router
 
 
-async def _gather_ready_checks(
-    db_pool: Any, cron_worker: Any, subagent_pool: Any
-) -> dict[str, Any]:
+async def _gather_ready_checks(db_pool: Any, cron_worker: Any, subagent_pool: Any) -> dict[str, Any]:
     checks = await asyncio.gather(
         _check_sqlite(),
         _check_postgres(db_pool),

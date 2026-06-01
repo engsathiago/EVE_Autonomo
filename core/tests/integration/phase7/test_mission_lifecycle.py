@@ -4,6 +4,7 @@ Testes de integração da F7 — ciclo completo de missão.
 Usam mocks de DB e LLM para ser executáveis sem infraestrutura real.
 Os testes verificam contratos de comportamento, não implementações.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -18,6 +19,7 @@ from agent.missions.reflector import MissionReflector
 from agent.missions.store import Mission, MissionStep
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
+
 
 def _mock_mission(status="active", step_count=3):
     m = MagicMock(spec=Mission)
@@ -52,6 +54,7 @@ def _mock_plan(steps=None):
 
 # ─── Test 1: Ciclo completo missão → passos → reflexão ───────────────────────
 
+
 @pytest.mark.asyncio
 async def test_full_mission_create_plan_execute_reflect() -> None:
     """
@@ -70,7 +73,7 @@ async def test_full_mission_create_plan_execute_reflect() -> None:
     async def get_pending_side(mission_id):
         call_count["pending"] += 1
         if call_count["pending"] <= 3:
-            return steps[call_count["pending"] - 1:]  # decreasing list
+            return steps[call_count["pending"] - 1 :]  # decreasing list
         return []
 
     mission_store.list_active = AsyncMock(return_value=[mission])

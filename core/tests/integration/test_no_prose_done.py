@@ -3,6 +3,7 @@ B.4 — Testes de regressão: nenhum step é marcado 'done' sem execução real.
 
 Regra: se esse teste falhar, NÃO mergeia. O bug voltou.
 """
+
 from __future__ import annotations
 
 from datetime import UTC
@@ -28,6 +29,7 @@ def _make_mission(mission_id=None):
     m.title = "Missão de regressão"
     m.status = "active"
     from datetime import datetime
+
     m.updated_at = datetime.now(tz=UTC)
     return m
 
@@ -172,9 +174,7 @@ async def test_real_tool_call_marks_done() -> None:
     assert report.steps_dispatched == 1, "Deve contar 1 step executado"
 
     call_kwargs = loop._mission_store.update_step.call_args.kwargs
-    assert call_kwargs["status"] == "done", (
-        f"Status deveria ser 'done', recebeu: {call_kwargs['status']}"
-    )
+    assert call_kwargs["status"] == "done", f"Status deveria ser 'done', recebeu: {call_kwargs['status']}"
     assert call_kwargs["result"]["tools_invoked"] == ["read_file"], (
         f"tools_invoked errado: {call_kwargs['result']['tools_invoked']}"
     )
@@ -246,9 +246,7 @@ async def test_subagent_planning_intent_counts_as_success() -> None:
     assert record_kwargs["verdict"] == "intent_planning", (
         f"verdict deveria ser 'intent_planning', recebeu: {record_kwargs['verdict']}"
     )
-    assert record_kwargs["tools_used"] == [], (
-        f"tools_used deveria ser vazio, recebeu: {record_kwargs['tools_used']}"
-    )
+    assert record_kwargs["tools_used"] == [], f"tools_used deveria ser vazio, recebeu: {record_kwargs['tools_used']}"
 
 
 # ---------------------------------------------------------------------------
@@ -285,9 +283,7 @@ async def test_subagent_no_intent_no_tools_fails() -> None:
     assert record_kwargs["verdict"] == "prose_only", (
         f"verdict deveria ser 'prose_only', recebeu: {record_kwargs['verdict']}"
     )
-    assert record_kwargs["tools_used"] == [], (
-        f"tools_used deveria ser vazio, recebeu: {record_kwargs['tools_used']}"
-    )
+    assert record_kwargs["tools_used"] == [], f"tools_used deveria ser vazio, recebeu: {record_kwargs['tools_used']}"
 
 
 # ---------------------------------------------------------------------------
@@ -315,14 +311,10 @@ async def test_failed_tool_call_still_counts_as_executed() -> None:
         report = await loop.tick()
 
     # Tool call aconteceu — mesmo com erro, é execução (não prosa)
-    assert report.steps_dispatched == 1, (
-        "Tool call com erro ainda deve contar como step executado"
-    )
+    assert report.steps_dispatched == 1, "Tool call com erro ainda deve contar como step executado"
 
     call_kwargs = loop._mission_store.update_step.call_args.kwargs
-    assert call_kwargs["status"] == "done", (
-        f"Status deveria ser 'done', recebeu: {call_kwargs['status']}"
-    )
+    assert call_kwargs["status"] == "done", f"Status deveria ser 'done', recebeu: {call_kwargs['status']}"
     assert call_kwargs["result"]["tool_call_count"] == 1, (
         f"tool_call_count deveria ser 1, recebeu: {call_kwargs['result']['tool_call_count']}"
     )

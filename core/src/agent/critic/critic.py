@@ -319,10 +319,7 @@ class Critic:
         decision = Decision(
             tool_name="exec_sandbox",
             tool_args={"command": cmd_str[:200], "policy": policy_name},
-            context_summary=(
-                f"Execução de comando em sandbox com política '{policy_name}'. "
-                f"Comando: {cmd_str[:300]}"
-            ),
+            context_summary=(f"Execução de comando em sandbox com política '{policy_name}'. Comando: {cmd_str[:300]}"),
             affects_external_world=True,
             is_first_of_its_kind=True,
         )

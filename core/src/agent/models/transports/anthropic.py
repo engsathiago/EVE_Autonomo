@@ -241,9 +241,7 @@ class AnthropicTransport:
             except sdk.APIStatusError as exc:
                 if exc.status_code not in _RETRYABLE_STATUSES or attempt == _MAX_RETRIES - 1:
                     raise
-                log.warning(
-                    "anthropic.retry", attempt=attempt + 1, delay=delay, status=exc.status_code
-                )
+                log.warning("anthropic.retry", attempt=attempt + 1, delay=delay, status=exc.status_code)
                 await asyncio.sleep(delay)
                 delay *= 2
         raise RuntimeError("unreachable")

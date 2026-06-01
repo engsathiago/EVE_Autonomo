@@ -1,4 +1,5 @@
 """TDD — ChannelRouter: allowlist, rate limit, dispatch, persistência (C2, C3, C4, C14)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -8,6 +9,7 @@ import pytest
 from agent.channels.base import ChannelAdapter, IncomingMessage, OutgoingMessage
 
 # ── Adapter fake para testes ──────────────────────────────────────────────────
+
 
 class _FakeAdapter(ChannelAdapter):
     name = "fakechan"
@@ -39,6 +41,7 @@ def _make_router(
     rate_limit_channel: int = 120,
 ):
     from agent.channels.router import ChannelRouter
+
     pool, _ = mock_db_pool
     return ChannelRouter(
         adapters=[adapter],
@@ -61,6 +64,7 @@ def _msg(user_id: str = "U1", text: str = "olá") -> IncomingMessage:
 
 
 # ── Allowlist ─────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_router_rejects_unauthorized_user(mock_orchestrator, mock_approval_manager, mock_db_pool):
@@ -105,9 +109,7 @@ async def test_router_passes_authorized_user(mock_orchestrator, mock_approval_ma
 async def test_router_sends_response_to_adapter(mock_orchestrator, mock_approval_manager, mock_db_pool):
     """Resposta do orchestrator é entregue de volta ao adapter correto."""
     adapter = _FakeAdapter(allowed=["U1"])
-    mock_orchestrator.route.return_value = MagicMock(
-        final_text="oi de volta", approval_request=None
-    )
+    mock_orchestrator.route.return_value = MagicMock(final_text="oi de volta", approval_request=None)
     router = _make_router(adapter, mock_orchestrator, mock_approval_manager, mock_db_pool)
 
     await router.handle(_msg(user_id="U1", text="olá"))
@@ -120,13 +122,17 @@ async def test_router_sends_response_to_adapter(mock_orchestrator, mock_approval
 
 # ── Rate limit ────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_router_rate_limit_per_user_blocks_excess(mock_orchestrator, mock_approval_manager, mock_db_pool):
     """Mensagens acima do limite por user são bloqueadas (retornam sem chamar orchestrator)."""
     adapter = _FakeAdapter(allowed=["U1"])
     # Limite de 3 por minuto para testar
     router = _make_router(
-        adapter, mock_orchestrator, mock_approval_manager, mock_db_pool,
+        adapter,
+        mock_orchestrator,
+        mock_approval_manager,
+        mock_db_pool,
         rate_limit_user=3,
     )
 
@@ -146,7 +152,10 @@ async def test_router_rate_limit_per_channel_blocks_excess(mock_orchestrator, mo
     adapter = _FakeAdapter(allowed=["U1", "U2", "U3", "U4"])
     # Limite de 3 por canal por minuto
     router = _make_router(
-        adapter, mock_orchestrator, mock_approval_manager, mock_db_pool,
+        adapter,
+        mock_orchestrator,
+        mock_approval_manager,
+        mock_db_pool,
         rate_limit_channel=3,
         rate_limit_user=100,  # user limit alto para não interferir
     )
@@ -168,7 +177,10 @@ async def test_router_rate_limited_metric_increments(mock_orchestrator, mock_app
 
     adapter = _FakeAdapter(allowed=["U1"])
     router = _make_router(
-        adapter, mock_orchestrator, mock_approval_manager, mock_db_pool,
+        adapter,
+        mock_orchestrator,
+        mock_approval_manager,
+        mock_db_pool,
         rate_limit_user=1,
     )
 
@@ -183,15 +195,15 @@ async def test_router_rate_limited_metric_increments(mock_orchestrator, mock_app
 
 # ── Session ID ───────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_router_session_id_format(mock_orchestrator, mock_approval_manager, mock_db_pool):
     """session_id deve ser '{channel}:{user_id}'."""
     adapter = _FakeAdapter(allowed=["U42"])
     captured_tasks = []
-    mock_orchestrator.route = AsyncMock(side_effect=lambda t: (
-        captured_tasks.append(t),
-        MagicMock(final_text="ok", approval_request=None)
-    )[1])
+    mock_orchestrator.route = AsyncMock(
+        side_effect=lambda t: (captured_tasks.append(t), MagicMock(final_text="ok", approval_request=None))[1]
+    )
 
     router = _make_router(adapter, mock_orchestrator, mock_approval_manager, mock_db_pool)
     await router.handle(_msg(user_id="U42"))
@@ -201,6 +213,7 @@ async def test_router_session_id_format(mock_orchestrator, mock_approval_manager
 
 
 # ── Persistência ─────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_router_persists_inbound_message(mock_orchestrator, mock_approval_manager, mock_db_pool):
@@ -220,9 +233,7 @@ async def test_router_persists_inbound_message(mock_orchestrator, mock_approval_
 async def test_router_persists_outbound_message(mock_orchestrator, mock_approval_manager, mock_db_pool):
     """Resposta outbound é gravada em channel_messages com direction=out."""
     pool, conn = mock_db_pool
-    mock_orchestrator.route.return_value = MagicMock(
-        final_text="resposta", approval_request=None
-    )
+    mock_orchestrator.route.return_value = MagicMock(final_text="resposta", approval_request=None)
     adapter = _FakeAdapter(allowed=["U1"])
     router = _make_router(adapter, mock_orchestrator, mock_approval_manager, (pool, conn))
 
@@ -234,18 +245,18 @@ async def test_router_persists_outbound_message(mock_orchestrator, mock_approval
 
 # ── Sem if channel == no router ───────────────────────────────────────────────
 
+
 def test_router_source_code_has_no_channel_if():
     """C14: router.py não tem 'if.*channel.*==' — roteamento é por adapter, não por nome."""
     import inspect
 
     from agent.channels import router as router_module
+
     source = inspect.getsource(router_module)
     # Permitido: comparações em strings de log/persist, não em lógica de dispatch
     lines_with_if_channel = [
-        ln for ln in source.splitlines()
-        if "if" in ln and "channel" in ln and "==" in ln
-        and not ln.strip().startswith("#")
+        ln
+        for ln in source.splitlines()
+        if "if" in ln and "channel" in ln and "==" in ln and not ln.strip().startswith("#")
     ]
-    assert lines_with_if_channel == [], (
-        f"router.py contém 'if channel ==' nas linhas: {lines_with_if_channel}"
-    )
+    assert lines_with_if_channel == [], f"router.py contém 'if channel ==' nas linhas: {lines_with_if_channel}"

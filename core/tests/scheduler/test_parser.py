@@ -2,6 +2,7 @@
 Testa o parser de linguagem natural → cron expression.
 20 frases PT-BR cobrindo os casos mais comuns.
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -20,15 +21,19 @@ from agent.scheduler.parser import (
 # Testes de _extract_cron (sem LLM)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("raw,expected", [
-    ("0 9 * * 1", "0 9 * * 1"),
-    ("*/30 * * * *", "*/30 * * * *"),
-    ("0 0 1 * *", "0 0 1 * *"),
-    ("0 8 * * *", "0 8 * * *"),
-    ("  0 18 * * 1-5  ", "0 18 * * 1-5"),
-    ("Cron: 0 9 * * 1\n", "0 9 * * 1"),
-    ("The answer is */2 * * * *", "*/2 * * * *"),
-])
+
+@pytest.mark.parametrize(
+    "raw,expected",
+    [
+        ("0 9 * * 1", "0 9 * * 1"),
+        ("*/30 * * * *", "*/30 * * * *"),
+        ("0 0 1 * *", "0 0 1 * *"),
+        ("0 8 * * *", "0 8 * * *"),
+        ("  0 18 * * 1-5  ", "0 18 * * 1-5"),
+        ("Cron: 0 9 * * 1\n", "0 9 * * 1"),
+        ("The answer is */2 * * * *", "*/2 * * * *"),
+    ],
+)
 def test_extract_cron_valid(raw: str, expected: str) -> None:
     assert _extract_cron(raw) == expected
 
@@ -42,25 +47,32 @@ def test_extract_cron_invalid() -> None:
 # Testes de _validate_cron (sem LLM)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("expr", [
-    "0 9 * * 1",
-    "*/30 * * * *",
-    "0 0 1 * *",
-    "0 8 * * *",
-    "0 18 * * 1-5",
-    "*/2 * * * *",
-    "0 0 * * *",
-    "30 6 * * 1-5",
-])
+
+@pytest.mark.parametrize(
+    "expr",
+    [
+        "0 9 * * 1",
+        "*/30 * * * *",
+        "0 0 1 * *",
+        "0 8 * * *",
+        "0 18 * * 1-5",
+        "*/2 * * * *",
+        "0 0 * * *",
+        "30 6 * * 1-5",
+    ],
+)
 def test_validate_cron_valid(expr: str) -> None:
     _validate_cron(expr, original=expr)  # não deve lançar exceção
 
 
-@pytest.mark.parametrize("expr", [
-    "99 25 * * *",   # hora inválida
-    "abc def ghi",   # não é cron
-    "60 * * * *",    # minuto inválido
-])
+@pytest.mark.parametrize(
+    "expr",
+    [
+        "99 25 * * *",  # hora inválida
+        "abc def ghi",  # não é cron
+        "60 * * * *",  # minuto inválido
+    ],
+)
 def test_validate_cron_invalid(expr: str) -> None:
     with pytest.raises(CronParseError):
         _validate_cron(expr, original=expr)
@@ -69,6 +81,7 @@ def test_validate_cron_invalid(expr: str) -> None:
 # ---------------------------------------------------------------------------
 # Testes de next_runs
 # ---------------------------------------------------------------------------
+
 
 def test_next_runs_returns_n_items() -> None:
     runs = next_runs("0 9 * * 1", n=3)
@@ -85,19 +98,23 @@ def test_next_runs_ordered() -> None:
 # Testes de parse_natural (com LLM mockado)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
-@pytest.mark.parametrize("phrase,expected_cron", [
-    ("toda segunda às 9h", "0 9 * * 1"),
-    ("todo dia às 8h", "0 8 * * *"),
-    ("a cada 30 minutos", "*/30 * * * *"),
-    ("a cada 2 minutos", "*/2 * * * *"),
-    ("todo dia 1 do mês", "0 0 1 * *"),
-    ("dias úteis às 18h", "0 18 * * 1-5"),
-    ("every day at 8am", "0 8 * * *"),
-    ("every monday at 9am", "0 9 * * 1"),
-    ("every 30 minutes", "*/30 * * * *"),
-    ("weekdays at 6pm", "0 18 * * 1-5"),
-])
+@pytest.mark.parametrize(
+    "phrase,expected_cron",
+    [
+        ("toda segunda às 9h", "0 9 * * 1"),
+        ("todo dia às 8h", "0 8 * * *"),
+        ("a cada 30 minutos", "*/30 * * * *"),
+        ("a cada 2 minutos", "*/2 * * * *"),
+        ("todo dia 1 do mês", "0 0 1 * *"),
+        ("dias úteis às 18h", "0 18 * * 1-5"),
+        ("every day at 8am", "0 8 * * *"),
+        ("every monday at 9am", "0 9 * * 1"),
+        ("every 30 minutes", "*/30 * * * *"),
+        ("weekdays at 6pm", "0 18 * * 1-5"),
+    ],
+)
 async def test_parse_natural_phrases(phrase: str, expected_cron: str) -> None:
     mock_llm = MagicMock()
     mock_response = MagicMock()

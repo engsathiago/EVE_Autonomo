@@ -130,18 +130,12 @@ class ReflexiveMemory:
             log.info("reflexive_memory.decayed", count=count)
         return count
 
-    async def list_all(
-        self, *, include_forgotten: bool = False, limit: int = 50
-    ) -> list[ReflexiveInsight]:
+    async def list_all(self, *, include_forgotten: bool = False, limit: int = 50) -> list[ReflexiveInsight]:
         if include_forgotten:
-            rows = await self._pool.fetch(
-                "SELECT * FROM reflexive_memory ORDER BY created_at DESC LIMIT $1", limit
-            )
+            rows = await self._pool.fetch("SELECT * FROM reflexive_memory ORDER BY created_at DESC LIMIT $1", limit)
         else:
             rows = await self._pool.fetch(
-                "SELECT * FROM reflexive_memory"
-                " WHERE forgotten = FALSE"
-                " ORDER BY relevance_score DESC LIMIT $1",
+                "SELECT * FROM reflexive_memory WHERE forgotten = FALSE ORDER BY relevance_score DESC LIMIT $1",
                 limit,
             )
         return [_row_to_insight(r) for r in rows]

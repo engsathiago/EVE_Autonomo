@@ -1,6 +1,7 @@
 """
 Integração: subagente não vê contexto do pai além do que é explicitamente passado.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch

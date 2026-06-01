@@ -1,4 +1,5 @@
 """Fixtures compartilhadas para testes de canais (F12)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -6,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 # ── Mocks de plataformas ─────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_discord_client():
@@ -26,10 +28,12 @@ def mock_discord_message():
     msg.author.bot = False
     msg.content = "hello"
     msg.channel.send = AsyncMock()
-    msg.channel.create_thread = AsyncMock(return_value=MagicMock(
-        send=AsyncMock(),
-        id="thread-123",
-    ))
+    msg.channel.create_thread = AsyncMock(
+        return_value=MagicMock(
+            send=AsyncMock(),
+            id="thread-123",
+        )
+    )
     msg.guild = MagicMock(id=42)
     msg.attachments = []
     return msg
@@ -58,9 +62,7 @@ def mock_slack_event():
             "thread_ts": None,
         },
         "say": AsyncMock(),
-        "client": MagicMock(
-            chat_postMessage=AsyncMock(return_value={"ok": True, "ts": "111.333"})
-        ),
+        "client": MagicMock(chat_postMessage=AsyncMock(return_value={"ok": True, "ts": "111.333"})),
     }
 
 
@@ -73,10 +75,12 @@ def mock_imap():
     imap.select = AsyncMock(return_value=("OK", [b"1"]))
     imap.idle_start = AsyncMock()
     imap.idle_done = AsyncMock(return_value=("OK", [b"32 EXISTS"]))
-    imap.uid = AsyncMock(return_value=(
-        "OK",
-        [b"1", b"(RFC822 {123})", b"Subject: [agent] test\r\nFrom: user@example.com\r\n\r\nbody"],
-    ))
+    imap.uid = AsyncMock(
+        return_value=(
+            "OK",
+            [b"1", b"(RFC822 {123})", b"Subject: [agent] test\r\nFrom: user@example.com\r\n\r\nbody"],
+        )
+    )
     imap.logout = AsyncMock()
     imap.protocol = MagicMock()
     imap.protocol.idle_done = AsyncMock(return_value=("OK", []))
@@ -95,10 +99,12 @@ def mock_smtp():
 
 # ── Mocks de infra do agente ────────────────────────────────────────────────
 
+
 @pytest.fixture
 def mock_orchestrator():
     """Mock do Orchestrator — route() retorna AgentResult simples."""
     from unittest.mock import MagicMock
+
     result = MagicMock()
     result.final_text = "resposta do agente"
     result.approval_request = None

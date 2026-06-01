@@ -1,6 +1,5 @@
 """Testa que SkillSynthesizer usa template quando model_router=None."""
 
-
 import pytest
 
 from agent.skills.synthesizer import ExecutionCluster, SkillSynthesizer

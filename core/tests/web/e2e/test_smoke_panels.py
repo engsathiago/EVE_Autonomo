@@ -3,6 +3,7 @@
 Skip se playwright não instalado — NÃO falha o suite por ausência da lib.
 Requer: `agent web start` rodando em 127.0.0.1:8080 e variável AGENT_WEB_TOKEN.
 """
+
 from __future__ import annotations
 
 import os
@@ -41,8 +42,14 @@ def test_8_panels_visible(browser_page) -> None:
     page.wait_for_selector("#app:not(.hidden)", timeout=10000)
 
     panel_ids = [
-        "#panel-chat", "#panel-missions", "#panel-skills", "#panel-memory",
-        "#panel-traces", "#panel-critic", "#panel-subagents", "#panel-approvals",
+        "#panel-chat",
+        "#panel-missions",
+        "#panel-skills",
+        "#panel-memory",
+        "#panel-traces",
+        "#panel-critic",
+        "#panel-subagents",
+        "#panel-approvals",
     ]
     for panel_id in panel_ids:
         assert page.is_visible(panel_id), f"Painel {panel_id} não visível"

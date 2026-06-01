@@ -2,6 +2,7 @@
 
 /approve e /deny só funcionam em canais listados em APPROVAL_CHANNELS.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -19,6 +20,7 @@ def _msg(channel: str = "discord", user_id: str = "U1", text: str = "/approve ab
 
 
 # ── Gating por canal ─────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_approve_blocked_on_unauthorized_channel():
@@ -127,6 +129,7 @@ async def test_approval_channels_default_is_telegram_and_web():
         env.pop("APPROVAL_CHANNELS", None)
         with patch.dict(os.environ, env, clear=True):
             from agent.channels.router import _parse_approval_channels
+
             channels = _parse_approval_channels()
             assert "telegram" in channels
             assert "web" in channels
@@ -153,6 +156,7 @@ async def test_approve_without_id_returns_usage():
 
 
 # ── Comandos básicos ──────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_help_command_returns_help_text():

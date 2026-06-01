@@ -1,4 +1,5 @@
 """Testes de métricas Prometheus dos canais (C12)."""
+
 from __future__ import annotations
 
 

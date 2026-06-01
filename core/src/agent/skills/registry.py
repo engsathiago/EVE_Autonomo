@@ -72,9 +72,7 @@ class SkillRegistry:
 
     async def list(self, status: str | None = None) -> list[dict[str, Any]]:
         if status:
-            rows = await self._pool.fetch(
-                "SELECT * FROM skills WHERE status = $1 ORDER BY created_at DESC", status
-            )
+            rows = await self._pool.fetch("SELECT * FROM skills WHERE status = $1 ORDER BY created_at DESC", status)
         else:
             rows = await self._pool.fetch("SELECT * FROM skills ORDER BY created_at DESC")
         return [dict(r) for r in rows]

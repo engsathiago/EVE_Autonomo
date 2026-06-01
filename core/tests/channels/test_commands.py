@@ -1,4 +1,5 @@
 """Testes dos comandos de canal — transversal a todos os canais."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -14,6 +15,7 @@ def _msg(text: str, channel: str = "discord") -> IncomingMessage:
 
 async def _dispatch(text: str, orchestrator=None, approval_manager=None, approval_channels=None):
     from agent.channels.commands import dispatch_command
+
     return await dispatch_command(
         text=text,
         msg=_msg(text),
@@ -27,6 +29,7 @@ async def _dispatch(text: str, orchestrator=None, approval_manager=None, approva
 
 # ── /help ─────────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_help_lists_all_commands():
     result = await _dispatch("/help")
@@ -35,6 +38,7 @@ async def test_help_lists_all_commands():
 
 
 # ── /status ───────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_status_without_orchestrator():
@@ -50,6 +54,7 @@ async def test_status_with_orchestrator():
 
 
 # ── /mission ──────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_mission_without_text_returns_usage():
@@ -82,6 +87,7 @@ async def test_mission_dispatches_to_orchestrator():
 
 # ── /missions ─────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_missions_returns_info():
     result = await _dispatch("/missions")
@@ -90,6 +96,7 @@ async def test_missions_returns_info():
 
 # ── /skills ───────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_skills_returns_info():
     result = await _dispatch("/skills")
@@ -97,6 +104,7 @@ async def test_skills_returns_info():
 
 
 # ── /cancel ───────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_cancel_without_id_returns_usage():
@@ -111,6 +119,7 @@ async def test_cancel_with_id_returns_confirmation():
 
 
 # ── Case-insensitive ──────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_commands_are_case_insensitive():

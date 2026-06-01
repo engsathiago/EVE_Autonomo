@@ -1,4 +1,5 @@
 """Testes do SkillValidator — C3: validação em sandbox."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -20,7 +21,11 @@ def _manifest(slug: str = "test_skill") -> SkillManifestF9:
         created_at=datetime.now(tz=UTC),
         description="test",
         embedding_text="test",
-        inputs_schema={"type": "object", "properties": {"url": {"type": "string", "format": "uri"}}, "required": ["url"]},
+        inputs_schema={
+            "type": "object",
+            "properties": {"url": {"type": "string", "format": "uri"}},
+            "required": ["url"],
+        },
         outputs_schema={"type": "object", "properties": {"result": {"type": "string"}}, "required": ["result"]},
         sandbox_profile="SKILL_DEV",
         network_policy={"allow_domains": []},
@@ -29,9 +34,11 @@ def _manifest(slug: str = "test_skill") -> SkillManifestF9:
 
 def _manifest_yaml(tmp_path: Path) -> None:
     data = {
-        "slug": "test_skill", "version": 1,
+        "slug": "test_skill",
+        "version": 1,
         "created_at": "2026-05-10T00:00:00+00:00",
-        "description": "test", "embedding_text": "test",
+        "description": "test",
+        "embedding_text": "test",
         "inputs_schema": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"]},
         "outputs_schema": {"type": "object", "properties": {"result": {"type": "string"}}, "required": ["result"]},
         "sandbox_profile": "SKILL_DEV",
@@ -43,17 +50,29 @@ def _manifest_yaml(tmp_path: Path) -> None:
 
 def _ok_sandbox_result(output: str = '{"result": "ok"}') -> SandboxResult:
     return SandboxResult(
-        exit_code=0, stdout=output, stderr="",
-        duration_ms=100, cpu_seconds=0.1, memory_peak_mb=50.0,
-        timed_out=False, oom_killed=False, network_denied_attempts=[],
+        exit_code=0,
+        stdout=output,
+        stderr="",
+        duration_ms=100,
+        cpu_seconds=0.1,
+        memory_peak_mb=50.0,
+        timed_out=False,
+        oom_killed=False,
+        network_denied_attempts=[],
     )
 
 
 def _fail_sandbox_result(exit_code: int = 1, stderr: str = "error") -> SandboxResult:
     return SandboxResult(
-        exit_code=exit_code, stdout="", stderr=stderr,
-        duration_ms=100, cpu_seconds=0.1, memory_peak_mb=50.0,
-        timed_out=False, oom_killed=False, network_denied_attempts=[],
+        exit_code=exit_code,
+        stdout="",
+        stderr=stderr,
+        duration_ms=100,
+        cpu_seconds=0.1,
+        memory_peak_mb=50.0,
+        timed_out=False,
+        oom_killed=False,
+        network_denied_attempts=[],
     )
 
 
@@ -117,10 +136,12 @@ async def test_validate_smoke_run_success(tmp_path: Path) -> None:
     _manifest_yaml(tmp_path)
 
     # exec_tool é chamado 2x: lint (ok) e smoke (ok)
-    mock_exec = AsyncMock(side_effect=[
-        _ok_sandbox_result(""),         # lint ok (exit_code=0)
-        _ok_sandbox_result('{"result": "value"}'),  # smoke ok
-    ])
+    mock_exec = AsyncMock(
+        side_effect=[
+            _ok_sandbox_result(""),  # lint ok (exit_code=0)
+            _ok_sandbox_result('{"result": "value"}'),  # smoke ok
+        ]
+    )
     validator = SkillValidator(tmp_path, exec_tool_fn=mock_exec)
     report = await validator.validate(_manifest())
     assert report.passed, f"Falhou: {report.failure_reason}"
@@ -136,10 +157,12 @@ async def test_validate_smoke_run_failure(tmp_path: Path) -> None:
     )
     _manifest_yaml(tmp_path)
 
-    mock_exec = AsyncMock(side_effect=[
-        _ok_sandbox_result(""),   # lint ok
-        _fail_sandbox_result(exit_code=1, stderr="ModuleNotFoundError"),  # smoke fail
-    ])
+    mock_exec = AsyncMock(
+        side_effect=[
+            _ok_sandbox_result(""),  # lint ok
+            _fail_sandbox_result(exit_code=1, stderr="ModuleNotFoundError"),  # smoke fail
+        ]
+    )
     validator = SkillValidator(tmp_path, exec_tool_fn=mock_exec)
     report = await validator.validate(_manifest())
     assert not report.passed

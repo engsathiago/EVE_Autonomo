@@ -1,4 +1,5 @@
 """Fixtures compartilhadas para os testes de deploy."""
+
 from __future__ import annotations
 
 import sqlite3

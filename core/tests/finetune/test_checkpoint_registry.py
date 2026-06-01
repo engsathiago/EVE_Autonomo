@@ -1,4 +1,5 @@
 """Tests for checkpoint_registry.py — C9, C10, C11 (activation/rollback)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -130,7 +131,7 @@ class TestRollback:
         """C11: rollback() returns the previous archived checkpoint ID."""
         pool = AsyncMock()
         pool.fetchrow.side_effect = [
-            {"id": "ckpt-current"},   # current active checkpoint
+            {"id": "ckpt-current"},  # current active checkpoint
             {"id": "ckpt-previous"},  # last archived
         ]
         pool.execute = AsyncMock()

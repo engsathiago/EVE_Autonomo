@@ -1,4 +1,5 @@
 """Testes adicionais de cobertura para start/stop/send dos adapters."""
+
 from __future__ import annotations
 
 import asyncio
@@ -9,8 +10,10 @@ import pytest
 
 # ── EmailAdapter: start / stop / send edge cases ─────────────────────────────
 
+
 def _email_adapter():
     from agent.channels.email_adapter import EmailAdapter
+
     return EmailAdapter(
         imap_host="imap.test.com",
         imap_port=993,
@@ -71,6 +74,7 @@ async def test_email_send_large_body_becomes_attachment():
     smtp_mock.send_message = AsyncMock()
 
     from agent.channels.base import OutgoingMessage
+
     msg = OutgoingMessage(text=large_text)
 
     with patch("aiosmtplib.SMTP", return_value=smtp_mock):
@@ -87,6 +91,7 @@ async def test_email_send_large_body_becomes_attachment():
 async def test_email_send_smtp_exception_logged():
     adapter = _email_adapter()
     from agent.channels.base import OutgoingMessage
+
     msg = OutgoingMessage(text="texto curto")
 
     smtp_mock = AsyncMock()
@@ -100,6 +105,7 @@ async def test_email_send_smtp_exception_logged():
 def test_email_extract_body_fallback_non_multipart():
     """Mensagem não-multipart usa get_payload(decode=True) como fallback."""
     from agent.channels.email_adapter import _extract_body
+
     msg = email.message.Message()
     msg.set_payload("corpo simples", charset="utf-8")
     result = _extract_body(msg)
@@ -109,8 +115,10 @@ def test_email_extract_body_fallback_non_multipart():
 
 # ── DiscordAdapter: _on_ready / stop / send with thread ──────────────────────
 
+
 def _discord_adapter():
     from agent.channels.discord_adapter import DiscordAdapter
+
     return DiscordAdapter(
         token="fake-token",
         guild_id=42,
@@ -164,6 +172,7 @@ async def test_discord_send_uses_thread_channel_when_found():
     adapter._channel_refs["111"] = channel_mock
 
     from agent.channels.base import OutgoingMessage
+
     msg = OutgoingMessage(text="resposta na thread", thread_id="999")
 
     await adapter.send("111", msg)
@@ -184,6 +193,7 @@ async def test_discord_send_falls_through_when_thread_not_found():
     adapter._channel_refs["111"] = channel_mock
 
     from agent.channels.base import OutgoingMessage
+
     msg = OutgoingMessage(text="texto curto", thread_id="999")
 
     await adapter.send("111", msg)
@@ -200,6 +210,7 @@ async def test_discord_send_embed_for_long_text():
     adapter._client = None
 
     from agent.channels.base import OutgoingMessage
+
     msg = OutgoingMessage(text="x" * 201)
 
     await adapter.send("111", msg)
@@ -211,8 +222,10 @@ async def test_discord_send_embed_for_long_text():
 
 # ── SlackAdapter: stop / send client=None / _handle_dm branches ───────────────
 
+
 def _slack_adapter():
     from agent.channels.slack_adapter import SlackAdapter
+
     return SlackAdapter(
         app_token="xapp-fake",
         bot_token="xoxb-fake",
@@ -247,6 +260,7 @@ async def test_slack_send_when_client_is_none():
     adapter._slack_client = None
 
     from agent.channels.base import OutgoingMessage
+
     msg = OutgoingMessage(text="olá")
 
     await adapter.send("U111", msg)  # deve retornar silenciosamente

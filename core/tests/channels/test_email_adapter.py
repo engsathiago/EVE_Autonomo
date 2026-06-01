@@ -1,4 +1,5 @@
 """Testes do EmailAdapter — IMAP IDLE, SMTP, threading (C7-Email, C11)."""
+
 from __future__ import annotations
 
 import email
@@ -35,6 +36,7 @@ def _make_email(headers: dict, body: str = "texto de teste") -> email.message.Me
 
 # ── Construção ────────────────────────────────────────────────────────────────
 
+
 def test_from_env_raises_config_error_on_missing_vars(monkeypatch):
     """from_env() levanta ConfigError se variáveis obrigatórias faltam."""
     monkeypatch.delenv("EMAIL_IMAP_HOST", raising=False)
@@ -61,6 +63,7 @@ def test_adapter_name():
 
 # ── Autorização ───────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_is_authorized_true_for_listed_email():
     adapter = _make_adapter(allowlist={"user@example.com"})
@@ -81,6 +84,7 @@ async def test_is_authorized_case_insensitive():
 
 # ── _process_email: encaminhamento correto ────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_process_email_reaches_router():
     """Email válido com prefixo [agent] chega ao router."""
@@ -91,12 +95,14 @@ async def test_process_email_reaches_router():
             received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
-    msg = _make_email({
-        "From": "user@example.com",
-        "To": "bot@example.com",
-        "Subject": "[agent] verificar status",
-        "Message-ID": "<test@example.com>",
-    })
+    msg = _make_email(
+        {
+            "From": "user@example.com",
+            "To": "bot@example.com",
+            "Subject": "[agent] verificar status",
+            "Message-ID": "<test@example.com>",
+        }
+    )
     await adapter._process_email(msg)
 
     assert len(received) == 1
@@ -115,11 +121,13 @@ async def test_process_email_without_prefix_is_ignored():
             received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
-    msg = _make_email({
-        "From": "user@example.com",
-        "Subject": "assunto sem prefixo",
-        "Message-ID": "<x@x.com>",
-    })
+    msg = _make_email(
+        {
+            "From": "user@example.com",
+            "Subject": "assunto sem prefixo",
+            "Message-ID": "<x@x.com>",
+        }
+    )
     await adapter._process_email(msg)
     assert received == []
 
@@ -134,11 +142,13 @@ async def test_process_email_preserves_thread_id():
             received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
-    msg = _make_email({
-        "From": "user@example.com",
-        "Subject": "[agent] qual é o status?",
-        "Message-ID": "<original-id@example.com>",
-    })
+    msg = _make_email(
+        {
+            "From": "user@example.com",
+            "Subject": "[agent] qual é o status?",
+            "Message-ID": "<original-id@example.com>",
+        }
+    )
     await adapter._process_email(msg)
 
     assert received[0].thread_id == "<original-id@example.com>"
@@ -161,6 +171,7 @@ async def test_attachment_email_gets_warning():
     import email.mime.base
     import email.mime.multipart
     import email.mime.text
+
     multipart = email.mime.multipart.MIMEMultipart()
     multipart["From"] = "user@example.com"
     multipart["Subject"] = "[agent] com anexo"
@@ -178,6 +189,7 @@ async def test_attachment_email_gets_warning():
 
 
 # ── C7-Email: threading (In-Reply-To) ─────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_send_sets_in_reply_to_header():
@@ -237,6 +249,7 @@ async def test_send_includes_auto_submitted_header():
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def test_mask_email_normal():
     # "thiago" tem 6 chars → t + 4 asteriscos + o

@@ -2,6 +2,7 @@
 Teste de persistência cross-sessão.
 Requer Postgres com schema aplicado + ANTHROPIC_API_KEY.
 """
+
 from __future__ import annotations
 
 import os

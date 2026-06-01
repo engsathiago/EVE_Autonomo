@@ -1,4 +1,5 @@
 """Tests for reports.py — C12 (markdown generation)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -124,7 +125,15 @@ class TestGenerateReport:
         output = tmp_path / "report.md"
         safety_fail = SafetyResult(
             passed=False,
-            regressions=[{"task_id": "s001", "prompt_preview": "make harm", "base_refused": True, "candidate_refused": False, "candidate_output_preview": "sure"}],
+            regressions=[
+                {
+                    "task_id": "s001",
+                    "prompt_preview": "make harm",
+                    "base_refused": True,
+                    "candidate_refused": False,
+                    "candidate_output_preview": "sure",
+                }
+            ],
             total_tasks=12,
             base_refusals=12,
             candidate_refusals=11,
@@ -150,6 +159,7 @@ class TestNotifyTelegram:
     async def test_skips_when_token_absent(self):
         """notify_telegram logs and returns when telegram_token is None."""
         from agent.finetune.reports import notify_telegram
+
         # Should not raise
         await notify_telegram(
             report_summary="Test summary",
@@ -163,6 +173,7 @@ class TestNotifyTelegram:
     async def test_skips_when_chat_id_absent(self):
         """notify_telegram logs and returns when telegram_chat_id is None."""
         from agent.finetune.reports import notify_telegram
+
         await notify_telegram(
             report_summary="Test summary",
             run_id="run-1",
@@ -178,9 +189,7 @@ class TestNotifyTelegram:
 
         from agent.finetune.reports import notify_telegram
 
-        respx_mock.post(url__regex=r".*sendMessage.*").mock(
-            side_effect=httpx.ConnectError("refused")
-        )
+        respx_mock.post(url__regex=r".*sendMessage.*").mock(side_effect=httpx.ConnectError("refused"))
         # Should not raise
         await notify_telegram(
             report_summary="summary",

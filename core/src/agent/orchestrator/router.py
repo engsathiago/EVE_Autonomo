@@ -185,6 +185,7 @@ class Orchestrator:
         step_id_str = (task.channel_ref or {}).get("step_id")
         if step_id_str and self._db_pool is not None:
             from uuid import UUID as _UUID
+
             try:
                 await log_routing_audit(
                     step_id=_UUID(step_id_str),

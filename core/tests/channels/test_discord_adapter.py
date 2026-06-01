@@ -1,4 +1,5 @@
 """Testes do DiscordAdapter — allowlist, on_message, embeds, threading (C7-Discord)."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -9,6 +10,7 @@ from agent.channels.base import ConfigError, IncomingMessage, OutgoingMessage
 from agent.channels.discord_adapter import DiscordAdapter, _parse_allowlist
 
 # ── Construção ────────────────────────────────────────────────────────────────
+
 
 def test_no_allowlist_raises_config_error():
     with pytest.raises(ConfigError):
@@ -43,6 +45,7 @@ def test_parse_allowlist_csv():
 
 # ── Autorização ───────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_is_authorized_true_for_listed():
     adapter = DiscordAdapter(token="t", guild_id=1, allowlist={"111"}, channels_allowed=set())
@@ -56,6 +59,7 @@ async def test_is_authorized_false_for_unlisted():
 
 
 # ── on_message ────────────────────────────────────────────────────────────────
+
 
 def _make_adapter(allowlist=None, channels_allowed=None, router=None):
     return DiscordAdapter(
@@ -78,6 +82,7 @@ def _make_message(
     mentions=None,
 ):
     import discord
+
     msg = MagicMock()
     msg.author.id = user_id
     msg.author.display_name = "TestUser"
@@ -86,9 +91,7 @@ def _make_message(
     msg.attachments = attachments or []
     msg.id = 99
     msg.channel.send = AsyncMock()
-    msg.channel.create_thread = AsyncMock(
-        return_value=MagicMock(send=AsyncMock(), id=555)
-    )
+    msg.channel.create_thread = AsyncMock(return_value=MagicMock(send=AsyncMock(), id=555))
     if is_dm:
         msg.channel = MagicMock(spec=discord.DMChannel)
         msg.channel.send = AsyncMock()
@@ -107,7 +110,8 @@ async def test_bot_message_is_ignored():
     received = []
 
     class FakeRouter:
-        async def handle(self, msg): received.append(msg)
+        async def handle(self, msg):
+            received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
     adapter._client = MagicMock()
@@ -124,7 +128,8 @@ async def test_message_from_wrong_guild_is_ignored():
     received = []
 
     class FakeRouter:
-        async def handle(self, msg): received.append(msg)
+        async def handle(self, msg):
+            received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
     adapter._client = MagicMock()
@@ -142,7 +147,8 @@ async def test_mention_triggers_response():
     received = []
 
     class FakeRouter:
-        async def handle(self, msg: IncomingMessage): received.append(msg)
+        async def handle(self, msg: IncomingMessage):
+            received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
     bot_user = MagicMock(id=9999, mention="<@9999>")
@@ -164,7 +170,8 @@ async def test_channel_allowed_triggers_response():
     received = []
 
     class FakeRouter:
-        async def handle(self, msg: IncomingMessage): received.append(msg)
+        async def handle(self, msg: IncomingMessage):
+            received.append(msg)
 
     adapter = _make_adapter(channels_allowed={"agent-control"}, router=FakeRouter())
     adapter._client = MagicMock()
@@ -183,7 +190,8 @@ async def test_attachment_gets_warning():
     received = []
 
     class FakeRouter:
-        async def handle(self, msg): received.append(msg)
+        async def handle(self, msg):
+            received.append(msg)
 
     adapter = _make_adapter(router=FakeRouter())
     bot_user = MagicMock(id=9999)
@@ -199,6 +207,7 @@ async def test_attachment_gets_warning():
 
 
 # ── send(): embeds para textos longos ────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_send_short_text_without_embed():
@@ -220,6 +229,7 @@ async def test_send_short_text_without_embed():
 async def test_send_long_text_uses_embed():
     """Texto longo (> 200 chars) vira embed."""
     import discord
+
     adapter = _make_adapter()
     channel = MagicMock()
     channel.send = AsyncMock()

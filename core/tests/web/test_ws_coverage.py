@@ -1,4 +1,5 @@
 """Testes diretos de cobertura do WS — _recv_loop, _send_loop, broadcast, _handle_chat."""
+
 from __future__ import annotations
 
 import asyncio

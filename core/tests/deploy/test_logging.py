@@ -1,4 +1,5 @@
 """Testes do deploy logging: redaction e formatter JSON."""
+
 from __future__ import annotations
 
 import json
@@ -10,6 +11,7 @@ import pytest
 from agent.deploy.logging import _JsonFormatter, _redact
 
 # ── Redaction ─────────────────────────────────────────────────────────────────
+
 
 class TestRedaction:
     def test_sk_key(self) -> None:
@@ -44,6 +46,7 @@ class TestRedaction:
 
 
 # ── JsonFormatter ─────────────────────────────────────────────────────────────
+
 
 class TestJsonFormatter:
     def _make_record(self, msg: str, level: str = "INFO") -> logging.LogRecord:
@@ -110,6 +113,7 @@ class TestJsonFormatter:
             raise ValueError("test exception")
         except ValueError:
             import sys
+
             exc_info = sys.exc_info()
             record = logging.LogRecord(
                 name="test",
@@ -126,6 +130,7 @@ class TestJsonFormatter:
 
 
 # ── GzipRotatingHandler ────────────────────────────────────────────────────────
+
 
 class TestGzipRotatingHandler:
     def test_rollover_creates_gz_file(self, tmp_path: Path) -> None:
@@ -146,15 +151,17 @@ class TestGzipRotatingHandler:
         logger.setLevel(logging.DEBUG)
 
         for i in range(5):
-            handler.emit(logging.LogRecord(
-                name="test",
-                level=logging.INFO,
-                pathname="",
-                lineno=0,
-                msg=f"line {i} with some padding to fill the file quickly",
-                args=(),
-                exc_info=None,
-            ))
+            handler.emit(
+                logging.LogRecord(
+                    name="test",
+                    level=logging.INFO,
+                    pathname="",
+                    lineno=0,
+                    msg=f"line {i} with some padding to fill the file quickly",
+                    args=(),
+                    exc_info=None,
+                )
+            )
 
         handler.doRollover()
         handler.close()
@@ -175,15 +182,17 @@ class TestGzipRotatingHandler:
             backupCount=3,
             encoding="utf-8",
         )
-        handler.emit(logging.LogRecord(
-            name="test",
-            level=logging.INFO,
-            pathname="",
-            lineno=0,
-            msg="padding to trigger rollover when maxBytes is tiny",
-            args=(),
-            exc_info=None,
-        ))
+        handler.emit(
+            logging.LogRecord(
+                name="test",
+                level=logging.INFO,
+                pathname="",
+                lineno=0,
+                msg="padding to trigger rollover when maxBytes is tiny",
+                args=(),
+                exc_info=None,
+            )
+        )
         handler.doRollover()
         handler.close()
 
@@ -193,15 +202,18 @@ class TestGzipRotatingHandler:
 
 # ── configure_deploy_logging ───────────────────────────────────────────────────
 
+
 class TestConfigureDeployLogging:
     def test_no_error_without_writable_dir(self, tmp_path: Path) -> None:
         """Não deve levantar exceção se o dir não existe."""
         from agent.deploy.logging import configure_deploy_logging
+
         # Dir acessível
         configure_deploy_logging(log_dir=str(tmp_path / "logs"))
 
     def test_adds_handler_to_root_logger(self, tmp_path: Path) -> None:
         from agent.deploy.logging import _GzipRotatingHandler, configure_deploy_logging
+
         configure_deploy_logging(log_dir=str(tmp_path / "logs2"))
         root = logging.getLogger()
         has_handler = any(isinstance(h, _GzipRotatingHandler) for h in root.handlers)
@@ -211,6 +223,7 @@ class TestConfigureDeployLogging:
 
     def test_no_duplicate_handlers(self, tmp_path: Path) -> None:
         from agent.deploy.logging import _GzipRotatingHandler, configure_deploy_logging
+
         log_dir = str(tmp_path / "logs3")
         configure_deploy_logging(log_dir=log_dir)
         configure_deploy_logging(log_dir=log_dir)

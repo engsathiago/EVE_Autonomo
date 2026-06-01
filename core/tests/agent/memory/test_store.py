@@ -3,6 +3,7 @@ Testes de integração do MemoryStore.
 Requer Postgres rodando com POSTGRES_DSN configurado.
 Marcar com pytest.mark.integration para excluir do CI sem banco.
 """
+
 from __future__ import annotations
 
 import os

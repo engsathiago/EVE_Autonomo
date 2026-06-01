@@ -1,4 +1,5 @@
 """Testes do SkillManager — Milestone B."""
+
 from __future__ import annotations
 
 import time
@@ -26,6 +27,7 @@ def _fake_embed(text: str) -> list[float]:
     """Embedding determinístico simples para testes: hash do texto → vetor normalizado."""
     import hashlib
     import math
+
     seed = int(hashlib.md5(text.encode()).hexdigest()[:8], 16)
     raw = [(seed * (i + 1)) % 997 / 997.0 for i in range(8)]
     norm = math.sqrt(sum(x * x for x in raw)) or 1.0
@@ -166,6 +168,7 @@ class TestToToolSchema:
 
     def test_required_args_in_schema(self, manager: SkillManager) -> None:
         from agent.skills.schema import SkillArgument
+
         manifest = _make_manifest("my_skill", "d")
         manifest.arguments = [
             SkillArgument(name="text", type="string", required=True),
@@ -178,6 +181,7 @@ class TestToToolSchema:
 
     def test_enum_arg(self, manager: SkillManager) -> None:
         from agent.skills.schema import SkillArgument
+
         manifest = _make_manifest("my_skill", "d")
         manifest.arguments = [
             SkillArgument(name="mode", type="enum", values=["a", "b"], default="a"),

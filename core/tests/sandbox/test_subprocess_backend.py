@@ -6,6 +6,7 @@ Cobre §8 critérios 1, 2, 3, 4 (SubprocessSandbox):
 - Rede: só DENY_ALL suportado.
 - Arquivos de input injetados corretamente.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -16,16 +17,19 @@ from agent.sandbox.subprocess_backend import SubprocessSandbox
 
 
 def _make(wall_time: int = 10, max_output: int = 1_000_000) -> SubprocessSandbox:
-    return SubprocessSandbox(SandboxConfig(
-        wall_time_seconds=wall_time,
-        max_output_bytes=max_output,
-        network=NetworkPolicy.DENY_ALL,
-    ))
+    return SubprocessSandbox(
+        SandboxConfig(
+            wall_time_seconds=wall_time,
+            max_output_bytes=max_output,
+            network=NetworkPolicy.DENY_ALL,
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
 # Caso base: echo retorna stdout
 # ---------------------------------------------------------------------------
+
 
 async def test_run_echo_returns_stdout():
     sb = _make()
@@ -47,13 +51,14 @@ async def test_run_echo_list_command():
 # Timeout mata processo
 # ---------------------------------------------------------------------------
 
+
 async def test_run_timeout_kills_process():
     """sleep 5 com wall_time=1 → timed_out=True (§8 critério 3)."""
     sb = _make(wall_time=1)
     result = await sb.run("sleep 5")
     await sb.cleanup()
     assert result.timed_out is True
-    assert result.exit_code != 0   # -1 quando timed_out
+    assert result.exit_code != 0  # -1 quando timed_out
 
 
 async def test_run_timeout_duration_within_margin():
@@ -62,21 +67,24 @@ async def test_run_timeout_duration_within_margin():
     result = await sb.run("sleep 10")
     await sb.cleanup()
     assert result.timed_out is True
-    assert result.duration_ms < 4_000   # tolerância de 3s
+    assert result.duration_ms < 4_000  # tolerância de 3s
 
 
 # ---------------------------------------------------------------------------
 # Output truncado
 # ---------------------------------------------------------------------------
 
+
 async def test_run_output_truncated():
     """Saída maior que max_output_bytes/2 é truncada (§8 critério 3)."""
     # max_output_bytes=200 → cada lado limitado em 100 bytes
-    sb = SubprocessSandbox(SandboxConfig(
-        wall_time_seconds=10,
-        max_output_bytes=200,
-        network=NetworkPolicy.DENY_ALL,
-    ))
+    sb = SubprocessSandbox(
+        SandboxConfig(
+            wall_time_seconds=10,
+            max_output_bytes=200,
+            network=NetworkPolicy.DENY_ALL,
+        )
+    )
     # Gera ~1000 bytes de output
     result = await sb.run("python3 -c \"print('X' * 1000)\"")
     await sb.cleanup()
@@ -86,6 +94,7 @@ async def test_run_output_truncated():
 # ---------------------------------------------------------------------------
 # Filesystem efêmero
 # ---------------------------------------------------------------------------
+
 
 async def test_run_fs_is_ephemeral_between_exec_tool_calls():
     """
@@ -131,6 +140,7 @@ async def test_run_same_instance_creates_fresh_tmpdir():
 # Rede: OPEN e ALLOWLIST não suportados
 # ---------------------------------------------------------------------------
 
+
 def test_network_policy_open_raises():
     """SubprocessSandbox rejeita NetworkPolicy.OPEN (§8 critério 3)."""
     with pytest.raises(SandboxBackendUnsupported) as exc_info:
@@ -147,6 +157,7 @@ def test_network_policy_allowlist_raises():
 # ---------------------------------------------------------------------------
 # Arquivos de input
 # ---------------------------------------------------------------------------
+
 
 async def test_run_input_files_present():
     """files= injetados são acessíveis pelo processo (§8 critério 2 implícito)."""
@@ -173,6 +184,7 @@ async def test_run_stdin_is_passed():
 # Métricas básicas
 # ---------------------------------------------------------------------------
 
+
 async def test_run_duration_positive():
     sb = _make()
     result = await sb.run("echo ok")
@@ -182,7 +194,9 @@ async def test_run_duration_positive():
 
 async def test_run_exit_code_nonzero():
     sb = _make()
-    result = await sb.run("exit 42", )
+    result = await sb.run(
+        "exit 42",
+    )
     await sb.cleanup()
     # shell exit code
     assert result.exit_code != 0
@@ -206,6 +220,7 @@ async def test_cleanup_is_idempotent():
 # ---------------------------------------------------------------------------
 # OOM: documentado como não detectável no subprocess — oom_killed=False sempre
 # ---------------------------------------------------------------------------
+
 
 async def test_oom_killed_always_false_on_subprocess():
     """SubprocessSandbox nunca reporta oom_killed=True (limitação documentada)."""

@@ -1,4 +1,5 @@
 """C5: WebSocket multiplexado — 2 tópicos simultâneos numa conexão."""
+
 from __future__ import annotations
 
 import json

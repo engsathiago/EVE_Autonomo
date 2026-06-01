@@ -63,9 +63,7 @@ def version_callback(value: bool) -> None:
 
 @app.callback()
 def main(
-    version: bool | None = typer.Option(
-        None, "--version", "-v", callback=version_callback, is_eager=True
-    ),
+    version: bool | None = typer.Option(None, "--version", "-v", callback=version_callback, is_eager=True),
 ) -> None:
     pass
 

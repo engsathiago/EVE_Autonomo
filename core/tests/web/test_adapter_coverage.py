@@ -1,4 +1,5 @@
 """Testes de cobertura dos adapters e rotas estáticas."""
+
 from __future__ import annotations
 
 import json
@@ -13,10 +14,12 @@ from agent.web.server import make_web_app
 
 # ── adapters/missions ────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_list_missions_error_returns_empty() -> None:
     """list_missions retorna [] em caso de exceção."""
     from agent.web.adapters.missions import list_missions
+
     store = MagicMock()
     store.list_by_status = AsyncMock(side_effect=RuntimeError("db fail"))
     result = await list_missions(store)
@@ -27,6 +30,7 @@ async def test_list_missions_error_returns_empty() -> None:
 async def test_get_mission_with_parent_id() -> None:
     """get_mission converte parent_mission_id para str."""
     from agent.web.adapters.missions import get_mission
+
     parent_id = uuid4()
     mission_id = uuid4()
     store = MagicMock()
@@ -47,6 +51,7 @@ async def test_get_mission_with_parent_id() -> None:
 async def test_get_mission_error_returns_none() -> None:
     """get_mission retorna None em caso de exceção."""
     from agent.web.adapters.missions import get_mission
+
     store = MagicMock()
     store.get = AsyncMock(side_effect=RuntimeError("db fail"))
     result = await get_mission(store, str(uuid4()))
@@ -76,6 +81,7 @@ async def test_create_mission_success() -> None:
 async def test_create_mission_error_returns_none() -> None:
     """create_mission retorna None em caso de exceção."""
     from agent.web.adapters.missions import create_mission
+
     store = MagicMock()
     store.create = AsyncMock(side_effect=RuntimeError("db fail"))
     planner = MagicMock()
@@ -87,6 +93,7 @@ async def test_create_mission_error_returns_none() -> None:
 async def test_pause_mission_error_returns_false() -> None:
     """pause_mission retorna False em caso de exceção."""
     from agent.web.adapters.missions import pause_mission
+
     store = MagicMock()
     store.update_status = AsyncMock(side_effect=RuntimeError("db fail"))
     result = await pause_mission(store, str(uuid4()))
@@ -97,6 +104,7 @@ async def test_pause_mission_error_returns_false() -> None:
 async def test_resume_mission_error_returns_false() -> None:
     """resume_mission retorna False em caso de exceção."""
     from agent.web.adapters.missions import resume_mission
+
     store = MagicMock()
     store.update_status = AsyncMock(side_effect=RuntimeError("db fail"))
     result = await resume_mission(store, str(uuid4()))
@@ -104,6 +112,7 @@ async def test_resume_mission_error_returns_false() -> None:
 
 
 # ── adapters/orchestrator ────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_send_message_success() -> None:
@@ -125,8 +134,7 @@ async def test_send_message_success() -> None:
     mock_task_store.create = AsyncMock(return_value=None)
 
     # Task e TaskSource são importados dentro da função — usa mocks em seus módulos originais
-    with patch("agent.tasks.task.Task") as MockTask, \
-         patch("agent.tasks.task.TaskSource"):
+    with patch("agent.tasks.task.Task") as MockTask, patch("agent.tasks.task.TaskSource"):
         mock_task_inst = MagicMock()
         mock_task_inst.tier = "FAST"
         MockTask.return_value = mock_task_inst
@@ -151,8 +159,7 @@ async def test_send_message_exception_yields_error() -> None:
     mock_task_store = MagicMock()
     mock_task_store.create = AsyncMock(return_value=None)
 
-    with patch("agent.tasks.task.Task") as MockTask, \
-         patch("agent.tasks.task.TaskSource"):
+    with patch("agent.tasks.task.Task") as MockTask, patch("agent.tasks.task.TaskSource"):
         MockTask.return_value = MagicMock()
 
         events = []
@@ -164,10 +171,12 @@ async def test_send_message_exception_yields_error() -> None:
 
 # ── adapters/critic ──────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_critic_queue_error_returns_empty() -> None:
     """get_critic_queue retorna [] em caso de exceção."""
     from agent.web.adapters.critic import get_critic_queue
+
     mock_pool = MagicMock()
     mock_pool.fetch = AsyncMock(side_effect=RuntimeError("db fail"))
     result = await get_critic_queue(mock_pool)
@@ -178,6 +187,7 @@ async def test_critic_queue_error_returns_empty() -> None:
 async def test_critic_history_error_returns_empty() -> None:
     """get_critic_history retorna [] em caso de exceção."""
     from agent.web.adapters.critic import get_critic_history
+
     mock_pool = MagicMock()
     mock_pool.fetch = AsyncMock(side_effect=RuntimeError("db fail"))
     result = await get_critic_history(mock_pool)
@@ -187,12 +197,14 @@ async def test_critic_history_error_returns_empty() -> None:
 def test_parse_verdict_none() -> None:
     """_parse_verdict retorna None para None."""
     from agent.web.adapters.critic import _parse_verdict
+
     assert _parse_verdict(None) is None
 
 
 def test_parse_verdict_string_json() -> None:
     """_parse_verdict faz parse de string JSON."""
     from agent.web.adapters.critic import _parse_verdict
+
     data = {"decision": "approve"}
     result = _parse_verdict(json.dumps(data))
     assert result == data
@@ -201,6 +213,7 @@ def test_parse_verdict_string_json() -> None:
 def test_parse_verdict_invalid_string() -> None:
     """_parse_verdict retorna dict com raw para string inválida."""
     from agent.web.adapters.critic import _parse_verdict
+
     result = _parse_verdict("not-json{")
     assert result == {"raw": "not-json{"}
 
@@ -208,11 +221,13 @@ def test_parse_verdict_invalid_string() -> None:
 def test_parse_verdict_dict_passthrough() -> None:
     """_parse_verdict retorna dict diretamente."""
     from agent.web.adapters.critic import _parse_verdict
+
     data = {"decision": "reject"}
     assert _parse_verdict(data) == data
 
 
 # ── adapters/subagents ───────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_subagents_with_db_pool() -> None:
@@ -249,6 +264,7 @@ async def test_subagents_db_pool_error_graceful() -> None:
 
 
 # ── routes/static ────────────────────────────────────────────────────────────
+
 
 @pytest.fixture()
 def static_client():
@@ -291,9 +307,11 @@ def test_static_path_traversal_denied(static_client: TestClient) -> None:
 
 # ── routes/api — create_mission ──────────────────────────────────────────────
 
+
 @pytest.fixture()
 def missions_client():
     from datetime import UTC, datetime
+
     store = MagicMock()
     planner = MagicMock()
     mission_id = uuid4()
@@ -335,6 +353,7 @@ def test_create_mission_endpoint(missions_client) -> None:
 
 
 # ── routes/api — rotas sem dependências configuradas ─────────────────────────
+
 
 @pytest.fixture()
 def client_no_deps():
@@ -464,10 +483,12 @@ def test_system_info_git_unavailable(client_no_deps: TestClient) -> None:
 
 # ── adapters/skills — exception paths ────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_list_skills_exception_returns_empty() -> None:
     """list_skills retorna [] em caso de exceção."""
     from agent.web.adapters.skills import list_skills
+
     manager = MagicMock()
     manager.list.side_effect = RuntimeError("fail")
     result = await list_skills(manager)
@@ -478,6 +499,7 @@ async def test_list_skills_exception_returns_empty() -> None:
 async def test_get_skill_exception_returns_none() -> None:
     """get_skill retorna None em caso de exceção."""
     from agent.web.adapters.skills import get_skill
+
     manager = MagicMock()
     manager.has.side_effect = RuntimeError("fail")
     result = await get_skill(manager, "any-skill")
@@ -488,6 +510,7 @@ async def test_get_skill_exception_returns_none() -> None:
 async def test_disable_skill_not_found_returns_false() -> None:
     """disable_skill retorna False se skill não existe."""
     from agent.web.adapters.skills import disable_skill
+
     manager = MagicMock()
     manager.has.return_value = False
     result = await disable_skill(manager, "missing")
@@ -498,6 +521,7 @@ async def test_disable_skill_not_found_returns_false() -> None:
 async def test_disable_skill_exception_returns_false() -> None:
     """disable_skill retorna False em caso de exceção."""
     from agent.web.adapters.skills import disable_skill
+
     manager = MagicMock()
     manager.has.side_effect = RuntimeError("fail")
     result = await disable_skill(manager, "any")

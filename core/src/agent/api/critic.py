@@ -40,10 +40,7 @@ def make_critic_router(critic: Any, db_pool: Any) -> APIRouter:
 
         where = "WHERE " + " AND ".join(conditions) if conditions else ""
         params.append(limit)
-        query = (
-            f"SELECT * FROM critic_evaluations {where}"
-            f" ORDER BY created_at DESC LIMIT ${len(params)}"
-        )
+        query = f"SELECT * FROM critic_evaluations {where} ORDER BY created_at DESC LIMIT ${len(params)}"
         rows = await db_pool.fetch(query, *params)
         return [_eval_dict(r) for r in rows]
 

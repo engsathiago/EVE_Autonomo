@@ -47,7 +47,7 @@ async def test_voyager_cycle_end_to_end(db_pool, tmp_skills_dir):
     from agent.skills.synthesizer import SkillSynthesizer
 
     # 1. Inserir 6 sandbox_executions com mesmo command_preview (cosine=1.0)
-    unique_cmd = f"python3 -c 'print(\"voyager_test_{uuid.uuid4().hex[:8]}\")"
+    unique_cmd = f'python3 -c \'print("voyager_test_{uuid.uuid4().hex[:8]}")'
     cutoff = datetime.now(tz=UTC) - timedelta(minutes=60)
 
     for i in range(6):
@@ -80,9 +80,7 @@ async def test_voyager_cycle_end_to_end(db_pool, tmp_skills_dir):
     clusters = await synth.scan_for_candidates()
 
     # Filtra só o cluster criado por este teste
-    test_clusters = [
-        c for c in clusters if any(unique_cmd[:40] in c.pattern_summary for c in [c])
-    ]
+    test_clusters = [c for c in clusters if any(unique_cmd[:40] in c.pattern_summary for c in [c])]
     assert len(test_clusters) >= 1, f"Nenhum cluster encontrado para o cmd do teste. Clusters: {clusters}"
 
     cluster = test_clusters[0]

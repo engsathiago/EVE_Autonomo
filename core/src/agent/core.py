@@ -160,9 +160,7 @@ class AIAgent:
                 if response.text:
                     await self._curate_turn(goal, response.text)
                     if self._memory_store and self._conversation_id:
-                        await self._memory_store.append_message(
-                            self._conversation_id, "assistant", response.text
-                        )
+                        await self._memory_store.append_message(self._conversation_id, "assistant", response.text)
                 break
 
             # Adiciona resposta do assistente ao histórico em memória
@@ -172,9 +170,7 @@ class AIAgent:
             from agent.skills.schema import ApprovalCreated
 
             try:
-                tool_results, turn_summaries = await self._execute_tools(
-                    response.tool_calls, emit
-                )
+                tool_results, turn_summaries = await self._execute_tools(response.tool_calls, emit)
                 all_tool_calls.extend(turn_summaries)
             except ApprovalCreated as exc:
                 duration = time.monotonic() - start
@@ -186,9 +182,7 @@ class AIAgent:
                     estimated_cost_usd=self._estimate_cost(model, total_in, total_out),
                     duration_s=round(duration, 2),
                     conversation_id=str(self._conversation_id) if self._conversation_id else None,
-                    approval_request=exc.request.model_dump()
-                    if hasattr(exc.request, "model_dump")
-                    else {},
+                    approval_request=exc.request.model_dump() if hasattr(exc.request, "model_dump") else {},
                     tool_calls_made=all_tool_calls,
                 )
             messages.append({"role": "user", "content": tool_results})
@@ -261,9 +255,7 @@ class AIAgent:
             result = await self._memory_store.search_hybrid(user_msg, k=5)
             if not result.entries:
                 return base_system
-            block = "\n".join(
-                f"- [{e.kind}, imp={e.importance}] {e.content}" for e in result.entries
-            )
+            block = "\n".join(f"- [{e.kind}, imp={e.importance}] {e.content}" for e in result.entries)
             return f"{base_system}\n\n<memorias_relevantes>\n{block}\n</memorias_relevantes>"
         except Exception as exc:
             log.warning("memory.inject.failed", error=str(exc))
@@ -376,9 +368,7 @@ class AIAgent:
                 from agent.tools.base import ToolResult
 
                 try:
-                    skill_result = await self._skill_manager.run(
-                        skill_name, args, self._conversation_id
-                    )
+                    skill_result = await self._skill_manager.run(skill_name, args, self._conversation_id)
                     result = ToolResult(ok=True, output=skill_result.output)
                 except ApprovalCreated:
                     raise  # propagate — caught by agent.run()
@@ -414,11 +404,7 @@ class AIAgent:
             message = {
                 "type": "tool_result",
                 "tool_use_id": call["id"],
-                "content": (
-                    json.dumps(result.output, ensure_ascii=False)
-                    if result.ok
-                    else f"ERROR: {result.error}"
-                ),
+                "content": (json.dumps(result.output, ensure_ascii=False) if result.ok else f"ERROR: {result.error}"),
             }
             return message, summary
 
