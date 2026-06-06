@@ -1,0 +1,4 @@
+sandbox_id=d3fb1d2a76ee4716a8707c57ad2a50eb
+policy_name=default
+exit_code=0
+stdout=hello
