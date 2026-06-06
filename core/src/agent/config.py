@@ -79,7 +79,7 @@ class OllamaCloudSettings(BaseSettings):
 
 
 class ModelSettings(BaseSettings):
-    default_model: str = "anthropic:claude-sonnet-4-7"
+    default_model: str = "ollama_cloud:deepseek-v3.1:cloud"
     fallback_chain: str = ""  # CSV: "ollama:qwen2.5:7b,anthropic:claude-haiku-4-5"
     timeout_s: int = 60
 
@@ -237,7 +237,7 @@ class Settings(BaseSettings):
             ),
             models=ModelSettings(
                 default_model=models_data.get("default_model")
-                or os.environ.get("DEFAULT_MODEL", "anthropic:claude-sonnet-4-7"),
+                or os.environ.get("DEFAULT_MODEL", "ollama_cloud:deepseek-v3.1:cloud"),
                 fallback_chain=models_data.get("fallback_chain") or os.environ.get("MODEL_FALLBACK_CHAIN", ""),
                 timeout_s=int(models_data.get("timeout_s") or os.environ.get("MODEL_TIMEOUT_S", 60)),
             ),

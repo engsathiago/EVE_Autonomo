@@ -78,6 +78,12 @@ security:
   admin_user_id: ${ADMIN_USER_ID}
   approval_timeout_seconds: ${APPROVAL_TIMEOUT_SECONDS}
 
+models:
+  default_model: "ollama_cloud:deepseek-v3.1:cloud"
+  # Fallback ativado se ollama_cloud estiver indisponível (erros de infra, timeout, 5xx).
+  # Não dispara para 401/429 (erros de uso). Vazio = sem fallback.
+  fallback_chain: "anthropic:claude-sonnet-4-7"
+
 fallback_chain:
   - anthropic
   - openrouter
