@@ -52,7 +52,7 @@ class TierClassifier:
     def __init__(
         self,
         model_router: ModelRouter,
-        model: str = "anthropic:claude-haiku-4-5",
+        model: str = "ollama_cloud:gpt-oss:20b-cloud",
         max_tokens: int = 200,
         cache_ttl_s: int = 300,
     ) -> None:

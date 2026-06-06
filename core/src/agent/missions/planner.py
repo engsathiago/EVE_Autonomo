@@ -88,7 +88,7 @@ class MissionPlanner:
         self,
         model_router: ModelRouter,
         reflexive_memory: ReflexiveMemory | None = None,
-        model: str = "anthropic:claude-haiku-4-5",
+        model: str = "ollama_cloud:gpt-oss:20b-cloud",
         max_tokens: int = 1200,
     ) -> None:
         self._router = model_router

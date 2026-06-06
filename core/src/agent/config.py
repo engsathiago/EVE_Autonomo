@@ -97,7 +97,7 @@ class ApprovalsSettings(BaseSettings):
 
 
 class OrchestratorSettings(BaseSettings):
-    classifier_model: str = "anthropic:claude-haiku-4-5"
+    classifier_model: str = "ollama_cloud:gpt-oss:20b-cloud"
     classifier_max_tokens: int = 200
     fast_max_iterations: int = 3
     strategic_max_iterations: int = 8
@@ -121,16 +121,16 @@ class SubagentsSettings(BaseSettings):
 
 class CriticSettings(BaseSettings):
     # Técnico e Advogado do Diabo usam modelo médio (3 chamadas LLM por avaliação)
-    medium_model: str = "anthropic:claude-haiku-4-5"
+    medium_model: str = "ollama_cloud:gpt-oss:20b-cloud"
     # Sintetizador usa modelo principal (decisão final)
-    primary_model: str = "anthropic:claude-sonnet-4-6"
+    primary_model: str = "ollama_cloud:kimi-k2.5:cloud"
     cost_threshold_usd: float = 0.50
     enabled: bool = True
 
 
 class MissionsSettings(BaseSettings):
-    planner_model: str = "anthropic:claude-haiku-4-5"
-    reflector_model: str = "anthropic:claude-sonnet-4-6"
+    planner_model: str = "ollama_cloud:gpt-oss:20b-cloud"
+    reflector_model: str = "ollama_cloud:kimi-k2.5:cloud"
     loop_interval_minutes: int = 5
     loop_enabled: bool = True
 
@@ -197,6 +197,7 @@ class Settings(BaseSettings):
         scheduler_data = data.get("scheduler", {})
         subagents_data = data.get("subagents", {})
         missions_data = data.get("missions", {})
+        critic_data = data.get("critic", {})
 
         return cls(
             log_level=data.get("log_level", "INFO"),
@@ -273,7 +274,7 @@ class Settings(BaseSettings):
             ),
             orchestrator=OrchestratorSettings(
                 classifier_model=orchestrator_data.get("classifier_model")
-                or os.environ.get("ORCHESTRATOR_CLASSIFIER_MODEL", "anthropic:claude-haiku-4-5"),
+                or os.environ.get("ORCHESTRATOR_CLASSIFIER_MODEL", "ollama_cloud:gpt-oss:20b-cloud"),
                 classifier_max_tokens=int(orchestrator_data.get("classifier_max_tokens", 200)),
                 fast_max_iterations=int(orchestrator_data.get("fast_max_iterations", 3)),
                 strategic_max_iterations=int(orchestrator_data.get("strategic_max_iterations", 8)),
@@ -295,14 +296,26 @@ class Settings(BaseSettings):
             missions=MissionsSettings(
                 planner_model=(
                     os.environ.get("MISSIONS_PLANNER_MODEL")
-                    or missions_data.get("planner_model", "anthropic:claude-haiku-4-5")
+                    or missions_data.get("planner_model", "ollama_cloud:gpt-oss:20b-cloud")
                 ),
                 reflector_model=(
                     os.environ.get("MISSIONS_REFLECTOR_MODEL")
-                    or missions_data.get("reflector_model", "anthropic:claude-sonnet-4-6")
+                    or missions_data.get("reflector_model", "ollama_cloud:kimi-k2.5:cloud")
                 ),
                 loop_interval_minutes=int(missions_data.get("loop_interval_minutes", 5)),
                 loop_enabled=bool(missions_data.get("loop_enabled", True)),
+            ),
+            critic=CriticSettings(
+                medium_model=(
+                    os.environ.get("CRITIC__MEDIUM_MODEL")
+                    or critic_data.get("medium_model", "ollama_cloud:gpt-oss:20b-cloud")
+                ),
+                primary_model=(
+                    os.environ.get("CRITIC__PRIMARY_MODEL")
+                    or critic_data.get("primary_model", "ollama_cloud:kimi-k2.5:cloud")
+                ),
+                cost_threshold_usd=float(critic_data.get("cost_threshold_usd", 0.50)),
+                enabled=bool(critic_data.get("enabled", True)),
             ),
         )
 

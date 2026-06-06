@@ -75,7 +75,7 @@ class MissionReflector:
         model_router: ModelRouter,
         mission_store: MissionStore,
         reflexive_memory: ReflexiveMemory,
-        model: str = "anthropic:claude-sonnet-4-6",
+        model: str = "ollama_cloud:kimi-k2.5:cloud",
         max_tokens: int = 800,
     ) -> None:
         self._router = model_router

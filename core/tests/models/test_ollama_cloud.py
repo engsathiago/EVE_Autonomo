@@ -156,22 +156,22 @@ def test_missions_reflector_model_env_override(monkeypatch: pytest.MonkeyPatch) 
 
 
 def test_missions_models_fall_back_to_config_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Sem env var, usa valores do config.yaml (Anthropic por padrão)."""
+    """Sem env var, usa valores do config.yaml (ollama_cloud por padrão após B.3)."""
     monkeypatch.delenv("MISSIONS_PLANNER_MODEL", raising=False)
     monkeypatch.delenv("MISSIONS_REFLECTOR_MODEL", raising=False)
     from agent.config import Settings
 
     s = Settings.from_yaml()
-    assert s.missions.planner_model.startswith("anthropic:")
-    assert s.missions.reflector_model.startswith("anthropic:")
+    assert s.missions.planner_model.startswith("ollama_cloud:")
+    assert s.missions.reflector_model.startswith("ollama_cloud:")
 
 
 def test_missions_env_override_empty_string_falls_back_to_config(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """String vazia na env var não deve sobrescrever — usa config.yaml."""
+    """String vazia na env var não deve sobrescrever — usa config.yaml (ollama_cloud após B.3)."""
     monkeypatch.setenv("MISSIONS_PLANNER_MODEL", "")
     from agent.config import Settings
 
     s = Settings.from_yaml()
-    assert s.missions.planner_model.startswith("anthropic:")
+    assert s.missions.planner_model.startswith("ollama_cloud:")

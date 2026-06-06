@@ -206,7 +206,7 @@ async def _resolve_llm(
                 system="You are a tool selector. Reply only with a JSON array of tool names.",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=100,
-                model="anthropic:claude-haiku-4-5",
+                model=model_router.default_model(),
             )
             raw = response.text.strip()
             start, end = raw.find("["), raw.rfind("]")

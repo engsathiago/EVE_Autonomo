@@ -148,8 +148,8 @@ class Critic:
     def __init__(
         self,
         model_router: ModelRouter,
-        medium_model: str = "anthropic:claude-haiku-4-5",
-        primary_model: str = "anthropic:claude-sonnet-4-6",
+        medium_model: str = "ollama_cloud:gpt-oss:20b-cloud",
+        primary_model: str = "ollama_cloud:kimi-k2.5:cloud",
         cost_threshold_usd: float = 0.50,
     ) -> None:
         self._router = model_router

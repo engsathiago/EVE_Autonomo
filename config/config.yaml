@@ -57,14 +57,14 @@ channels:
     signing_secret: ${SLACK_SIGNING_SECRET}
 
 critic:
-  medium_model: "anthropic:claude-haiku-4-5"   # Técnico + Advogado do Diabo
-  primary_model: "anthropic:claude-sonnet-4-6"  # Sintetizador (decisão final)
+  medium_model: "ollama_cloud:gpt-oss:20b-cloud"   # Técnico + Advogado do Diabo
+  primary_model: "ollama_cloud:kimi-k2.5:cloud"    # Sintetizador (decisão final)
   cost_threshold_usd: 0.50
   enabled: true
 
 missions:
-  planner_model: "anthropic:claude-haiku-4-5"
-  reflector_model: "anthropic:claude-sonnet-4-6"
+  planner_model: "ollama_cloud:gpt-oss:20b-cloud"
+  reflector_model: "ollama_cloud:kimi-k2.5:cloud"
   loop_interval_minutes: 5
   loop_enabled: true
 
@@ -82,7 +82,7 @@ models:
   default_model: "ollama_cloud:deepseek-v3.1:cloud"
   # Fallback ativado se ollama_cloud estiver indisponível (erros de infra, timeout, 5xx).
   # Não dispara para 401/429 (erros de uso). Vazio = sem fallback.
-  fallback_chain: "anthropic:claude-sonnet-4-7"
+  fallback_chain: "anthropic:claude-sonnet-4-6"
 
 fallback_chain:
   - anthropic
