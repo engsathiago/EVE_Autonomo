@@ -19,14 +19,22 @@ StepStatus = Literal[
     "done",
     "failed",
     "skipped",
-    "failed_no_execution",  # LLM respondeu prosa sem invocar nenhuma tool (Fase B)
-    "failed_missing_tool",  # tool declarada em tools_required não existe no registry (D.1)
+    "failed_no_execution",   # LLM respondeu prosa sem invocar nenhuma tool (Fase B)
+    "failed_missing_tool",   # tool declarada em tools_required não existe no registry (D.1)
+    "blocked_by_critic",     # Critic rejeitou tool irreversível antes da execução (D.4)
 ]
 # failed_no_execution: LLM respondeu prosa — problema de execução/prompt.
 # failed_missing_tool: ferramenta declarada ausente — problema de configuração.
+# blocked_by_critic: Critic rejeitou — problema de segurança/irreversibilidade.
 # Distintos para permitir análise separada por causa raiz.
 
-_TERMINAL_STATUSES = {"done", "abandoned", "failed", "failed_no_execution", "failed_missing_tool"}
+_TERMINAL_STATUSES = {
+    "done", "abandoned", "failed",
+    "failed_no_execution",   # Fase B
+    "failed_missing_tool",   # D.1
+    "blocked_by_critic",     # D.4
+    "skipped",
+}
 
 
 class Mission(BaseModel):
@@ -239,7 +247,12 @@ class MissionStore:
         now = datetime.now(tz=UTC)
         started_at = now if status == "running" else None
         completed_at = (
-            now if status in ("done", "failed", "skipped", "failed_no_execution", "failed_missing_tool") else None
+            now
+            if status in (
+                "done", "failed", "skipped",
+                "failed_no_execution", "failed_missing_tool", "blocked_by_critic",
+            )
+            else None
         )
 
         await self._pool.execute(
