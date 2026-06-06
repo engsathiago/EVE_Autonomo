@@ -15,6 +15,7 @@ from agent.tools.registry import ToolRegistry
 from agent.transports.base import BaseTransport
 
 if TYPE_CHECKING:
+    from agent.critic.critic import Critic
     from agent.memory.compressor import ContextCompressor
     from agent.memory.curator import Curator
     from agent.memory.store import MemoryStore
@@ -60,6 +61,10 @@ class AgentResult(BaseModel):
     # "planning" para turns de planejamento explícito (sem tool call esperada)
     exception: str | None = None
     # Mensagem de exception se a execução terminou com erro não tratado
+    critic_blocked: bool = False
+    # True se o Critic bloqueou pelo menos uma tool irreversível nesta execução
+    critic_blocked_tool: str | None = None
+    critic_blocked_reason: str | None = None
 
 
 class AIAgent:
@@ -75,8 +80,10 @@ class AIAgent:
         conversation_id: UUID | None = None,
         skill_manager: "SkillManager | None" = None,
         model_router: "ModelRouter | None" = None,
-        critic: "Any | None" = None,
-        db_pool: "Any | None" = None,
+        critic: "Critic | None" = None,
+        mission_id: UUID | None = None,
+        task_id: UUID | None = None,
+        db_pool: Any | None = None,
     ) -> None:
         self._transport = transport
         self._registry = tool_registry
@@ -89,7 +96,13 @@ class AIAgent:
         self._skill_manager = skill_manager
         self._model_router = model_router
         self._critic = critic
+        self._mission_id = mission_id
+        self._task_id = task_id
         self._db_pool = db_pool
+        # D.4: rastreia bloqueio do Critic dentro desta execução
+        self._critic_blocked = False
+        self._critic_blocked_tool: str | None = None
+        self._critic_blocked_reason: str | None = None
 
     async def run(
         self,
@@ -184,6 +197,9 @@ class AIAgent:
                     conversation_id=str(self._conversation_id) if self._conversation_id else None,
                     approval_request=exc.request.model_dump() if hasattr(exc.request, "model_dump") else {},
                     tool_calls_made=all_tool_calls,
+                    critic_blocked=self._critic_blocked,
+                    critic_blocked_tool=self._critic_blocked_tool,
+                    critic_blocked_reason=self._critic_blocked_reason,
                 )
             messages.append({"role": "user", "content": tool_results})
 
@@ -236,6 +252,9 @@ class AIAgent:
             duration_s=round(duration, 2),
             conversation_id=str(self._conversation_id) if self._conversation_id else None,
             tool_calls_made=all_tool_calls,
+            critic_blocked=self._critic_blocked,
+            critic_blocked_tool=self._critic_blocked_tool,
+            critic_blocked_reason=self._critic_blocked_reason,
         )
 
     # -------------------------------------------------------------------------
@@ -362,6 +381,55 @@ class AIAgent:
                     },
                 )
             )
+
+            # D.4: Critic check para tools irreversíveis (não para skills).
+            # Hook por tool específica — nunca por dispatch genérico (ver BUG_PATTERN_MAP).
+            if not is_skill and self._critic is not None:
+                from agent.critic.irreversible import is_irreversible
+                if is_irreversible(name):
+                    from agent.critic.critic import Decision
+                    decision = Decision(
+                        tool_name=name,
+                        tool_args=args,
+                        context_summary=(
+                            f"Tool irreversível solicitada pelo agente. "
+                            f"Mission: {self._mission_id}. Step: {self._task_id}."
+                        ),
+                        mission_id=self._mission_id,
+                        task_id=self._task_id,
+                    )
+                    try:
+                        verdict = await self._critic.evaluate(decision, db_pool=self._db_pool)
+                    except Exception as critic_exc:
+                        log.warning("agent.critic.eval_failed", tool=name, error=str(critic_exc))
+                        verdict = None
+
+                    if verdict is not None and verdict.verdict == "reject":
+                        self._critic_blocked = True
+                        self._critic_blocked_tool = name
+                        self._critic_blocked_reason = verdict.reasoning
+                        log.info(
+                            "agent.critic.blocked",
+                            tool=name,
+                            mission_id=str(self._mission_id) if self._mission_id else None,
+                            task_id=str(self._task_id) if self._task_id else None,
+                            reason=verdict.reasoning[:200],
+                        )
+                        message = {
+                            "type": "tool_result",
+                            "tool_use_id": call["id"],
+                            "content": (
+                                f"BLOCKED_BY_CRITIC: A execução de '{name}' foi bloqueada. "
+                                f"Razão: {verdict.reasoning}"
+                            ),
+                        }
+                        summary = ToolCallSummary(
+                            tool_name=name,
+                            succeeded=False,
+                            has_structured_output=False,
+                            duration_ms=int(time.monotonic() * 1000) - t0_ms,
+                        )
+                        return message, summary
 
             if is_skill and self._skill_manager and skill_name:
                 from agent.skills.schema import ApprovalCreated, SkillError, SkillRequiresApproval

@@ -35,6 +35,7 @@ from agent.tools.registry import ToolRegistry, register_builtin, register_memory
 
 if TYPE_CHECKING:
     from agent.approvals.manager import ApprovalManager
+    from agent.critic.critic import Critic
     from agent.memory.compressor import ContextCompressor
     from agent.memory.curator import Curator
     from agent.memory.store import MemoryStore
@@ -64,6 +65,8 @@ class Orchestrator:
         epic_max_iterations_per_child: int = 6,
         # D.1: pool para gravar auditoria em step_tool_routing (opcional)
         db_pool: Any | None = None,
+        # D.4: Critic para interceptar tools irreversíveis em AIAgent._execute_tools
+        critic: "Critic | None" = None,
     ) -> None:
         self._model_router = model_router
         self._task_store = task_store
@@ -79,6 +82,7 @@ class Orchestrator:
         self._epic_max_parallel = epic_max_parallel
         self._epic_max_iter_child = epic_max_iterations_per_child
         self._db_pool = db_pool  # D.1: para log_routing_audit
+        self._critic = critic  # D.4: Critic para tools irreversíveis
         # Contadores para stats (em memória, 24h rolling)
         self._stats: dict[str, list[float]] = defaultdict(list)
 
@@ -149,6 +153,14 @@ class Orchestrator:
             max_iterations=max_iterations,
             reflection_every=999,
         )
+        # D.4: extrai mission/step context do channel_ref para popular Decision no Critic
+        _channel_ref = task.channel_ref or {}
+        _mission_id_str = _channel_ref.get("mission_id")
+        _step_id_str = _channel_ref.get("step_id")
+        from uuid import UUID as _UUID
+        _mission_id = _UUID(_mission_id_str) if _mission_id_str else None
+        _step_id = _UUID(_step_id_str) if _step_id_str else None
+
         agent = AIAgent(
             transport=transport,
             tool_registry=registry,
@@ -159,6 +171,10 @@ class Orchestrator:
             conversation_id=conversation_id,
             skill_manager=self._skill_manager,
             model_router=self._model_router,
+            critic=self._critic,
+            mission_id=_mission_id,
+            task_id=_step_id,
+            db_pool=self._db_pool,
         )
         return await agent.run(goal=task.content, conversation_history=[])
 
@@ -196,6 +212,7 @@ class Orchestrator:
             except Exception as exc:
                 log.warning("orchestrator.routing_audit.failed", error=str(exc))
 
+        _mission_id_str = (task.channel_ref or {}).get("mission_id")
         ctx = SubAgentContext(
             task=task.content,
             tools_allowed=resolution.tools,
@@ -205,6 +222,7 @@ class Orchestrator:
             timeout_s=120,
             channel_ref=task.channel_ref,
             parent_task_id=str(task.id),
+            mission_id=_mission_id_str,
         )
         log.info(
             "orchestrator.strategic.tools_resolved",
