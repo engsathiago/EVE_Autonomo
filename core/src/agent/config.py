@@ -72,6 +72,12 @@ class OllamaSettings(BaseSettings):
     timeout: int = 120
 
 
+class OllamaCloudSettings(BaseSettings):
+    base_url: str = "https://ollama.com"
+    api_key: str = ""  # obrigatório para uso — transport valida na inicialização
+    timeout: int = 120
+
+
 class ModelSettings(BaseSettings):
     default_model: str = "anthropic:claude-sonnet-4-7"
     fallback_chain: str = ""  # CSV: "ollama:qwen2.5:7b,anthropic:claude-haiku-4-5"
@@ -148,6 +154,7 @@ class Settings(BaseSettings):
     openai: OpenAISettings = OpenAISettings()
     openrouter: OpenRouterSettings = OpenRouterSettings()
     ollama: OllamaSettings = OllamaSettings()
+    ollama_cloud: OllamaCloudSettings = OllamaCloudSettings()
     models: ModelSettings = ModelSettings()
     search: SearchSettings = SearchSettings()
     skills: SkillsSettings = SkillsSettings()
@@ -181,6 +188,7 @@ class Settings(BaseSettings):
         openai_data = providers.get("openai", {})
         openrouter_data = providers.get("openrouter", {})
         ollama_data = providers.get("ollama", {})
+        ollama_cloud_data = providers.get("ollama_cloud", {})
         models_data = data.get("models", {})
         search_data = data.get("search", {})
         skills_data = data.get("skills", {})
@@ -221,6 +229,11 @@ class Settings(BaseSettings):
                 base_url=ollama_data.get("base_url") or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
                 api_key=ollama_data.get("api_key") or os.environ.get("OLLAMA_API_KEY", ""),
                 timeout=ollama_data.get("timeout", 120),
+            ),
+            ollama_cloud=OllamaCloudSettings(
+                base_url=ollama_cloud_data.get("base_url") or os.environ.get("OLLAMA_CLOUD_BASE_URL", "https://ollama.com"),
+                api_key=ollama_cloud_data.get("api_key") or os.environ.get("OLLAMA_CLOUD_API_KEY", ""),
+                timeout=ollama_cloud_data.get("timeout", 120),
             ),
             models=ModelSettings(
                 default_model=models_data.get("default_model")
@@ -360,6 +373,20 @@ def build_model_router(
             timeout=cfg.ollama.timeout,
         ),
     )
+
+    # Ollama Cloud — provider separado; registrado apenas quando api_key configurada
+    if cfg.ollama_cloud.api_key:
+        from agent.models.transports.ollama_cloud import OllamaCloudTransport
+
+        _oc_cfg = cfg.ollama_cloud  # captura explícita para evitar closure sobre cfg mutável
+        registry.register(
+            "ollama_cloud",
+            lambda: OllamaCloudTransport(
+                base_url=_oc_cfg.base_url,
+                api_key=_oc_cfg.api_key,
+                timeout=_oc_cfg.timeout,
+            ),
+        )
 
     return ModelRouter(
         registry=registry,

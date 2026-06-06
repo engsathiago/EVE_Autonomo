@@ -35,6 +35,10 @@ providers:
     host: "http://ollama:11434"
     models:
       memory: "qwen2.5:7b-instruct"
+  ollama_cloud:
+    base_url: "https://ollama.com"
+    api_key: ${OLLAMA_CLOUD_API_KEY}
+    timeout: 120
 
 memory:
   postgres_url: ${POSTGRES_URL}

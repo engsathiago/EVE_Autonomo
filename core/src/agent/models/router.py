@@ -49,7 +49,7 @@ def parse_model_string(s: str) -> tuple[str, str]:
     provider, _, model = s.partition(":")
     if not provider or not model:
         raise ValueError(f"String de modelo inválida: {s!r}. Formato: 'provider:model'")
-    allowed = {"anthropic", "openai", "openrouter", "ollama"}
+    allowed = {"anthropic", "openai", "openrouter", "ollama", "ollama_cloud"}
     if provider not in allowed:
         raise ValueError(f"Provider desconhecido: {provider!r}. Permitidos: {allowed}")
     return provider, model
@@ -250,7 +250,7 @@ class ModelRouter:
         model_id: str,
         transport: Any,
     ) -> Any:
-        if provider == "ollama":
+        if provider in ("ollama", "ollama_cloud"):
             return await transport.get_model_capabilities(model_id)
         caps = get_cloud_capabilities(alias)
         return caps or transport.capabilities
