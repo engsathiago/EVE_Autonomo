@@ -1,0 +1,9 @@
+services:
+  core:
+    environment:
+      POSTGRES_DSN: postgresql://agent:qualquercoisa123@postgres:5432/agent_d5_validation
+      DATABASE_URL: postgresql://agent:qualquercoisa123@postgres:5432/agent_d5_validation
+      AGENT_NO_WEB: "1"
+      CHANNELS_ENABLED: "discord,slack"
+      MODEL_FALLBACK_CHAIN: ""
+      DEFAULT_MODEL: "anthropic:claude-haiku-4-5"

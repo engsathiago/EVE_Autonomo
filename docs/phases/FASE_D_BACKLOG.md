@@ -88,17 +88,27 @@ Relatório completo: [`core/docs/phases/D1_REPLAY_RESULTS.md`](core/docs/phases/
 
 ---
 
-## D.5 — Re-validação F5–F13 em runtime real ⭐ CANDIDATO PRÓXIMO
+## D.5 — Re-validação F5–F13 em runtime real ✅ EXECUTADA (2026-05-29)
 
-**Pendente da Fase A:** 10 fases marcadas TEÓRICAS (F5 Telegram, F6 Cron, F7 Critic, F8 Sandbox, F9 Voyager, F10 Deploy, F11 Web UI, F12 Channels, F13 LoRA).
+**Resultado:** 4/9 testáveis destrancadas. NOT_APPLICABLE: F13. NOT_APPLICABLE_INFRA: F11.
 
-Com D.1 em produção (tools corretas por step) + fix da Fase B (validação de execução real), agora é o momento natural de re-validar as fases TEÓRICAS. D.1 resolve o motivo arquitetural mais provável do TEATRO — agora os subagentes têm as ferramentas que precisam.
+| Fase | Resultado | Evidência chave |
+|------|-----------|-----------------|
+| F5 (Telegram) | **DESTRANCOU** | `outbound.dispatched` no gateway log; bot entregou mensagem |
+| F6 (Cron+Subagentes) | **DESTRANCOU** | `cron_jobs.last_status=ok`; `subagent_runs.tools_used={write_file}` |
+| F7 (Missões+Critic) | AINDA TEÓRICA | Steps = prosa; `step_tool_routing=0`; `critic_evaluations=0` |
+| F8 (Sandboxes) | **PARCIAL** | `noop_skill` em `/health/deep` ok=true via exec_tool+SubprocessSandbox; `sandbox_executions=0` |
+| F9 (Skills Voyager) | AINDA TEÓRICA | PermissionError `/app/src/agent/skills/_active`; `/api/v1/skills` → 404 |
+| F10 (Deploy) | **DESTRANCOU** | `/health/live`, `/health/ready`, `/health/deep` ativos |
+| F11 (Web UI) | NOT_APPLICABLE_INFRA | `RuntimeError: Cannot add middleware after application started` |
+| F12 (Canais) | AINDA TEÓRICA | Credenciais incompletas (DISCORD_GUILD_ID, SLACK_APP_TOKEN) |
+| F13 (LoRA) | NOT_APPLICABLE | Sem checkpoint; sem GPU |
 
-**Por que D.5 virou candidato natural agora:**
-- D.1 em main: tools por step resolvidas dinamicamente
-- Fase B em main: steps sem tool call → `failed_no_execution` (não mais silencioso)
-- Próxima iteração pode revelar quantas fases "acordam" com D.1 ativo
+**Bugs de deployment corrigidos durante D.5:**
+- `server.py:261`: `parents[4]` → `Path(settings.skills.skills_dir)` (IndexError no container)
+- `server.py:268`: mkdir movido para dentro do try/except
 
-**Proposta:** missão real por fase, em runtime, com critérios de aceite por DB count + efeito verificável. Re-escrever `AUDIT_REPORT.md` com status real após validação. Oportunidade de fechar também a limitação L3 do replay C10 (steps históricos reais).
+**Relatório completo:** `docs/phases/D5_VALIDATION_RESULTS.md`  
+**Branch:** `validate/d5-runtime-revalidation` (aguarda review e merge)
 
-**Prioridade:** MÉDIA → ALTA — pré-requisito para qualquer claim de "sistema pronto pra produção". Com D.1 em produção, D.5 é o próximo passo lógico antes de D.4 (Critic) ou D.2 (timeouts).
+**Threshold não atingido (4 < 5) → sem tag d5-done. Próxima fase: D.4.**
