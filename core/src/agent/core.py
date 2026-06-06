@@ -432,6 +432,60 @@ class AIAgent:
                         return message, summary
 
             if is_skill and self._skill_manager and skill_name:
+                # A.3: Critic gate para skills com irreversible=True no manifesto
+                if self._critic is not None:
+                    from agent.skills.exceptions import SkillNotFound as _SkillNotFound
+                    try:
+                        skill_manifest = self._skill_manager.get(skill_name)
+                        if skill_manifest.irreversible:
+                            from agent.critic.critic import Decision
+                            decision = Decision(
+                                tool_name=skill_name,
+                                tool_args=args,
+                                context_summary=(
+                                    f"Skill irreversível solicitada: {skill_name}. "
+                                    f"Mission: {self._mission_id}. Step: {self._task_id}."
+                                ),
+                                mission_id=self._mission_id,
+                                task_id=self._task_id,
+                            )
+                            try:
+                                verdict = await self._critic.evaluate(decision, db_pool=self._db_pool)
+                            except Exception as critic_exc:
+                                log.warning(
+                                    "agent.critic.skill.eval_failed",
+                                    skill=skill_name,
+                                    error=str(critic_exc),
+                                )
+                                verdict = None
+
+                            if verdict is not None and verdict.verdict == "reject":
+                                self._critic_blocked = True
+                                self._critic_blocked_tool = skill_name
+                                self._critic_blocked_reason = verdict.reasoning
+                                log.info(
+                                    "agent.critic.skill.blocked",
+                                    skill=skill_name,
+                                    mission_id=str(self._mission_id) if self._mission_id else None,
+                                    task_id=str(self._task_id) if self._task_id else None,
+                                    reason=verdict.reasoning[:200],
+                                )
+                                return {
+                                    "type": "tool_result",
+                                    "tool_use_id": call["id"],
+                                    "content": (
+                                        f"BLOCKED_BY_CRITIC: A execução da skill '{skill_name}' "
+                                        f"foi bloqueada. Razão: {verdict.reasoning}"
+                                    ),
+                                }, ToolCallSummary(
+                                    tool_name=name,
+                                    succeeded=False,
+                                    has_structured_output=False,
+                                    duration_ms=int(time.monotonic() * 1000) - t0_ms,
+                                )
+                    except _SkillNotFound:
+                        pass  # skill não registrada no manager — executa sem gating
+
                 from agent.skills.schema import ApprovalCreated, SkillError, SkillRequiresApproval
                 from agent.tools.base import ToolResult
 

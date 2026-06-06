@@ -1,6 +1,6 @@
 # Ollama Cloud
 
-A EVE suporta tanto **Ollama local** (`http://localhost:11434`) quanto **Ollama Cloud** (`https://ollama.com`) através do mesmo `OllamaTransport`.
+A EVE suporta tanto **Ollama local** (provider `ollama`) quanto **Ollama Cloud** (provider `ollama_cloud`) como **providers separados**. Desde Sprint 2, `ollama_cloud` é o provider padrão.
 
 ## Quando usar Ollama Cloud?
 
@@ -25,14 +25,12 @@ A EVE suporta tanto **Ollama local** (`http://localhost:11434`) quanto **Ollama 
 ### 2. Configurar `.env`
 
 ```bash
-# Aponta para a cloud em vez do localhost
-OLLAMA_BASE_URL=https://ollama.com
+# Provider Ollama Cloud (separado do provider "ollama" local)
+OLLAMA_CLOUD_API_KEY=ollama_sua_chave_aqui
+OLLAMA_CLOUD_BASE_URL=https://ollama.com   # padrão — só altere se necessário
 
-# Sua API key da cloud
-OLLAMA_API_KEY=ollama_sua_chave_aqui
-
-# Modelo padrão (use modelos cloud-only para máximo proveito)
-DEFAULT_MODEL=ollama:gpt-oss:120b
+# Modelo padrão (já configurado por default, só confirme)
+DEFAULT_MODEL=ollama_cloud:deepseek-v3.1:cloud
 ```
 
 ### 3. Reiniciar o Core
@@ -45,38 +43,70 @@ docker compose restart core
 
 ```bash
 agent model health
-# Deve mostrar: ollama → ok (latência ~X ms)
+# Deve mostrar: ollama_cloud → ok (latência ~X ms)
 
-agent model test ollama:gpt-oss:120b "Oi, tudo bem?"
+agent model test ollama_cloud:deepseek-v3.1:cloud "Oi, tudo bem?"
 ```
 
 ## Modelos disponíveis na Cloud
 
-| Modelo | Tamanho | Uso recomendado |
-|--------|---------|-----------------|
-| `gpt-oss:120b` | 120B | Tarefas complexas, raciocínio profundo |
-| `qwen3-coder:480b-cloud` | 480B | Geração de código avançada |
-| `deepseek-v3.1:671b-cloud` | 671B | Estado-da-arte, missões críticas |
-| `kimi-k2:1t-cloud` | 1T | Maior modelo disponível |
+| Modelo (string completa) | Tamanho | Uso recomendado |
+|--------------------------|---------|-----------------|
+| `ollama_cloud:gpt-oss:20b-cloud` | 20B | Classificação, planning (rápido) |
+| `ollama_cloud:deepseek-v3.1:cloud` | ~70B | Default geral, reasoning |
+| `ollama_cloud:kimi-k2.5:cloud` | — | Reflector, Critic sintetizador |
+| `ollama_cloud:qwen3-coder:480b-cloud` | 480B | Geração de código avançada |
 
-> Lista atualizada em: https://ollama.com/library
+> Lista completa e atualizada em: https://ollama.com/library
+
+## Mapeamento tier → modelo padrão
+
+| Componente | Modelo padrão | Override via env |
+|---|---|---|
+| ModelRouter (default) | `ollama_cloud:deepseek-v3.1:cloud` | `DEFAULT_MODEL` |
+| TierClassifier | `ollama_cloud:gpt-oss:20b-cloud` | `ORCHESTRATOR_CLASSIFIER_MODEL` |
+| MissionPlanner | `ollama_cloud:gpt-oss:20b-cloud` | `MISSIONS_PLANNER_MODEL` |
+| MissionReflector | `ollama_cloud:kimi-k2.5:cloud` | `MISSIONS_REFLECTOR_MODEL` |
+| Critic (técnico/DA) | `ollama_cloud:gpt-oss:20b-cloud` | `CRITIC__MEDIUM_MODEL` |
+| Critic (sintetizador) | `ollama_cloud:kimi-k2.5:cloud` | `CRITIC__PRIMARY_MODEL` |
+
+## Trocar o provider padrão
+
+Para reverter para Anthropic:
+
+```bash
+# .env
+DEFAULT_MODEL=anthropic:claude-sonnet-4-6
+ORCHESTRATOR_CLASSIFIER_MODEL=anthropic:claude-haiku-4-5
+MISSIONS_PLANNER_MODEL=anthropic:claude-haiku-4-5
+MISSIONS_REFLECTOR_MODEL=anthropic:claude-sonnet-4-6
+CRITIC__MEDIUM_MODEL=anthropic:claude-haiku-4-5
+CRITIC__PRIMARY_MODEL=anthropic:claude-sonnet-4-6
+```
+
+Ou via CLI (só o DEFAULT_MODEL):
+
+```bash
+agent model set-default anthropic:claude-sonnet-4-6
+```
 
 ## Usando local e cloud ao mesmo tempo
 
-Você pode configurar fallback chain mista:
+Configure fallback chain no `.env`:
 
 ```bash
-DEFAULT_MODEL=ollama:gpt-oss:120b
-MODEL_FALLBACK_CHAIN=anthropic:claude-haiku-4-5,ollama:qwen2.5:7b
+DEFAULT_MODEL=ollama_cloud:deepseek-v3.1:cloud
+MODEL_FALLBACK_CHAIN=anthropic:claude-sonnet-4-6
 ```
 
-Se a Cloud falhar (timeout, 5xx), cai para Claude. Se Claude falhar, cai para Ollama local.
+Se a Cloud falhar (timeout, 5xx), cai automaticamente para Anthropic.
+Rate limit (429) e erros de autenticação **não disparam** fallback.
 
 ## Custos
 
 A Ollama Cloud cobra por consumo. Veja https://ollama.com/pricing.
 
-A EVE registra **todo custo** automaticamente em `model_invocations`:
+A EVE registra todo custo automaticamente em `model_invocations`:
 
 ```bash
 agent model costs --since today
@@ -95,65 +125,45 @@ agent model costs --since today
 
 ## Troubleshooting
 
-### `PermissionError: OLLAMA_API_KEY`
+### `ValueError: OllamaCloudTransport requer autenticação`
+
+`OLLAMA_CLOUD_API_KEY` está vazia. Configure no `.env` e reinicie.
+
+### `PermissionError` (401/403)
 
 A chave é inválida ou expirou. Gere uma nova em https://ollama.com/settings/keys.
 
-### `ModelNotPulledError: gpt-oss:120b`
+### `ModelNotPulledError`
 
 O modelo não está disponível na sua conta/região. Verifique a lista em https://ollama.com/library.
 
 ### Timeouts frequentes
-
-Aumente o timeout:
 
 ```bash
 # .env
 MODEL_TIMEOUT_S=180   # 3 minutos para modelos grandes
 ```
 
-Ou na config:
+Ou no `config/config.yaml`:
 
 ```yaml
-# config/config.yaml
 providers:
-  ollama:
+  ollama_cloud:
     timeout: 180
 ```
 
 ### Latência alta
 
-Modelos cloud têm latência inerente (~2-10s por resposta). Para tarefas onde latência importa, considere:
+Modelos cloud têm latência inerente (~2-10s). Para tarefas latência-sensitivas:
+- Use modelo menor (`ollama_cloud:gpt-oss:20b-cloud`)
+- Inverta o fallback: `DEFAULT_MODEL=anthropic:claude-haiku-4-5`, com cloud como backup
 
-- Usar modelo menor (`gpt-oss:120b` em vez de `kimi-k2:1t-cloud`)
-- Fallback chain: começar pelo Claude Haiku, cair para Ollama Cloud só se necessário
+## Diferença entre `ollama` e `ollama_cloud`
 
-## Detecção automática
-
-O transport detecta se está em modo cloud pela presença de `api_key`:
-
-```python
-from agent.config import get_settings
-from agent.models.transports.ollama import OllamaTransport
-
-settings = get_settings()
-transport = OllamaTransport(
-    base_url=settings.ollama.base_url,
-    api_key=settings.ollama.api_key,
-)
-
-print(transport.is_cloud)   # True se OLLAMA_API_KEY foi configurada
-```
-
-## Comparação API: local vs cloud
-
-| Endpoint | Local | Cloud |
-|----------|-------|-------|
-| `POST /api/chat` | ✅ | ✅ |
-| `POST /api/generate` | ✅ | ✅ |
-| `GET /api/tags` | ✅ Modelos locais | ✅ Modelos disponíveis na cloud |
-| `POST /api/show` | ✅ | ✅ |
-| `POST /api/pull` | ✅ | ❌ Modelos cloud não precisam pull |
-| Authorization header | Opcional | **Obrigatório** |
-
-A EVE abstrai essas diferenças — o mesmo código funciona em ambos os modos.
+| | `ollama` | `ollama_cloud` |
+|---|---|---|
+| URL padrão | `http://localhost:11434` | `https://ollama.com` |
+| Autenticação | Opcional | **Obrigatória** (`OLLAMA_CLOUD_API_KEY`) |
+| Classe Python | `OllamaTransport` | `OllamaCloudTransport` (subclasse) |
+| Configuração | `OLLAMA_BASE_URL`, `OLLAMA_API_KEY` | `OLLAMA_CLOUD_BASE_URL`, `OLLAMA_CLOUD_API_KEY` |
+| Registro no router | Sempre (sem key) | Só quando `OLLAMA_CLOUD_API_KEY` configurada |

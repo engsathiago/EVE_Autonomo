@@ -123,23 +123,41 @@ Veja `.env.example`. Nunca commite `.env` real.
 
 ## Modelos recomendados
 
-- **Planner/Reasoner do agente:** `claude-haiku-4-5` (rápido, tool use confiável)
-- **Reflector/Critic:** `claude-sonnet-4-6` (raciocínio profundo)
-- **Memória/Sumarização:** `qwen2.5:7b-instruct` via Ollama (local, grátis)
+- **Default geral (ModelRouter):** `ollama_cloud:deepseek-v3.1:cloud` (requer `OLLAMA_CLOUD_API_KEY`)
+- **TierClassifier / Planner:** `ollama_cloud:gpt-oss:20b-cloud`
+- **Reflector / Critic sintetizador:** `ollama_cloud:kimi-k2.5:cloud`
+- **Memória/Sumarização:** `qwen2.5:7b-instruct` via Ollama local (grátis)
 - **Embeddings:** `paraphrase-multilingual-MiniLM-L12-v2` (PT+EN)
 
-## Multi-modelo (Fase 4)
+Para trocar o default: `DEFAULT_MODEL=anthropic:claude-sonnet-4-6` no `.env`, ou via CLI:
+```bash
+agent model set-default anthropic:claude-sonnet-4-6
+```
 
-Formato de string: `provider:model_id` — ex: `anthropic:claude-haiku-4-5`, `ollama:qwen2.5:7b`
+## Multi-modelo (Fase 4 + Sprint 2)
+
+Formato de string: `provider:model_id` — ex: `ollama_cloud:deepseek-v3.1:cloud`, `anthropic:claude-haiku-4-5`
 
 | Provider | Exemplo | Notas |
 |---|---|---|
-| `anthropic` | `anthropic:claude-sonnet-4-7` | Default. Requer `ANTHROPIC_API_KEY` |
+| `ollama_cloud` | `ollama_cloud:deepseek-v3.1:cloud` | **Default.** Requer `OLLAMA_CLOUD_API_KEY` |
+| `anthropic` | `anthropic:claude-sonnet-4-6` | Fallback de infra. Requer `ANTHROPIC_API_KEY` |
 | `openai` | `openai:gpt-4o-mini` | Requer `OPENAI_API_KEY` |
 | `openrouter` | `openrouter:deepseek/deepseek-chat` | Requer `OPENROUTER_API_KEY` |
 | `ollama` | `ollama:qwen2.5:7b` | Local. Requer Ollama rodando em `OLLAMA_BASE_URL` |
 
-Fallback chain: `MODEL_FALLBACK_CHAIN=ollama:qwen2.5:7b,anthropic:claude-haiku-4-5` (vazio = sem fallback).
+**Mapeamento tier → modelo (padrão):**
+
+| Tier | Componente | Modelo padrão |
+|---|---|---|
+| Classificação | TierClassifier | `ollama_cloud:gpt-oss:20b-cloud` |
+| Planejamento | MissionPlanner | `ollama_cloud:gpt-oss:20b-cloud` |
+| Reflexão | MissionReflector | `ollama_cloud:kimi-k2.5:cloud` |
+| Crítico (médio) | Critic técnico + DA | `ollama_cloud:gpt-oss:20b-cloud` |
+| Crítico (principal) | Critic sintetizador | `ollama_cloud:kimi-k2.5:cloud` |
+| Default geral | ModelRouter | `ollama_cloud:deepseek-v3.1:cloud` |
+
+Fallback chain: `MODEL_FALLBACK_CHAIN=anthropic:claude-sonnet-4-6` (vazio = sem fallback).
 Só dispara em erros de infra (timeout, 5xx). Rate limit (429) e auth errors não disparam fallback.
 
 Custo: cada invocação LLM grava em `model_invocations`. Ver gastos: `agent model costs --since today`.
