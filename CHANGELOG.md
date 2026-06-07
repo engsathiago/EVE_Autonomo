@@ -67,6 +67,53 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.1.0] — 2026-06-07 — Ollama Cloud default + Critic wire + Runtime validation
+
+### Adicionado
+
+- Provider `ollama_cloud` como default do ModelRouter (`DEFAULT_MODEL=ollama_cloud:deepseek-v3.1:cloud`)
+- `OllamaCloudTransport` separado do `OllamaTransport` local — auth Bearer via `OLLAMA_CLOUD_API_KEY`
+- Critic gate em skills irreversíveis em `AIAgent._execute_tools` (artigo A.3 do SECURITY.md — KI-1 fechado)
+- Settings dedicados por componente LLM: `OrchestratorSettings.classifier_model`, `CriticSettings.medium_model` / `primary_model`, `MissionsSettings.planner_model` / `reflector_model`
+- **Runtime validation framework** — marker `runtime` no `pyproject.toml`, fixtures asyncpg, testes em `tests/runtime/`
+- 18 testes runtime cobrindo F5 / F6 / F7 / F8 / F9 / F11 (todos passando com Postgres real)
+- `scripts/install_vps.sh` — instalação idempotente em VPS Ubuntu 22.04 via Docker Compose
+- `migration/017_blocked_by_critic.sql` — status `blocked_by_critic` + índice parcial em `critic_evaluations(mission_id)`
+- Documentos de Sprint 2: `AUDIT_REPORT.md`, `PLAN.md`, `DEPLOY_GAP.md`, `RUNTIME_VALIDATION_REPORT.md`, `BUG_F5_DISCOVERED.md`, `BUG_F11_DISCOVERED.md`, `SPRINT_2_REPORT.md`
+- `docs/RUNTIME_TESTING.md` — guia do padrão de runtime testing para fases futuras
+
+### Corrigido
+
+- **BUG_F5-A:** `ApprovalManager.create()` agora serializa `skill_args` e `channel_ref` com `json.dumps` antes do `INSERT` em colunas `jsonb` (asyncpg rejeitava `dict` Python direto)
+- **BUG_F5-B:** `ApprovalManager.get()` / `decide()` / `list_pending()` agora desserializam corretamente `UUID→str` e `jsonb str→dict` via helper `_row_to_state` (Pydantic rejeitava os tipos brutos)
+- Critic conectado ao mission flow — antes da v1.1.0 estava registrado mas nunca era invocado em `core.py` (KI-1)
+- `Settings.from_yaml()` agora parseia bloco `critic:` do `config.yaml` (antes era ignorado silenciosamente)
+- `SubagentPool` agora propaga `db_pool` corretamente até o `AIAgent` dos subagentes — antes `critic_evaluations` não persistiam em subagentes (d4-critic fix)
+- `tool_router.py` usa `model_router.default_model()` em vez de `anthropic:claude-haiku-4-5` hardcoded
+
+### Alterado
+
+- Hardcodes de modelo Anthropic removidos de `TierClassifier`, `Critic`, `MissionPlanner`, `MissionReflector` — agora leem de `Settings` com override via env var
+- `config.yaml` default e `.env.example` apontam para `ollama_cloud` como provider principal; Anthropic vira fallback opcional via `MODEL_FALLBACK_CHAIN`
+
+### Problemas conhecidos / Gaps
+
+- **GAP-F11-A:** não existe endpoint REST `POST /api/ui/chat` — chat ocorre via WebSocket (`chat.send` op)
+- **GAP-F11-B:** tabela `web_sessions` existe no schema mas o código nunca executa `INSERT` — sessions vivem em memória (`_WsSession`)
+- **F12** (Discord/Slack/Email) e **F13** (LoRA finetune): código existe, runtime validation adiada para v1.2
+- Repo contém dois venvs em `core/` (`.venv` incompleto, `.venv312` completo) — `install_vps.sh` consolida em um único
+- Gateway healthcheck marca `unhealthy` durante restarts do Telegraf por `409 Conflict` (long-polling) — sugestão: migrar para webhook em produção
+- `test_supervisor_internals.py::test_start_worker_sets_pid` falha em SQLite por DDL Postgres-specific (pré-existente, não introduzido nesta release)
+
+### Métricas
+
+- **18 testes runtime** adicionados (todos passando com Postgres real)
+- **2 bugs F5** corrigidos
+- **2 bugs KI** fechados (KI-1 Critic wire, KI-2 OllamaCloudTransport)
+- **18 gaps** documentados em DEPLOY_GAP.md e RUNTIME_VALIDATION_REPORT.md
+
+---
+
 ## [Unreleased]
 
 ### Corrigido
@@ -302,7 +349,9 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
-[Unreleased]: https://github.com/engsathiago/EVE_Autonomo/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/engsathiago/EVE_Autonomo/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/engsathiago/EVE_Autonomo/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/engsathiago/EVE_Autonomo/compare/v0.13.0...v1.0.0
 [0.13.0]: https://github.com/engsathiago/EVE_Autonomo/releases/tag/v0.13.0
 [0.12.0]: https://github.com/engsathiago/EVE_Autonomo/releases/tag/v0.12.0
 [0.11.0]: https://github.com/engsathiago/EVE_Autonomo/releases/tag/v0.11.0
