@@ -102,6 +102,7 @@ markers = [
   "integration: testes que requerem Postgres rodando (desabilitar com -m 'not integration')",
   "docker: testes que requerem Docker daemon disponível (desabilitar com -m 'not docker')",
   "slow: testes que demoram (GPU, treino real) — desabilitar com -m 'not slow'",
+  "runtime: testes de validação runtime (requerem Postgres em localhost:5432 e ambiente completo)",
 ]
 
 [tool.coverage.report]
