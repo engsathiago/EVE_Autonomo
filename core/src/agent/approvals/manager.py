@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
@@ -10,6 +11,21 @@ from pydantic import BaseModel
 from agent.observability.logger import get_logger
 
 log = get_logger(__name__)
+
+
+def _row_to_state(row: Any) -> "ApprovalState":
+    """Converte asyncpg Record → ApprovalState com coerções de tipo necessárias.
+
+    asyncpg retorna coluna `uuid` como uuid.UUID e colunas `jsonb` como str JSON —
+    ambos incompatíveis com os tipos Pydantic declarados na model.
+    """
+    data = dict(row)
+    data["id"] = str(data["id"])
+    for field in ("skill_args", "channel_ref"):
+        val = data.get(field)
+        if isinstance(val, str):
+            data[field] = json.loads(val)
+    return ApprovalState(**data)
 
 _DEFAULT_TIMEOUT_S = 1800  # 30 min
 
@@ -95,10 +111,10 @@ class ApprovalManager:
                 approval_id,
                 session_id,
                 skill_name,
-                skill_args,
+                json.dumps(skill_args, ensure_ascii=False),
                 summary,
                 channel,
-                channel_ref or {},
+                json.dumps(channel_ref or {}, ensure_ascii=False),
                 expires_at,
             )
 
@@ -118,7 +134,7 @@ class ApprovalManager:
             )
         if row is None:
             raise ApprovalNotFoundError(approval_id)
-        return ApprovalState(**dict(row))
+        return _row_to_state(row)
 
     async def decide(
         self,
@@ -136,7 +152,7 @@ class ApprovalManager:
             if row is None:
                 raise ApprovalNotFoundError(approval_id)
 
-            state = ApprovalState(**dict(row))
+            state = _row_to_state(row)
 
             if state.status != "pending":
                 # Idempotente: segunda chamada retorna estado atual sem modificar
@@ -163,7 +179,7 @@ class ApprovalManager:
                 now,
             )
 
-        updated = ApprovalState(**dict(row))
+        updated = _row_to_state(row)
         log.info("approval.decided", approval_id=approval_id, status=new_status, by=decided_by)
         self._fire_event(approval_id)
         return updated
@@ -208,4 +224,4 @@ class ApprovalManager:
                     """,
                     limit,
                 )
-        return [ApprovalState(**dict(r)) for r in rows]
+        return [_row_to_state(r) for r in rows]

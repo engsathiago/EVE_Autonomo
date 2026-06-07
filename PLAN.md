@@ -328,6 +328,8 @@ Se `docker ps` falhar ou retornar erro: **PARE imediatamente e avise o usuário.
 
 > ⚠️ TODO descoberto em A.4: o repo tem dois venvs no core/ (.venv incompleto, .venv312 com deps completas). install_vps.sh deve criar UM único venv (recomendado: core/.venv) e rodar pip install -r requirements.txt + pip install -e . para garantir todas as deps (prometheus_client, discord.py, slack_*, etc.). Documentar no README também que .venv312 era artefato local e não deve ser referência.
 
+> ⚠️ TODO descoberto em C.1: o gateway marca `unhealthy` durante restarts do Telegraf (~20s loop) causados por erro `409 Conflict — terminated by other getUpdates request` quando duas instâncias tentam fazer long-polling do mesmo bot token. install_vps.sh deve garantir que apenas uma instância poleia o bot por vez (ex: `docker compose down gateway` antes de `docker compose up -d`, OU migrar para webhook em vez de long-polling). O `StartPeriod` do healthcheck também pode ser aumentado para 60s para tolerar os restarts iniciais do Telegraf.
+
 ---
 
 ## Itens Descartados do Pedido Original (Fase 2 do plano inicial)
