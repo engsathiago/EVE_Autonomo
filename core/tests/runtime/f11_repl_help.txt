@@ -1,0 +1,41 @@
+[2J[H╭───────────────────────────────────────────────────────────────────╮
+│ [1mEVE[0m — Agente Autônomo  [2m| modelo:[0m ollama_cloud:deepseek-v3.1:cloud │
+│ [2mDigite[0m /help [2mpara comandos · [0m[2m/exit[0m[2m ou Ctrl+D para sair[0m            │
+╰───────────────────────────────────────────────────────────────────╯
+/help
+/exit
+
+[?12l[?25h[6n[?2004h[?1l[?25l[0m[?7l[0m[J[0;1m› [0m
+
+
+
+
+
+
+
+
+
+
+
+
+
+[0m [7A[2C[?7h[0m[?12l[?25h[?25l[?7l[2D[0m[J[0;1m› [0m/help[7D[0m
+
+[J[?7h[0m[?12l[?25h[?2004l[3m                              Comandos disponíveis                              [0m
+┌──────────────────────┬───────────────────────────────────────────────────────┐
+│ /help                │ Lista todos os comandos                               │
+│ /model               │ Mostra ou troca o modelo (ex: /model                  │
+│                      │ ollama:gpt-oss:120b)                                  │
+│ /clear               │ Limpa a tela                                          │
+│ /cost                │ Total de custo desta sessão                           │
+│ /tools               │ Lista tools disponíveis                               │
+│ /skills              │ Lista skills carregadas                               │
+│ /missions            │ Lista missões ativas                                  │
+│ /approvals           │ Lista aprovações pendentes                            │
+│ /save                │ Salva conversa atual em arquivo                       │
+│ /reset               │ Zera o histórico de tokens/custo desta sessão         │
+│ /exit                │ Sai do chat (Ctrl+D também funciona)                  │
+└──────────────────────┴───────────────────────────────────────────────────────┘
+[?2004h[?25l[0m[?7l[0m[J[0;1m› [0m/exit[7D[7C[?7h[0m[?12l[?25h[?25l[?7l[7D[0m[J[0;1m› [0m/exit[7D[0m
+
+[J[?7h[0m[?12l[?25h[?2004l[2mAté logo! 👋[0m
