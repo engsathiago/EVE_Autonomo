@@ -1,0 +1,4 @@
+approval_id=abf269c0-7022-4fbc-870d-63a394b0948e
+status=approved
+skill_name=mock_send_email
+decided_by=runtime-test-c1
